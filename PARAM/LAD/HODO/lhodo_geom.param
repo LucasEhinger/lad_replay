@@ -1,0 +1,9 @@
+; Number of hodoscopes
+lhodo_num_planes = 4
+lhodo_plane_names = "0 1 2 3"
+
+; Number of hodoscope paddles per layer
+      lhodo_0_nr = 4
+      lhodo_1_nr = 4
+      lhodo_2_nr = 4
+      lhodo_3_nr = 4
