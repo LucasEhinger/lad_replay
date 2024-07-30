@@ -22,6 +22,7 @@ void replay_no_reference_times_hms(Int_t RunNumber=0, Int_t MaxEvent=0) {
   pathList.push_back("./raw");
   pathList.push_back("./raw/../raw.copiedtotape");
   pathList.push_back("./cache");
+  pathList.push_back("/cache/hallc/xem2/raw/");
 
   const char* ROOTFileNamePattern = "ROOTfiles/hms_noReferenceTime_%d_%d.root";
 

@@ -1,4 +1,5 @@
-void replay_no_timing_windows_hms(Int_t RunNumber=0, Int_t MaxEvent=0) {
+#include "../LAD_link_defs.h"
+void replay_production_hms_lad(Int_t RunNumber=0, Int_t MaxEvent=0) {
 
   // Get RunNumber and MaxEvent if not provided.
   if(RunNumber == 0) {
@@ -24,12 +25,12 @@ void replay_no_timing_windows_hms(Int_t RunNumber=0, Int_t MaxEvent=0) {
   pathList.push_back("./cache");
   pathList.push_back("/cache/hallc/xem2/raw/");
 
-  const char* ROOTFileNamePattern = "ROOTfiles/hms_noTimingWindows_%d_%d.root";
+  const char* ROOTFileNamePattern = "ROOTfiles/hms_replay_production_%d_%d.root";
 
   // Load Global parameters
   // Add variables to global list.
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
-  gHcParms->AddString("g_ctp_database_filename", "DBASE/HMS/standard.database");
+  gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD/standard.database");
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
@@ -38,21 +39,12 @@ void replay_no_timing_windows_hms(Int_t RunNumber=0, Int_t MaxEvent=0) {
   // Load fadc debug parameters
   gHcParms->Load("PARAM/HMS/GEN/h_fadc_debug.param");
 
-  //===================================
-
-  //Now remove all Timing Windows and revert to 
-  //the default values specifid in hallc_replay
-  gHcParms->AddString("g_ctp_no_timing_windows_filename", "PARAM/HMS/GEN/hdet_cuts_no_timing_windows.param");
-  gHcParms->Load(gHcParms->GetString("g_ctp_no_timing_windows_filename"));
-
-  //===================================
-
   // const char* CurrentFileNamePattern = "low_curr_bcm/bcmcurrent_%d.param";
   // gHcParms->Load(Form(CurrentFileNamePattern, RunNumber));
 
   // Load the Hall C detector map
   gHcDetectorMap = new THcDetectorMap();
-  gHcDetectorMap->Load("MAPS/HMS/DETEC/STACK/hms_stack.map");
+  gHcDetectorMap->Load("MAPS/LAD/DETEC/STACK/lad_hms_stack.map");
   
   // Add trigger apparatus
   THaApparatus* TRG = new THcTrigApp("T", "TRG");
@@ -79,6 +71,14 @@ void replay_no_timing_windows_hms(Int_t RunNumber=0, Int_t MaxEvent=0) {
   // Add calorimeter to HMS apparatus
   THcShower* cal = new THcShower("cal", "Calorimeter");
   HMS->AddDetector(cal);
+
+
+    // Add LAD detector 
+  THcLADSpectrometer *LAD = new THcLADSpectrometer("L", "LAD");
+  gHaApps->Add(LAD);
+
+  THcLADHodoscope *lhod = new THcLADHodoscope("hod", "LAD Hodoscope");
+  LAD->AddDetector(lhod);
 
   // THcBCMCurrent* hbc = new THcBCMCurrent("H.bcm", "BCM current check");
   // gHaPhysics->Add(hbc);
@@ -171,14 +171,13 @@ void replay_no_timing_windows_hms(Int_t RunNumber=0, Int_t MaxEvent=0) {
   // Define output DEF-file 
   analyzer->SetOdefFile("DEF-files/HMS/PRODUCTION/hstackana_production.def");
   // Define cuts file
-  analyzer->SetOdefFile("DEF-files/HMS/TIMING/no_timing_windows.def");
-
-  // Define cuts file
-  //These do not appear to effect the study on reference times.  Leaving in.
   analyzer->SetCutFile("DEF-files/HMS/PRODUCTION/CUTS/hstackana_production_cuts.def");    // optional
-
-
+  // File to record cuts accounting information for cuts
+  analyzer->SetSummaryFile(Form("REPORT_OUTPUT/HMS/PRODUCTION/summary_production_%d_%d.report", RunNumber, MaxEvent));    // optional
   // Start the actual analysis.
   analyzer->Process(run);
+  // Create report file from template.
+  analyzer->PrintReport("TEMPLATES/HMS/PRODUCTION/hstackana_production.template",
+			Form("REPORT_OUTPUT/HMS/PRODUCTION/replay_hms_production_%d_%d.report", RunNumber, MaxEvent));
 
 }
