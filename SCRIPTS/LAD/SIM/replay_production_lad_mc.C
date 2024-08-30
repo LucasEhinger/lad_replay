@@ -1,19 +1,20 @@
 #include "../LAD_link_defs.h"
-#include "SBSSimDecoder.h"
+#include "LADSimDecoder.h"
 #include "TSystem.h"
 
-void replay_production_lad_mc(Int_t RunNumber=0, Int_t MaxEvent=0) {
+void replay_production_lad_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Get RunNumber and MaxEvent if not provided.
-  if(RunNumber == 0) {
+  if (RunNumber == 0) {
     cout << "Enter a Run Number (-1 to exit): ";
     cin >> RunNumber;
-    if( RunNumber<=0 ) return;
+    if (RunNumber <= 0)
+      return;
   }
-  if(MaxEvent == 0) {
+  if (MaxEvent == 0) {
     cout << "\nNumber of Events to analyze: ";
     cin >> MaxEvent;
-    if(MaxEvent == 0) {
+    if (MaxEvent == 0) {
       cerr << "...Invalid entry\n";
       exit;
     }
@@ -28,7 +29,7 @@ void replay_production_lad_mc(Int_t RunNumber=0, Int_t MaxEvent=0) {
   // pathList.push_back("./cache");
   // pathList.push_back("/cache/hallc/xem2/raw/");
 
-  const char* ROOTFileNamePattern = "ROOTfiles/hms_replay_production_%d_%d.root";
+  const char *ROOTFileNamePattern = "ROOTfiles/hms_replay_production_%d_%d.root";
 
   // Load Global parameters
   // Add variables to global list.
@@ -48,7 +49,7 @@ void replay_production_lad_mc(Int_t RunNumber=0, Int_t MaxEvent=0) {
   // Load the Hall C detector map
   gHcDetectorMap = new THcDetectorMap();
   gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo.map");
-  
+
   // // Add trigger apparatus
   // THaApparatus* TRG = new THcTrigApp("T", "TRG");
   // gHaApps->Add(TRG);
@@ -75,8 +76,7 @@ void replay_production_lad_mc(Int_t RunNumber=0, Int_t MaxEvent=0) {
   // THcShower* cal = new THcShower("cal", "Calorimeter");
   // HMS->AddDetector(cal);
 
-
-    // Add LAD detector 
+  // Add LAD detector
   THcLADSpectrometer *LAD = new THcLADSpectrometer("L", "LAD");
   gHaApps->Add(LAD);
 
@@ -88,7 +88,7 @@ void replay_production_lad_mc(Int_t RunNumber=0, Int_t MaxEvent=0) {
 
   // Add rastered beam apparatus
   // THaApparatus* beam = new THcRasteredBeam("H.rb", "Rastered Beamline");
-  // gHaApps->Add(beam);  
+  // gHaApps->Add(beam);
   // Add physics modules
   // Calculate reaction point
   // THcReactionPoint* hrp = new THcReactionPoint("H.react", "HMS reaction point", "H", "H.rb");
@@ -107,13 +107,13 @@ void replay_production_lad_mc(Int_t RunNumber=0, Int_t MaxEvent=0) {
   // gHaPhysics->Add(heff);
 
   // Add handler for prestart event 125.
-  THcConfigEvtHandler* ev125 = new THcConfigEvtHandler("HC", "Config Event type 125");
+  THcConfigEvtHandler *ev125 = new THcConfigEvtHandler("HC", "Config Event type 125");
   gHaEvtHandlers->Add(ev125);
   // Add handler for EPICS events
   THaEpicsEvtHandler *hcepics = new THaEpicsEvtHandler("epics", "HC EPICS event type 181");
   gHaEvtHandlers->Add(hcepics);
   // Add handler for scaler events
-  THcScalerEvtHandler *hscaler = new THcScalerEvtHandler("H", "Hall C scaler event type 2");  
+  THcScalerEvtHandler *hscaler = new THcScalerEvtHandler("H", "Hall C scaler event type 2");
   hscaler->AddEvtType(2);
   hscaler->AddEvtType(129);
   hscaler->SetDelayedType(129);
@@ -128,7 +128,7 @@ void replay_production_lad_mc(Int_t RunNumber=0, Int_t MaxEvent=0) {
   hhelscaler->SetUseFirstEvent(kTRUE);
   gHaEvtHandlers->Add(hhelscaler);
   */
-  
+
   // Add event handler for DAQ configuration event
   THcConfigEvtHandler *hconfig = new THcConfigEvtHandler("hconfig", "Hall C configuration event handler");
   gHaEvtHandlers->Add(hconfig);
@@ -138,30 +138,27 @@ void replay_production_lad_mc(Int_t RunNumber=0, Int_t MaxEvent=0) {
   // The Analyzer controls the reading of the data, executes
   // tests/cuts, loops over Acpparatus's and PhysicsModules,
   // and executes the output routines.
-  THcAnalyzer* analyzer = new THcAnalyzer;
+  THcAnalyzer *analyzer = new THcAnalyzer;
 
-
-  //Set the decoder to use simulation input
-  THcInterface::SetDecoder( SBSSimDecoder::Class() );
+  // Set the decoder to use simulation input
+  THcInterface::SetDecoder(LADSimDecoder::Class());
 
   // A simple event class to be output to the resulting tree.
   // Creating your own descendant of THaEvent is one way of
   // defining and controlling the output.
-  THaEvent* event = new THaEvent;
+  THaEvent *event = new THaEvent;
 
   // Define the run(s) that we want to analyze.
   // We just set up one, but this could be many.
   // THcRun* run = new THcRun( pathList, Form(RunFileNamePattern, RunNumber) );
 
-  // string filebase = "GMN_SBS8_elastic_job_0";
   // TString run_file = Form("%s/%s.root", "/volatile/hallc/c-lad/ehingerl",filebase.c_str());
   TString run_file = "../libLADdig/test_scripts/lad_hodo_sim.root";
-  THaRunBase *run = new SBSSimFile(run_file.Data(), "gmn", "");
-
+  THaRunBase *run  = new LADSimFile(run_file.Data(), "gmn", "");
 
   // Set to read in Hall C run database parameters
   run->SetRunParamClass("THcRunParameters");
-  
+
   // Eventually need to learn to skip over, or properly analyze the pedestal events
   run->SetEventRange(1, MaxEvent); // Physics Event number, does not include scaler or control events.
   // run->SetNscan(1);
@@ -171,9 +168,9 @@ void replay_production_lad_mc(Int_t RunNumber=0, Int_t MaxEvent=0) {
 
   // Define the analysis parameters
   TString ROOTFileName = Form(ROOTFileNamePattern, RunNumber, MaxEvent);
-  analyzer->SetCountMode(2);  // 0 = counter is # of physics triggers
-                              // 1 = counter is # of all decode reads
-                              // 2 = counter is event number
+  analyzer->SetCountMode(2); // 0 = counter is # of physics triggers
+                             // 1 = counter is # of all decode reads
+                             // 2 = counter is event number
 
   analyzer->SetEvent(event);
   // Set EPICS event type
@@ -182,34 +179,32 @@ void replay_production_lad_mc(Int_t RunNumber=0, Int_t MaxEvent=0) {
   analyzer->SetCrateMapFileName("MAPS/db_cratemap_mc.dat");
   // Define output ROOT file
   analyzer->SetOutFile(ROOTFileName.Data());
-  // Define output DEF-file 
+  // Define output DEF-file
   analyzer->SetOdefFile("DEF-files/LAD/PRODUCTION/lstackana_production_all.def");
   // Define cuts file
-  analyzer->SetCutFile("DEF-files/HMS/PRODUCTION/CUTS/hstackana_production_cuts.def");    // optional
+  analyzer->SetCutFile("DEF-files/HMS/PRODUCTION/CUTS/hstackana_production_cuts.def"); // optional
   // File to record cuts accounting information for cuts
-  // analyzer->SetSummaryFile(Form("REPORT_OUTPUT/HMS/PRODUCTION/summary_production_%d_%d.report", RunNumber, MaxEvent));    // optional
-  // Start the actual analysis.
+  // analyzer->SetSummaryFile(Form("REPORT_OUTPUT/HMS/PRODUCTION/summary_production_%d_%d.report", RunNumber,
+  // MaxEvent));    // optional Start the actual analysis.
   analyzer->Process(run);
   // Create report file from template.
   analyzer->PrintReport("TEMPLATES/LAD/PRODUCTION/lstackana_production.template",
-			Form("REPORT_OUTPUT/HMS/PRODUCTION/replay_hms_production_%d_%d.report", RunNumber, MaxEvent));
-
+                        Form("REPORT_OUTPUT/HMS/PRODUCTION/replay_hms_production_%d_%d.report", RunNumber, MaxEvent));
 }
 
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   gSystem->SetFlagsOpt("-g -O0");
-  new THcInterface( "The Hall C analyzer", &argc, argv, 0, 0, 1 );
-  //const 
-  int runnum; 
+  new THcInterface("The Hall C analyzer", &argc, argv, 0, 0, 1);
+  // const
+  int runnum;
   uint nev = -1;
-  if(argc<2 || argc>3){
+  if (argc < 2 || argc > 3) {
     cout << "Usage: replay_gen filebase(char*) nev(uint)" << endl;
     return -1;
   }
   runnum = atoi(argv[1]);
-  if(argc==3) nev = atoi(argv[2]);
+  if (argc == 3)
+    nev = atoi(argv[2]);
 
   replay_production_lad_mc(runnum, nev);
   return 0;

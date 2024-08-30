@@ -25,8 +25,6 @@ TH1F lhodo_101_good_adc_mult 'LAD 2Y Good ADC Multiplicity; Number of PMTs Hit; 
 # LAD HODO Good TDC Multiplicities
 #-----------------------------------
 
-TH1F lhodo_000_all_tdc_mult_btm 'LAD 000+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good -TDC Hits' L.hod.001.totNumTdcHits 10 0.5 10.5
-
 TH1F lhodo_000_good_tdc_mult_top 'LAD 000+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.hod.000.totNumGoodTopTdcHits 16 0.5 16.5
 TH1F lhodo_001_good_tdc_mult_top 'LAD 001+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.hod.001.totNumGoodTopTdcHits 10 0.5 10.5
 TH1F lhodo_100_good_tdc_mult_top 'LAD 100+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.hod.100.totNumGoodTopTdcHits 16 0.5 16.5
