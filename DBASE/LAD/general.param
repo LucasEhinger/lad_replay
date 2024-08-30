@@ -14,3 +14,6 @@
 #include "PARAM/LAD/HODO/lhodo_cuts.param"
 #include "PARAM/LAD/HODO/lhodo_calib.param"
 #include "PARAM/LAD/GEN/l_reftime_cut_hmsdaq.param"
+
+; LAD digitization parameters
+#include "MAPS/LAD/DETEC/HODO/lhodo_mc.map"
