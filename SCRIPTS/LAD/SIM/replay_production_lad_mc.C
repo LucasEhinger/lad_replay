@@ -108,6 +108,7 @@ void replay_production_lad_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Add handler for prestart event 125.
   THcConfigEvtHandler *ev125 = new THcConfigEvtHandler("HC", "Config Event type 125");
+  // ev125->AddEvtType(1);// Hack to set NSA,NSB,NPED for all events
   gHaEvtHandlers->Add(ev125);
   // Add handler for EPICS events
   THaEpicsEvtHandler *hcepics = new THaEpicsEvtHandler("epics", "HC EPICS event type 181");
@@ -153,6 +154,7 @@ void replay_production_lad_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // THcRun* run = new THcRun( pathList, Form(RunFileNamePattern, RunNumber) );
 
   // TString run_file = Form("%s/%s.root", "/volatile/hallc/c-lad/ehingerl",filebase.c_str());
+  // TString run_file = "../libLADdig/test_scripts/lad_hodo_sim_large.root";
   TString run_file = "../libLADdig/test_scripts/lad_hodo_sim.root";
   THaRunBase *run  = new LADSimFile(run_file.Data(), "gmn", "");
 
