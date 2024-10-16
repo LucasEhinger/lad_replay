@@ -29,7 +29,7 @@ void replay_production_lad_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // pathList.push_back("./cache");
   // pathList.push_back("/cache/hallc/xem2/raw/");
 
-  const char *ROOTFileNamePattern = "ROOTfiles/hms_replay_production_%d_%d.root";
+  const char *ROOTFileNamePattern = "ROOTfiles/hms_replay_sim_%d_%d.root";
 
   // Load Global parameters
   // Add variables to global list.
@@ -155,7 +155,7 @@ void replay_production_lad_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // TString run_file = Form("%s/%s.root", "/volatile/hallc/c-lad/ehingerl",filebase.c_str());
   // TString run_file = "../libLADdig/test_scripts/lad_hodo_sim_large.root";
-  TString run_file = "../libLADdig/test_scripts/lad_hodo_sim.root";
+  TString run_file = "../libLADdig/test_scripts/lad_hodo_sim_time_walk.root";
   THaRunBase *run  = new LADSimFile(run_file.Data(), "gmn", "");
 
   // Set to read in Hall C run database parameters
