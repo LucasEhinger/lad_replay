@@ -48,18 +48,18 @@ void fitHodoCalib(TString filename,Int_t runNUM,Bool_t cosmic_flag=kFALSE)
   TFile *outROOT = new TFile(Form("HodoCalibPlots_%d.root", runNUM), "recreate");
   
   /******Define Fixed Quantities********/
-  static const Int_t PLANES = 4;
+  static const Int_t PLANES = 5;
   static const Int_t SIDES = 2;
-  TString spec = "H";
+  TString spec = "L";
   TString det = "hod";
-  string pl_names[4] = {"1x", "1y", "2x", "2y"};
+  string pl_names[4] = {"000", "001", "100", "101", "200"};
   string side_names[2] = {"GoodPos", "GoodNeg"};
   string nsign[2] = {"+", "-"};
-  Int_t maxPMT[4] = {16, 10, 16, 10};
+  Int_t maxPMT[4] = {11, 11, 11, 11, 11};
   Int_t refPad[4] = {0, 16, 26, 42};              //use as reference when counting bars up to 52 
-  Double_t hhodo_velArr[PLANES][16] = {0.0};      //store hhodo velocity parameters (1/slope of the line fit)
-  Double_t hhodo_cableArr[PLANES][16] = {0.0};    //store hhodo cableLength differences (y-int of line fit)
-  Double_t hhodo_sigArr[PLANES][16] = {0.0};       //store hhodo sigma parameters
+  Double_t hhodo_velArr[PLANES][11] = {0.0};      //store hhodo velocity parameters (1/slope of the line fit)
+  Double_t hhodo_cableArr[PLANES][11] = {0.0};    //store hhodo cableLength differences (y-int of line fit)
+  Double_t hhodo_sigArr[PLANES][11] = {0.0};       //store hhodo sigma parameters
   Double_t vp = 30.0;                             //speed of light [cm/ns]
 
   if (cosmic_flag) {
@@ -97,14 +97,14 @@ void fitHodoCalib(TString filename,Int_t runNUM,Bool_t cosmic_flag=kFALSE)
 
 
   //---Variables---
-  Double_t TdcTimeUnCorr[PLANES][SIDES][16];
-  Double_t TdcTimeTWCorr[PLANES][SIDES][16];
-  Double_t AdcPulseTime[PLANES][SIDES][16];
-  Double_t AdcPulseAmp[PLANES][SIDES][16];
+  Double_t TdcTimeUnCorr[PLANES][SIDES][11];
+  Double_t TdcTimeTWCorr[PLANES][SIDES][11];
+  Double_t AdcPulseTime[PLANES][SIDES][11];
+  Double_t AdcPulseAmp[PLANES][SIDES][11];
 
   Double_t TrackXPos[PLANES];
   Double_t TrackYPos[PLANES];
-  Double_t DiffDistTWCorr[PLANES][16];
+  Double_t DiffDistTWCorr[PLANES][11];
 
   Double_t hcal_etrkNorm;
   Double_t hcer_npeSum;
@@ -117,7 +117,7 @@ void fitHodoCalib(TString filename,Int_t runNUM,Bool_t cosmic_flag=kFALSE)
   Int_t good_pad[PLANES];                   //keep track of good paddle hits
   Int_t ngood = 0;
 
-  static const Int_t npar = 52;             //reference paddle 1x7 is fixed (so we actually have 51)
+  static const Int_t npar = 55;             //reference paddle ??? is fixed (so we actually have 54)
   static const Int_t ROW = 6*evtNUM;        
   static const Int_t COL = npar;
  
@@ -133,7 +133,7 @@ void fitHodoCalib(TString filename,Int_t runNUM,Bool_t cosmic_flag=kFALSE)
   //Variables that make up the b_Vector
   Double_t x[PLANES];
   Double_t y[PLANES];
-  Double_t z[PLANES][16];    //z-coordinates / paddle corrected for dz offset
+  Double_t z[PLANES][11];    //z-coordinates / paddle corrected for dz offset
   Double_t zCorr[PLANES];
   Double_t x1, x2, x3, x4;   //x-coordinates of the track for planes 1, 2, 3, 4
   Double_t y1, y2, y3, y4;   //y-coordinates of the track for planes 1, 2, 3, 4

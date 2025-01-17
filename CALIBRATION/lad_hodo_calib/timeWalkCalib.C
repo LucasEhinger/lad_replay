@@ -57,7 +57,7 @@ static const UInt_t lineStyle = 7;
 
 static const UInt_t nbars[nPlanes]             = {11, 11, 11, 11, 11};
 static const TString planeNames[nPlanes]       = {"000", "001", "100", "101", "200"};
-static const TString sideNames[nSides]         = {"top", "btm"};
+static const TString sideNames[nSides]         = {"Top", "Btm"};
 static const TString twFitParNames[nTwFitPars] = {"c_{1}", "c_{2}"};
 
 // Declare directories
@@ -294,9 +294,9 @@ void drawParams(UInt_t iplane) {
 // Add a method to Get Fit Parameters
 void WriteFitParam(int runNUM) {
 
-  TString outPar_Name = Form("../../PARAM/HMS/HODO/hhodo_TWcalib_%d.param", runNUM);
+  TString outPar_Name = Form("../../PARAM/LAD/HODO/lhodo_TWcalib_%d.param", runNUM);
   outParam.open(outPar_Name);
-  outParam << Form(";HMS Hodoscopes Output Parameter File: Run %d", runNUM) << endl;
+  outParam << Form(";LAD Hodoscopes Output Parameter File: Run %d", runNUM) << endl;
   outParam << " " << endl;
   //  outParam << "htofusinginvadc=0 " << " ;set to zero to NOT read old style hodo calib parameters" << endl;
   outParam << "hTDC_threshold=" << tdcThresh << ". ;units of mV " << endl;
@@ -323,65 +323,65 @@ void WriteFitParam(int runNUM) {
   // Wrtie to Param FIle
 
   outParam << ";Param c1-Pos" << endl;
-  outParam << "; " << setw(12) << "1x " << setw(15) << "1y " << setw(15) << "2x " << setw(15) << "2y " << endl;
+  outParam << "; " << setw(12) << planeNames[0] << setw(15) << planeNames[1] << setw(15) << planeNames[2] << setw(15) << planeNames[3]<< setw(15) << planeNames[4] << endl;
   outParam << "hc1_Pos = ";
   // Loop over all paddles
   for (UInt_t ipaddle = 0; ipaddle < nBarsMax; ipaddle++) {
     // Write c1-Pos values
     if (ipaddle == 0) {
       outParam << c1[0][0][ipaddle] << "," << setw(15) << c1[1][0][ipaddle] << "," << setw(15) << c1[2][0][ipaddle]
-               << "," << setw(15) << c1[3][0][ipaddle] << fixed << endl;
+               << "," << setw(15) << c1[3][0][ipaddle]<< ","<< setw(15) << c1[4][0][ipaddle] << fixed << endl;
     } else {
       outParam << setw(17) << c1[0][0][ipaddle] << "," << setw(15) << c1[1][0][ipaddle] << "," << setw(15)
-               << c1[2][0][ipaddle] << "," << setw(15) << c1[3][0][ipaddle] << fixed << endl;
+               << c1[2][0][ipaddle] << "," << setw(15) << c1[3][0][ipaddle]<< ","<< setw(15) << c1[4][0][ipaddle] << fixed << endl;
     }
   } // end loop over paddles
 
   outParam << " " << endl;
   outParam << ";Param c1-Neg" << endl;
-  outParam << "; " << setw(12) << "1x " << setw(15) << "1y " << setw(15) << "2x " << setw(15) << "2y " << endl;
+  outParam << "; " << setw(12) << planeNames[0] << setw(15) << planeNames[1] << setw(15) << planeNames[2] << setw(15) << planeNames[3]<< setw(15) << planeNames[4] << endl;
   outParam << "hc1_Neg = ";
   // Loop over all paddles
   for (UInt_t ipaddle = 0; ipaddle < nBarsMax; ipaddle++) {
     // Write c1-Neg values
     if (ipaddle == 0) {
       outParam << c1[0][1][ipaddle] << "," << setw(15) << c1[1][1][ipaddle] << "," << setw(15) << c1[2][1][ipaddle]
-               << "," << setw(15) << c1[3][1][ipaddle] << fixed << endl;
+               << "," << setw(15) << c1[3][1][ipaddle]<< ","<< setw(15) << c1[4][1][ipaddle] << fixed << endl;
     } else {
       outParam << setw(17) << c1[0][1][ipaddle] << "," << setw(15) << c1[1][1][ipaddle] << "," << setw(15)
-               << c1[2][1][ipaddle] << "," << setw(15) << c1[3][1][ipaddle] << fixed << endl;
+               << c1[2][1][ipaddle] << "," << setw(15) << c1[3][1][ipaddle]<< ","<< setw(15) << c1[4][1][ipaddle] << fixed << endl;
     }
   } // end loop over paddles
 
   outParam << " " << endl;
   outParam << ";Param c2-Pos" << endl;
-  outParam << "; " << setw(12) << "1x " << setw(15) << "1y " << setw(15) << "2x " << setw(15) << "2y " << endl;
+  outParam << "; " << setw(12) << planeNames[0] << setw(15) << planeNames[1] << setw(15) << planeNames[2] << setw(15) << planeNames[3]<< setw(15) << planeNames[4] << endl;
   outParam << "hc2_Pos = ";
   // Loop over all paddles
   for (UInt_t ipaddle = 0; ipaddle < nBarsMax; ipaddle++) {
     // Write c2-Pos values
     if (ipaddle == 0) {
       outParam << c2[0][0][ipaddle] << "," << setw(15) << c2[1][0][ipaddle] << "," << setw(15) << c2[2][0][ipaddle]
-               << "," << setw(15) << c2[3][0][ipaddle] << fixed << endl;
+               << "," << setw(15) << c2[3][0][ipaddle]<< "," << setw(15) << c2[4][0][ipaddle] << fixed << endl;
     } else {
       outParam << setw(17) << c2[0][0][ipaddle] << "," << setw(15) << c2[1][0][ipaddle] << "," << setw(15)
-               << c2[2][0][ipaddle] << "," << setw(15) << c2[3][0][ipaddle] << fixed << endl;
+               << c2[2][0][ipaddle] << "," << setw(15) << c2[3][0][ipaddle]<< "," << setw(15) << c2[4][0][ipaddle] << fixed << endl;
     }
   } // end loop over paddles
 
   outParam << " " << endl;
   outParam << ";Param c2-Neg" << endl;
-  outParam << "; " << setw(12) << "1x " << setw(15) << "1y " << setw(15) << "2x " << setw(15) << "2y " << endl;
+  outParam << "; " << setw(12) << planeNames[0] << setw(15) << planeNames[1] << setw(15) << planeNames[2] << setw(15) << planeNames[3]<< setw(15) << planeNames[4] << endl;
   outParam << "hc2_Neg = ";
   // Loop over all paddles
   for (UInt_t ipaddle = 0; ipaddle < nBarsMax; ipaddle++) {
     // Write c2-Neg values
     if (ipaddle == 0) {
       outParam << c2[0][1][ipaddle] << "," << setw(15) << c2[1][1][ipaddle] << "," << setw(15) << c2[2][1][ipaddle]
-               << "," << setw(15) << c2[3][1][ipaddle] << fixed << endl;
+               << "," << setw(15) << c2[3][1][ipaddle]<< "," << setw(15) << c2[4][1][ipaddle] << fixed << endl;
     } else {
       outParam << setw(17) << c2[0][1][ipaddle] << "," << setw(15) << c2[1][1][ipaddle] << "," << setw(15)
-               << c2[2][1][ipaddle] << "," << setw(15) << c2[3][1][ipaddle] << fixed << endl;
+               << c2[2][1][ipaddle] << "," << setw(15) << c2[3][1][ipaddle]<< "," << setw(15) << c2[4][1][ipaddle] << fixed << endl;
     }
   } // end loop over paddles
 
