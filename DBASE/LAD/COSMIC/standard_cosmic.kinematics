@@ -1,0 +1,12 @@
+# LAD
+
+0 - 99999
+ltheta = -12.47
+lpcentral = 6.667
+gpbeam = 10.5
+
+
+gtargmass_amu=12.0107
+hpartmass = 0.00051099
+htheta_lab = -25.005
+hpcentral = 1.6
