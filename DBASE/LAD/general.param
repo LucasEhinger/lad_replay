@@ -15,5 +15,12 @@
 #include "PARAM/LAD/HODO/lhodo_calib.param"
 #include "PARAM/LAD/GEN/l_reftime_cut_hmsdaq.param"
 
+; LAD GEM Parameter files
+#include "PARAM/LAD/GEM/lgem_geom.param"
+#include "PARAM/LAD/GEM/lgem_cuts.param"
+;#include "PARAM/LAD/GEM/CommonModeRange_1683.txt"
+;#include "PARAM/LAD/GEM/gem_ped_1683.dat"
+
+
 ; LAD digitization parameters
 #include "MAPS/LAD/DETEC/HODO/lhodo_mc.map"
