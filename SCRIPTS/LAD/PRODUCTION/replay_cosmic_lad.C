@@ -18,12 +18,15 @@ void replay_cosmic_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   }
 
   // Create file name patterns.
-  const char *RunFileNamePattern = "lad_esb_%01d.evio.0";
+  // const char *RunFileNamePattern = "lad_esb_%01d.evio.0";
+  const char *RunFileNamePattern = "ladvme1_%03d.dat.0";
   vector<TString> pathList;
   pathList.push_back(".");
-  pathList.push_back("./ROOTfiles/COSMICS/raw/");
+  // pathList.push_back("./ROOTfiles/COSMICS/raw/");
+  pathList.push_back("/cache/hallc/c-lad/raw/");
 
-  const char *ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_cosmic_%d_%d.root";
+
+  const char *ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_cosmic_hall_%d_%d.root";
 
   // Load Global parameters
   // Add variables to global list.
@@ -41,7 +44,8 @@ void replay_cosmic_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Load the Hall C detector map
   gHcDetectorMap = new THcDetectorMap();
-  gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo_cosmic.map");
+  gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo.map");
+  // gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo_cosmic.map");
 
   // Add LAD detector
   THcLADSpectrometer *LAD = new THcLADSpectrometer("L", "LAD");
@@ -68,8 +72,8 @@ void replay_cosmic_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // gHaEvtHandlers->Add(hscaler);
 
   // Add event handler for DAQ configuration event
-  THcConfigEvtHandler *hconfig = new THcConfigEvtHandler("hconfig", "Hall C configuration event handler");
-  gHaEvtHandlers->Add(hconfig);
+  // THcConfigEvtHandler *hconfig = new THcConfigEvtHandler("hconfig", "Hall C configuration event handler");
+  // gHaEvtHandlers->Add(hconfig);
 
   // Set up the analyzer - we use the standard one,
   // but this could be an experiment-specific one as well.
@@ -112,7 +116,7 @@ void replay_cosmic_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // Define output DEF-file
   analyzer->SetOdefFile("DEF-files/LAD/PRODUCTION/lstackana_production_all.def");
   // Define cuts file
-  analyzer->SetCutFile("DEF-files/LAD/PRODUCTION/CUTS/lstackana_production_cuts_cosmic.def"); // optional
+  // analyzer->SetCutFile("DEF-files/LAD/PRODUCTION/CUTS/lstackana_production_cuts_cosmic.def"); // optional
   // File to record cuts accounting information for cuts
   // analyzer->SetSummaryFile(
   //     Form("REPORT_OUTPUT/HMS/PRODUCTION/summary_production_%d_%d.report", RunNumber, MaxEvent)); // optional
@@ -120,5 +124,5 @@ void replay_cosmic_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   analyzer->Process(run);
   // Create report file from template.
   analyzer->PrintReport("TEMPLATES/LAD/PRODUCTION/lstackana_production.template",
-                        Form("REPORT_OUTPUT/HMS/PRODUCTION/replay_hms_production_%d_%d.report", RunNumber, MaxEvent));
+                        Form("REPORT_OUTPUT/LAD/PRODUCTION/replay_lad_production_%d_%d.report", RunNumber, MaxEvent));
 }
