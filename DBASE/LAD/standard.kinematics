@@ -7,6 +7,6 @@ gpbeam = 10.5
 
 
 gtargmass_amu=12.0107
-hpartmass = 0.00051099
-htheta_lab = -25.005
-hpcentral = 1.6
+lpartmass = 0.00051099
+ltheta_lab = -25.005
+lad_pcentral = 1.0
