@@ -39,15 +39,16 @@ void replay_production_lad_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
   // Load params for HMS trigger configuration
-  gHcParms->Load("PARAM/TRIG/thms.param");
+  // gHcParms->Load("PARAM/TRIG/thms.param");
   // Load fadc debug parameters
-  gHcParms->Load("PARAM/HMS/GEN/h_fadc_debug.param");
+  // gHcParms->Load("PARAM/HMS/GEN/h_fadc_debug.param");
 
   // const char* CurrentFileNamePattern = "low_curr_bcm/bcmcurrent_%d.param";
   // gHcParms->Load(Form(CurrentFileNamePattern, RunNumber));
 
   // Load the Hall C detector map
   gHcDetectorMap = new THcDetectorMap();
+  // gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo_mc_input.map");
   gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo_mc.map");
 
   // // Add trigger apparatus
@@ -114,12 +115,12 @@ void replay_production_lad_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   THaEpicsEvtHandler *hcepics = new THaEpicsEvtHandler("epics", "HC EPICS event type 181");
   gHaEvtHandlers->Add(hcepics);
   // Add handler for scaler events
-  THcScalerEvtHandler *hscaler = new THcScalerEvtHandler("H", "Hall C scaler event type 2");
-  hscaler->AddEvtType(2);
-  hscaler->AddEvtType(129);
-  hscaler->SetDelayedType(129);
-  hscaler->SetUseFirstEvent(kTRUE);
-  gHaEvtHandlers->Add(hscaler);
+  // THcScalerEvtHandler *hscaler = new THcScalerEvtHandler("H", "Hall C scaler event type 2");
+  // hscaler->AddEvtType(2);
+  // hscaler->AddEvtType(129);
+  // hscaler->SetDelayedType(129);
+  // hscaler->SetUseFirstEvent(kTRUE);
+  // gHaEvtHandlers->Add(hscaler);
 
   /*
   // Add event handler for helicity scalers
@@ -131,8 +132,8 @@ void replay_production_lad_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   */
 
   // Add event handler for DAQ configuration event
-  THcConfigEvtHandler *hconfig = new THcConfigEvtHandler("hconfig", "Hall C configuration event handler");
-  gHaEvtHandlers->Add(hconfig);
+  // THcConfigEvtHandler *hconfig = new THcConfigEvtHandler("hconfig", "Hall C configuration event handler");
+  // gHaEvtHandlers->Add(hconfig);
 
   // Set up the analyzer - we use the standard one,
   // but this could be an experiment-specific one as well.

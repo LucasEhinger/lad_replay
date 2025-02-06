@@ -1,14 +1,14 @@
 ; LAD GEM geometry
 ; Total two layers, each has one module
 
-lgem_chanmap_file = "MAPS/LAD/DETEC/GEM/lgem_chan.map"
-lgem_pedfile = "PARAM/LAD/GEM/gem_ped_1683.dat"
-lgem_cmfile = "PARAM/LAD/GEM/CommonModeRange_1683.txt"
+lgem_chanmap_file = "MAPS/LAD/DETEC/GEM/lgem_chan_mc.map"
+lgem_pedfile = "PARAM/LAD/GEM/gem_ped_1683_mc.dat"
+lgem_cmfile = "PARAM/LAD/GEM/CommonModeRange_1683_mc.txt"
 
 lgem_num_modules = 2;
 lgem_num_layers = 2;
 
-lgem_module_names = "m0, m1"
+lgem_module_names = "m0, m1"; not used
 
 lgem_m0_layer = 0
 lgem_m1_layer = 1

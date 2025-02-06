@@ -1,3 +1,4 @@
+#include "../../LAD/LAD_link_defs.h"
 void replay_SSP(int RunNumber=111, int MaxEvent=100)
 {
 
@@ -11,8 +12,9 @@ void replay_SSP(int RunNumber=111, int MaxEvent=100)
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
   gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD/standard.database");
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
+  gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
-  gHcParms->Load("PARAM/LAD/GEM/lgem_geom.param");
+  // gHcParms->Load("PARAM/LAD/GEM/lgem_geom.param");
   // gHcParms->Load("DB_LAD/lgem_chan.map");
   // gHcParms->Load("DB_LAD/lgem_cuts.param");
 
@@ -30,10 +32,11 @@ void replay_SSP(int RunNumber=111, int MaxEvent=100)
   THaEvent* event = new THaEvent;  
 
   //  THcRun* run = new THcRun(pathList, Form(RunFileNamePattern, RunNumber) );
-  THaRun* run = new THaRun(pathList, Form(RunFileNamePattern, RunNumber) );
+  THaRunBase* run = new THaRun(pathList, Form(RunFileNamePattern, RunNumber) );
 
   run->SetEventRange(1, MaxEvent);
-  run->SetDataRequired(THaRunBase::kDate|THaRunBase::kRunNumber);
+  // run->SetDataRequired(THaRunBase::kDate|THaRunBase::kRunNumber);
+  run->SetDataRequired(0);
   run->Print();
 
   analyzer->SetEvent(event);
