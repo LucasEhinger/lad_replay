@@ -1,14 +1,6 @@
-#include "../../LAD/LAD_link_defs.h"
+// #include "../../LAD/LAD_link_defs.h"
 void replay_SSP_SIM(int RunNumber = 111, int MaxEvent = 100) {
 
-  // datafile name pattern
-  // const char *RunFileNamePattern = "ssp_gem_%d.evio.0";
-  // const char *RunFileNamePattern = "lad_hodo_gem_sim.root";
-  const char *RunFileNamePattern = "lad_hodo_gem_sim_strip_test.root";
-  vector<TString> pathList;
-  pathList.push_back("./");
-  // pathList.push_back("./ROOTfiles/GEM_EVIO_COSMIC/");
-  pathList.push_back("/work/hallc/c-lad/ehingerl/software/libLADdig/test_scripts/");
 
   // Params
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
@@ -43,9 +35,7 @@ void replay_SSP_SIM(int RunNumber = 111, int MaxEvent = 100) {
 
   TString run_file = "../libLADdig/test_scripts/lad_hodo_gem_sim.root";
   // TString run_file = "../libLADdig/test_scripts/lad_hodo_gem_sim_strip_test.root";
-  THaRunBase *run  = new LADSimFile(run_file.Data(), "gmn", "");
-  //  THcRun* run = new THcRun(pathList, Form(RunFileNamePattern, RunNumber) );
-  // THaRun *run = new THaRun(pathList, Form(RunFileNamePattern, RunNumber));
+  THaRunBase *run  = new LADSimFile(run_file.Data(), "lad", "");
   // run->SetRunParamClass("THcRunParameters");
   
   run->SetEventRange(1, MaxEvent);

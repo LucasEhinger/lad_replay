@@ -1,6 +1,4 @@
-#include "../LAD_link_defs.h"
-#include "LADSimDecoder.h"
-#include "TSystem.h"
+// #include "../LAD_link_defs.h"
 
 void replay_production_lad_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
@@ -20,14 +18,7 @@ void replay_production_lad_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
     }
   }
 
-  // Create file name patterns.
-  // const char* RunFileNamePattern = "hms_all_%05d.dat";
-  // vector<TString> pathList;
-  // pathList.push_back(".");
-  // pathList.push_back("./raw");
-  // pathList.push_back("./raw/../raw.copiedtotape");
-  // pathList.push_back("./cache");
-  // pathList.push_back("/cache/hallc/xem2/raw/");
+
 
   const char *ROOTFileNamePattern = "ROOTfiles/hms_replay_sim_%d_%d.root";
 

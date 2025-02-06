@@ -21,6 +21,5 @@
 ;#include "PARAM/LAD/GEM/CommonModeRange_1683.txt"
 ;#include "PARAM/LAD/GEM/gem_ped_1683.dat"
 
-
 ; LAD digitization parameters
-#include "MAPS/LAD/DETEC/HODO/lhodo_mc.map"
+

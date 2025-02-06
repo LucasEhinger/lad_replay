@@ -1,5 +1,5 @@
 // #include "../LAD_link_defs.h"
-void replay_cosmic_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
+void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Get RunNumber and MaxEvent if not provided.
   if (RunNumber == 0) {
@@ -46,7 +46,7 @@ void replay_cosmic_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // Load the Hall C detector map
   gHcDetectorMap = new THcDetectorMap();
   gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo.map");
-  // gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo_cosmic.map");
+
 
   // Add LAD detector
   THcLADSpectrometer *LAD = new THcLADSpectrometer("L", "LAD");
@@ -55,8 +55,14 @@ void replay_cosmic_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   THcLADHodoscope *lhod = new THcLADHodoscope("hod", "LAD Hodoscope");
   LAD->AddDetector(lhod);
 
-  // THcBCMCurrent* hbc = new THcBCMCurrent("H.bcm", "BCM current check");
-  // gHaPhysics->Add(hbc);
+  //TODO: Add LAD GEM once detector maps (and hall readout) are available
+  //For now, can use the simulation version of the replay
+
+  // THcLADGEM *gem = new THcLADGEM("gem", "gem");
+  // LAD->AddDetector(gem);
+
+
+
 
   // // Add handler for prestart event 125.
   // THcConfigEvtHandler *ev125 = new THcConfigEvtHandler("HC", "Config Event type 125");

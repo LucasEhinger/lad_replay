@@ -1,5 +1,5 @@
-#include "../../LAD/LAD_link_defs.h"
-void replay_SSP(int RunNumber=111, int MaxEvent=100)
+// #include "../../LAD/LAD_link_defs.h"
+void replay_GEM(int RunNumber=111, int MaxEvent=100)
 {
 
   // datafile name pattern
