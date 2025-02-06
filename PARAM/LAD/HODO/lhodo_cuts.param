@@ -3,7 +3,7 @@
 ; https://hallcweb.jlab.org/elogs/A1n-d2n+Combined+Analysis/41
 ;
 
-lis_simulation=0
+is_mc=0
 ; Cosmic flag for beta calculation
 lcosmicflag=0
 
