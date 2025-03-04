@@ -32,3 +32,5 @@ hcana
 2
 SCRIPTS/LAD/LAD_link_defs.h
 DB_LAD_UNUSED/*
+gem_map_LAD.txt
+test.def
