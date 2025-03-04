@@ -124,12 +124,13 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   analyzer->SetOdefFile("DEF-files/LAD/PRODUCTION/lstackana_production_all.def");
   // Define cuts file
   // analyzer->SetCutFile("DEF-files/LAD/PRODUCTION/CUTS/lstackana_production_cuts_cosmic.def"); // optional
+  analyzer->SetCutFile("DEF-files/LAD/PRODUCTION/CUTS/lstackana_production_cuts.def");
   // File to record cuts accounting information for cuts
   // analyzer->SetSummaryFile(
   //     Form("REPORT_OUTPUT/HMS/PRODUCTION/summary_production_%d_%d.report", RunNumber, MaxEvent)); // optional
   // Start the actual analysis.
   analyzer->Process(run);
   // Create report file from template.
-  analyzer->PrintReport("TEMPLATES/LAD/PRODUCTION/lstackana_production.template",
-                        Form("REPORT_OUTPUT/LAD/PRODUCTION/replay_lad_production_%d_%d.report", RunNumber, MaxEvent));
+  // analyzer->PrintReport("TEMPLATES/LAD/PRODUCTION/lstackana_production.template",
+  //                       Form("REPORT_OUTPUT/LAD/PRODUCTION/replay_lad_production_%d_%d.report", RunNumber, MaxEvent));
 }
