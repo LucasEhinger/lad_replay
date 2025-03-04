@@ -23,11 +23,11 @@ lstart_time_slop = 100.
 ; note that the params below are factor of 10 higher than
 ; what is present in the respective leaf
 lscin_tdc_min = 0
-lscin_tdc_max = 1200
+lscin_tdc_max = 2000
 
 ; lhodo_tdc_to_time   scin tdc time per channel
-;lhodo_tdc_to_time = 0.09766   ; See HC Log Entry 3574348
-lhodo_tdc_to_time = 1
+lhodo_tdc_to_time = 0.09766   ; See HC Log Entry 3574348
+; lhodo_tdc_to_time = 1
 
 ; tof and you figured out good values
 ltof_tolerance = 10.0

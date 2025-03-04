@@ -31,3 +31,4 @@ hcana
 # Debugging files (Lucas)
 2
 SCRIPTS/LAD/LAD_link_defs.h
+DB_LAD_UNUSED/*
