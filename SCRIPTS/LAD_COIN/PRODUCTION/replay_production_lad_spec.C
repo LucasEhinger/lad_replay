@@ -1,5 +1,6 @@
 #include "MultiFileRun.h"
-#include "../../LAD/LAD_link_defs.h"
+
+//#include "../../LAD/LAD_link_defs.h"
 
 void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEvent = 1, int MaxSegment = 1,
                                 int FirstSegment = 0, const char *fname_prefix = "shms_all") {
@@ -106,6 +107,7 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   // // Add trigger detector to trigger apparatus
   // THcTrigDet *shms = new THcTrigDet("shms", "SHMS Trigger Information");
   // TRG->AddDetector(shms);
+
 
   //////////////////////////////////////////////////////////////////////////
   //      SHMS
@@ -287,6 +289,7 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   analyzer->SetOutFile(ROOTFileName.Data());
   // Define DEF-file
   analyzer->SetOdefFile("DEF-files/LAD_COIN/PRODUCTION/coin_production_lad.def");
+
   // Define cuts file
   analyzer->SetCutFile("DEF-files/LAD_COIN/PRODUCTION/CUTS/coin_production_cuts_lad.def"); // optional
   // File to record accounting information for cuts

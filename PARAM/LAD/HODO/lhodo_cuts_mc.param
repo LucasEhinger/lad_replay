@@ -25,9 +25,11 @@ lstart_time_slop = 100.
 lscin_tdc_min = 0
 lscin_tdc_max = 2000
 
+
 ; lladhodo_tdc_to_time   scin tdc time per channel
 lladhodo_tdc_to_time = 0.09766   ; See HC Log Entry 3574348
 ; lladhodo_tdc_to_time = 1
+
 
 ; tof and you figured out good values
 ltof_tolerance = 10.0

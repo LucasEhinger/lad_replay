@@ -1,4 +1,5 @@
-; Coppied from HMS lladhodo_calib for now.
+; Coppied from HMS hodo_calib for now.
+
 ; Currently not used for LAD
 
 lladhodo_pos_sigma =100.00,  100.00,    0.36,    0.41

@@ -30,6 +30,7 @@ lladhodo_tdc_max = 1200
 ; lladhodo_tdc_to_time   scin tdc time per channel
 lladhodo_tdc_to_time = 0.09766   ; See HC Log Entry 3574348
 
+
 ; tof and you figured out good values
 lladtof_tolerance = 10.0
 
@@ -120,6 +121,7 @@ lladhodo_top_ped_limit = 1000,    1000,    1000,    1000,    1000,
                       1000,    1000,    1000,    1000,    1000
 
 ;
+
 lladhodo_btm_ped_limit = 1000,    1000,    1000,    1000,    1000,
                       1000,    1000,    1000,    1000,    1000,
                       1000,    1000,    1000,    1000,    1000,
