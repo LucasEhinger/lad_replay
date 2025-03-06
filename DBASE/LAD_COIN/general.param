@@ -80,13 +80,13 @@ cminch=2.54
 ; LAD Parameter files
 #include "PARAM/GEN/genflags.param"
 #include "PARAM/GEN/gdebug.param"
-#include "PARAM/LAD/HODO/lhodo_geom.param"
-#include "PARAM/LAD/HODO/lhodo_cuts.param"
-#include "PARAM/LAD/HODO/lhodo_calib.param"
+#include "PARAM/LAD_COIN/HODO/lhodo_geom.param"
+#include "PARAM/LAD_COIN/HODO/lhodo_cuts.param"
+#include "PARAM/LAD_COIN/HODO/lhodo_calib.param"
 
 ; LAD GEM Parameter files
-#include "PARAM/LAD/GEM/lgem_geom.param"
-#include "PARAM/LAD/GEM/lgem_cuts.param"
+#include "PARAM/LAD_COIN/GEM/lgem_geom.param"
+#include "PARAM/LAD_COIN/GEM/lgem_cuts.param"
 
 ;Be aware of the files below. They are not called here, but have to be included in lgem_geom.param
 ;#include "PARAM/LAD/GEM/CommonModeRange_1683.txt"
