@@ -1,4 +1,5 @@
-// #include "../LAD_link_defs.h"
+// replays both the LAD hodoscope and GEM detectors (not standard spectrometers)
+// #include "../../LAD/LAD_link_defs.h". Leave this line commented. Used for debugging purposes.
 void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Get RunNumber and MaxEvent if not provided.
@@ -32,7 +33,7 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // Load Global parameters
   // Add variables to global list.
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
-  gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD/COSMIC/standard_cosmic.database");
+  gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD/standard.database");
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
@@ -55,11 +56,8 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   THcLADHodoscope *lhod = new THcLADHodoscope("hod", "LAD Hodoscope");
   LAD->AddDetector(lhod);
 
-  //TODO: Add LAD GEM once detector maps (and hall readout) are available
-  //For now, can use the simulation version of the replay
-
-  // THcLADGEM *gem = new THcLADGEM("gem", "gem");
-  // LAD->AddDetector(gem);
+  THcLADGEM *gem = new THcLADGEM("gem", "gem");
+  LAD->AddDetector(gem);
 
 
 
@@ -117,19 +115,20 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // Set EPICS event type
   analyzer->SetEpicsEvtType(181);
   // Define crate map
-  analyzer->SetCrateMapFileName("MAPS/db_cratemap_cosmic.dat");
+  analyzer->SetCrateMapFileName("MAPS/db_cratemap_lad.dat");
   // Define output ROOT file
   analyzer->SetOutFile(ROOTFileName.Data());
   // Define output DEF-file
   analyzer->SetOdefFile("DEF-files/LAD/PRODUCTION/lstackana_production_all.def");
   // Define cuts file
   // analyzer->SetCutFile("DEF-files/LAD/PRODUCTION/CUTS/lstackana_production_cuts_cosmic.def"); // optional
+  analyzer->SetCutFile("DEF-files/LAD/PRODUCTION/CUTS/lstackana_production_cuts.def");
   // File to record cuts accounting information for cuts
   // analyzer->SetSummaryFile(
   //     Form("REPORT_OUTPUT/HMS/PRODUCTION/summary_production_%d_%d.report", RunNumber, MaxEvent)); // optional
   // Start the actual analysis.
   analyzer->Process(run);
   // Create report file from template.
-  analyzer->PrintReport("TEMPLATES/LAD/PRODUCTION/lstackana_production.template",
-                        Form("REPORT_OUTPUT/LAD/PRODUCTION/replay_lad_production_%d_%d.report", RunNumber, MaxEvent));
+  // analyzer->PrintReport("TEMPLATES/LAD/PRODUCTION/lstackana_production.template",
+  //                       Form("REPORT_OUTPUT/LAD/PRODUCTION/replay_lad_production_%d_%d.report", RunNumber, MaxEvent));
 }

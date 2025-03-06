@@ -27,7 +27,7 @@ void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Load the Hall C detector map
   gHcDetectorMap = new THcDetectorMap();
-  gHcDetectorMap->Load("MAPS/LAD/DETEC/STACK/lstack_mc.map");
+  gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo_mc.map");
 
   // Add LAD detector
   THcLADSpectrometer *LAD = new THcLADSpectrometer("L", "LAD");
@@ -46,8 +46,9 @@ void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   THaEvent *event = new THaEvent;
 
-  TString run_file = "../libLADdig/test_scripts/lad_hodo_gem_sim.root";
-  THaRunBase *run  = new LADSimFile(run_file.Data(), "lad", "");
+  // TString run_file = "../libLADdig/test_scripts/lad_hodo_gem_sim.root";
+  TString run_file = Form("/volatile/hallc/c-lad/ehingerl/G4_LAD/carlos_proton/dig/ScanLAD_proton_%dMeV_10k_20240205_dig.root", RunNumber);
+  THaRunBase *run = new LADSimFile(run_file.Data(), "lad", "");
 
   // Set to read in Hall C run database parameters
   // run->SetRunParamClass("THcRunParameters");
@@ -70,7 +71,7 @@ void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   analyzer->SetCrateMapFileName("MAPS/db_cratemap_mc.dat");
   // Define output ROOT file
 
-  analyzer->SetOutFile("ROOTfiles/gem_mc.root");
+  analyzer->SetOutFile(Form("ROOTfiles/full_mc_%dMeV_%d.root", RunNumber, MaxEvent));
   // // Define output DEF-file
   analyzer->SetOdefFile("DEF-files/LAD/PRODUCTION/lstackana_production_all.def");
   // // Define cuts file

@@ -1,3 +1,5 @@
+#LHE. This map is used for routing digitized data into the LAD hodo classes. It should match lhodo_mc_input.map (by channels, not format)
+
 L.hod.nchan = 110
 L.hod.is_mc = 1
 

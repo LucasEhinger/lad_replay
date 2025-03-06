@@ -1,12 +1,13 @@
 # LAD
+; LHE Don't think that any of these are actually used (though some are being read in)
 
 0 - 99999
 ltheta = -12.47
-lpcentral = 6.667
+lad_pcentral = 1
 gpbeam = 10.5
 
 
 gtargmass_amu=12.0107
 lpartmass = 0.00051099
-ltheta_lab = -25.005
-lad_pcentral = 1.0
+htheta_lab = -25.005
+hpcentral = 1.6

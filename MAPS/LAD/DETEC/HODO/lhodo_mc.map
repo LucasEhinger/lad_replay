@@ -1,5 +1,7 @@
+!LHE. This map is used for routing digitized data into the LAD hodo classes. It should match lhodo_mc_input.map (by channels, not format)
+
 !LAD:
-! LSCIN_ID= 33   ADC+,ADC-,TDC+,TDC-
+! LLADSCIN_ID= 33   ADC+,ADC-,TDC+,TDC-
 
 DETECTOR=33
 

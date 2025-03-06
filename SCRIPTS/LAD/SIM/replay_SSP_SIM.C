@@ -46,8 +46,9 @@ void replay_SSP_SIM(int RunNumber = 111, int MaxEvent = 100) {
   analyzer->SetEvent(event);
   analyzer->SetCountMode(2); // 2 = counter is event number
 
-  analyzer->SetCrateMapFileName("MAPS/db_cratemap_gem_mc.dat");
-  analyzer->SetOutFile("ROOTfiles/gem_mc.root");
+  analyzer->SetCrateMapFileName("MAPS/db_cratemap_mc.dat");
+  TString outfile = Form("ROOTfiles/gem_mc_%d.root", RunNumber);
+  analyzer->SetOutFile(outfile);
   analyzer->SetOdefFile("DEF-files/LAD/PRODUCTION/GEM/test.def");
   //  analyzer->SetCutFile( "test_cuts.def" );
   //  analyzer->SetCrateMapFileName("cratemap.dat");

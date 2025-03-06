@@ -1,0 +1,11 @@
+#********************
+# Block Definitions *
+#********************
+
+# block L.gem.*
+block L.gem.clust*
+block L.gem.hit*
+block L.gem.trk*
+
+#include "DEF-files/LAD/PRODUCTION/GEM/gem_histos.def"
+#include "DEF-files/LAD/PRODUCTION/CUTS/lstackana_gem_cuts.def"

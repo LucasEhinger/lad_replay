@@ -1,9 +1,11 @@
 ; LAD GEM geometry
 ; Total two layers, each has one module
 
-lgem_chanmap_file = "MAPS/LAD/DETEC/GEM/lgem_chan_mc.map"
-lgem_pedfile = "PARAM/LAD/GEM/gem_ped_1683_mc.dat"
-lgem_cmfile = "PARAM/LAD/GEM/CommonModeRange_1683_mc.txt"
+lgem_chanmap_file = "MAPS/LAD/DETEC/GEM/lgem_chan.map"
+;If using sim (is_mc=1), chanmap must be "MAPS/LAD/DETEC/GEM/lgem_chan_mc.map"
+
+lgem_pedfile = "PARAM/LAD/GEM/gem_ped_1683.dat" ;TODO. I don't think it makes a difference having mc or not. Delete the MC files (if mc works without them)
+lgem_cmfile = "PARAM/LAD/GEM/CommonModeRange_1683.txt" ; same as above
 
 lgem_num_modules = 2;
 lgem_num_layers = 2;
@@ -18,16 +20,22 @@ lgem_m0_apvmap = 1
 lgem_m1_apvmap = 1
 
 ; Positions, all units in m
-lgem_m0_position = 0, 0, 0.75
-lgem_m1_position = 0, 0, 0.95
+;lgem_m0_position = 0, 0, 0.75
+;lgem_m1_position = 0, 0, 0.95
+lgem_m0_position = 0, 0, 1.00
+lgem_m1_position = 0, 0, 1.20
+
+lgem_angle = 127; deg
+
 
 ; strip angles
 ; X/Y are defined in lab coordinate system 
-lgem_m0_uangle = 0.0
-lgem_m0_vangle = 90.0
+;TODO. Check definitions to make sure x & y are defined correctly
+lgem_m0_uangle = 90.0
+lgem_m0_vangle = 0.0
 
-lgem_m1_uangle = 0.0
-lgem_m1_vangle = 90.0
+lgem_m1_uangle = 90.0
+lgem_m1_vangle = 0.0
 
 ; Number of strips
 ;lgem_m0_nstripsu = 3072

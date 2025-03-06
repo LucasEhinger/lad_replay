@@ -1,3 +1,5 @@
+#LHE. This map is used for routing digitized data into the GEM classes. It should match lgem_mc_input.map (by channels, not format)
+
 ################### DECODE INFO ########################################################################
 ## Channel maps for decoding explained                                                                ##
 ## Each entry corresponds to one APV card                                                             ## 

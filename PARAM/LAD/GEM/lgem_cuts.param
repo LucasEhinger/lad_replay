@@ -28,13 +28,13 @@ lgem_usestriptimingcut = 1
 
 lgem_clustering_flag = 0
 
-; Offline threshold (move to cut file eventually)
+; Offline threshold
 lgem_threshold_sample = 100.0
 lgem_threshold_stripsum = 400.
 lgem_threshold_clustersum = 800.
 
 lgem_adcasym_cut = 0.7
-lgem_adcasym_sigma
+lgem_adcasym_sigma = 0.06
 lgem_delta_cut = 25.0
 
 lgem_peakprominence_minsigma = 3.0

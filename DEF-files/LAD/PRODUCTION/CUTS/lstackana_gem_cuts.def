@@ -1,0 +1,5 @@
+Block: GEMcuts
+
+# Cuts:
+singletrack         L.gem.trk.ntracks==1
+anytrack            L.gem.trk.ntracks>0
