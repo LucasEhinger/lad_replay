@@ -1,6 +1,6 @@
 !LAD:
 ! Reroute hms hodo data through LAD class
-! LSCIN_ID= 33   ADC+,ADC-,TDC+,TDC-
+! LLADSCIN_ID= 33   ADC+,ADC-,TDC+,TDC-
 
 DETECTOR=33
 

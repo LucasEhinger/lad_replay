@@ -17,9 +17,7 @@ lhodo_plane_names = "000 001 100 101 200"
       lscin_101_theta = 2.21657 ; 127 deg
       lscin_200_theta = 1.81514 ; 150 deg
 
-;      hpathlength_central = 2500 ;Think can be deleted
-
-; Z positions of hodoscopes
+; Z positions of hodoscopes (cm)
       lscin_000_zpos =  615
       lscin_001_zpos =  (615+40.6)
       lscin_100_zpos =  523

@@ -1,3 +1,5 @@
+#LHE. This map is used for routing digitized data into the GEM classes. It should match lgem_mc_input.map (by channels, not format)
+
 ## A chamber is a "Tracker-Plane" composed of vertically stacked modules
 is_mc = 1
 L.gem.onlinezerosuppress = 0

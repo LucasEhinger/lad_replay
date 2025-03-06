@@ -1,3 +1,9 @@
 Block: RawDecode
 #include "DEF-files/LAD/PRODUCTION/CUTS/lstackana_rawdecode_cuts.def"
 RawDecode_master 1
+
+Block: GEMcuts
+#include "DEF-files/LAD/PRODUCTION/CUTS/lstackana_gem_cuts.def"
+GEMcuts_master 1
+
+#Might want to add LAD cuts

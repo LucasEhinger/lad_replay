@@ -1,0 +1,18 @@
+#********************
+# Block Definitions *
+#********************
+
+block L.hod.*
+
+
+Block: RawDecode
+#include "DEF-files/LAD/PRODUCTION/CUTS/lstackana_rawdecode_cuts.def"
+RawDecode_master 1
+
+
+#include "DEF-files/LAD/PRODUCTION/HODO/lhodo_histos.def"
+#include "DEF-files/LAD/PRODUCTION/HODO/lhodo_histos_debug.def"
+#include "DEF-files/LAD/PRODUCTION/HODO/lhodo_histos_timewalk.def"
+
+
+; Can include LAD cuts later here if we want. File currently doesn't exist #include "DEF-files/LAD/PRODUCTION/CUTS/lstackana_lad_cuts.def"
