@@ -1,0 +1,236 @@
+#####################################################
+##   HMS
+#####################################################
+
+hladhodo_debug_adc = 1
+; Number of ladhodoscopes
+hladhodo_num_planes = 5
+hladhodo_plane_names = "000 001 100 101 200"
+
+; Number of ladhodoscope paddles per layer
+      hladhodo_000_nr = 11
+      hladhodo_001_nr = 11
+      hladhodo_100_nr = 11
+      hladhodo_101_nr = 11
+      hladhodo_200_nr = 11
+
+; ladhodoscope Central Angles
+      hladhodo_000_theta = 2.61799 ; 104 deg
+      hladhodo_001_theta = 2.61799; 104 deg
+      hladhodo_100_theta = 2.21657 ; 127 deg
+      hladhodo_101_theta = 2.21657 ; 127 deg
+      hladhodo_200_theta = 1.81514 ; 150 deg
+
+; Z positions of ladhodoscopes (cm)
+      hladhodo_000_zpos =  615
+      hladhodo_001_zpos =  (615+40.6)
+      hladhodo_100_zpos =  523
+      hladhodo_101_zpos =  (523+40.6)
+      hladhodo_200_zpos =  615
+      hladhodo_000_dzpos = 0
+      hladhodo_001_dzpos = 0
+      hladhodo_100_dzpos = 0
+      hladhodo_101_dzpos = 0
+      hladhodo_200_dzpos = 0
+      ;pretty sure none of the size and spacing params are being used
+      hladhodo_000_size = 22.0
+      hladhodo_001_size = 22.0
+      hladhodo_100_size = 22.0
+      hladhodo_101_size = 22.0
+      hladhodo_200_size = 22.0
+      hladhodo_000_spacing = 22.0
+      hladhodo_001_spacing = 22.0
+      hladhodo_100_spacing = 22.0
+      hladhodo_101_spacing = 22.0
+      hladhodo_200_spacing = 22.0
+
+; X,Y positions of ladhodoscope paddles
+      hladhodo_000_btm  =  200 ;todo. Need to change this to be variable based on bar number
+      hladhodo_000_top  = -200
+      hladhodo_000_offset = 0
+      hladhodo_000_center = 110.0
+                         88.0
+                         66.0
+                         44.0
+                         22.0
+                         0.0
+                         -22.0
+                         -44.0
+                         -66.0
+                         -88.0
+                         -110.0
+      hladhodo_001_btm  =  200 ;todo. Need to change this to be variable based on bar number
+      hladhodo_001_top  = -200
+      hladhodo_001_offset = 0
+      hladhodo_001_center = 110.0
+                         88.0
+                         66.0
+                         44.0
+                         22.0
+                         0.0
+                         -22.0
+                         -44.0
+                         -66.0
+                         -88.0
+                         -110.0
+      hladhodo_100_btm  =  200 ;todo. Need to change this to be variable based on bar number
+      hladhodo_100_top  = -200
+      hladhodo_100_offset = 0
+      hladhodo_100_center = 110.0
+                         88.0
+                         66.0
+                         44.0
+                         22.0
+                         0.0
+                         -22.0
+                         -44.0
+                         -66.0
+                         -88.0
+                         -110.0
+      hladhodo_101_btm  =  200 ;todo. Need to change this to be variable based on bar number
+      hladhodo_101_top  = -200
+      hladhodo_101_offset = 0
+      hladhodo_101_center = 110.0
+                         88.0
+                         66.0
+                         44.0
+                         22.0
+                         0.0
+                         -22.0
+                         -44.0
+                         -66.0
+                         -88.0
+                         -110.0
+      hladhodo_200_btm  =  200 ;todo. Need to change this to be variable based on bar number
+      hladhodo_200_top  = -200
+      hladhodo_200_offset = 0
+      hladhodo_200_center = 110.0
+                         88.0
+                         66.0
+                         44.0
+                         22.0
+                         0.0
+                         -22.0
+                         -44.0
+                         -66.0
+                         -88.0
+                         -110.0
+
+
+#####################################################
+##   SHMS
+#####################################################
+
+pladhodo_debug_adc = 1
+; Number of ladhodoscopes
+pladhodo_num_planes = 5
+pladhodo_plane_names = "000 001 100 101 200"
+
+; Number of ladhodoscope paddles per layer
+      pladhodo_000_nr = 11
+      pladhodo_001_nr = 11
+      pladhodo_100_nr = 11
+      pladhodo_101_nr = 11
+      pladhodo_200_nr = 11
+
+; ladhodoscope Central Angles
+      pladhodo_000_theta = 2.61799 ; 104 deg
+      pladhodo_001_theta = 2.61799; 104 deg
+      pladhodo_100_theta = 2.21657 ; 127 deg
+      pladhodo_101_theta = 2.21657 ; 127 deg
+      pladhodo_200_theta = 1.81514 ; 150 deg
+
+; Z positions of ladhodoscopes (cm)
+      pladhodo_000_zpos =  615
+      pladhodo_001_zpos =  (615+40.6)
+      pladhodo_100_zpos =  523
+      pladhodo_101_zpos =  (523+40.6)
+      pladhodo_200_zpos =  615
+      pladhodo_000_dzpos = 0
+      pladhodo_001_dzpos = 0
+      pladhodo_100_dzpos = 0
+      pladhodo_101_dzpos = 0
+      pladhodo_200_dzpos = 0
+      ;pretty sure none of the size and spacing params are being used
+      pladhodo_000_size = 22.0
+      pladhodo_001_size = 22.0
+      pladhodo_100_size = 22.0
+      pladhodo_101_size = 22.0
+      pladhodo_200_size = 22.0
+      pladhodo_000_spacing = 22.0
+      pladhodo_001_spacing = 22.0
+      pladhodo_100_spacing = 22.0
+      pladhodo_101_spacing = 22.0
+      pladhodo_200_spacing = 22.0
+
+; X,Y positions of ladhodoscope paddles
+      pladhodo_000_btm  =  200 ;todo. Need to change this to be variable based on bar number
+      pladhodo_000_top  = -200
+      pladhodo_000_offset = 0
+      pladhodo_000_center = 110.0
+                         88.0
+                         66.0
+                         44.0
+                         22.0
+                         0.0
+                         -22.0
+                         -44.0
+                         -66.0
+                         -88.0
+                         -110.0
+      pladhodo_001_btm  =  200 ;todo. Need to change this to be variable based on bar number
+      pladhodo_001_top  = -200
+      pladhodo_001_offset = 0
+      pladhodo_001_center = 110.0
+                         88.0
+                         66.0
+                         44.0
+                         22.0
+                         0.0
+                         -22.0
+                         -44.0
+                         -66.0
+                         -88.0
+                         -110.0
+      pladhodo_100_btm  =  200 ;todo. Need to change this to be variable based on bar number
+      pladhodo_100_top  = -200
+      pladhodo_100_offset = 0
+      pladhodo_100_center = 110.0
+                         88.0
+                         66.0
+                         44.0
+                         22.0
+                         0.0
+                         -22.0
+                         -44.0
+                         -66.0
+                         -88.0
+                         -110.0
+      pladhodo_101_btm  =  200 ;todo. Need to change this to be variable based on bar number
+      pladhodo_101_top  = -200
+      pladhodo_101_offset = 0
+      pladhodo_101_center = 110.0
+                         88.0
+                         66.0
+                         44.0
+                         22.0
+                         0.0
+                         -22.0
+                         -44.0
+                         -66.0
+                         -88.0
+                         -110.0
+      pladhodo_200_btm  =  200 ;todo. Need to change this to be variable based on bar number
+      pladhodo_200_top  = -200
+      pladhodo_200_offset = 0
+      pladhodo_200_center = 110.0
+                         88.0
+                         66.0
+                         44.0
+                         22.0
+                         0.0
+                         -22.0
+                         -44.0
+                         -66.0
+                         -88.0
+                         -110.0

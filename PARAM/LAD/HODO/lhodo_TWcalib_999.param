@@ -1,4 +1,5 @@
 ;LAD Hodoscopes Output Parameter File: Run 999
+;Need to change output names
  
 hTDC_threshold=120. ;units of mV 
  

@@ -1,5 +1,5 @@
-; LAD Hodo Cuts parameters
-; Coppied from HMS hodo
+; LAD ladhodo Cuts parameters
+; Coppied from HMS ladhodo
 ; https://hallcweb.jlab.org/elogs/A1n-d2n+Combined+Analysis/41
 ;
 
@@ -12,7 +12,7 @@ lcosmicflag=0
 ;  2 == Use the sample integral - known ped
 ;  3 == Use the sample integral - sample ped
 ; if not set then defaults to use the raw pulse integral
-lhodo_adc_mode=1
+lladhodo_adc_mode=1
 
 ; lstart_time_center  center of allowed time window (ns)
 lstart_time_center = 32.
@@ -25,34 +25,36 @@ lstart_time_slop = 100.
 lscin_tdc_min = 0
 lscin_tdc_max = 2000
 
-; lhodo_tdc_to_time   scin tdc time per channel
-lhodo_tdc_to_time = 0.09766   ; See HC Log Entry 3574348
-; lhodo_tdc_to_time = 1
+
+; lladhodo_tdc_to_time   scin tdc time per channel
+lladhodo_tdc_to_time = 0.09766   ; See HC Log Entry 3574348
+; lladhodo_tdc_to_time = 1
+
 
 ; tof and you figured out good values
 ltof_tolerance = 10.0
 
 ; lad_tof_params
-; hnum_scin_counters, lhodo_zpos, lhodo_center_coord, lhodo_width
+; hnum_scin_counters, lladhodo_zpos, lladhodo_center_coord, lladhodo_width
 ; are all calculated within h_init_scin
-;    lhodo_top_coord and lhodo_btm_coord are not yet used
+;    lladhodo_top_coord and lladhodo_btm_coord are not yet used
 
-lhodo_slop     =    2.,  2.,  2.,  2., 2.
+lladhodo_slop     =    2.,  2.,  2.,  2., 2.
 
-; lhodo_tdc_offset is array of time offsets for all paddles in a plane
+; lladhodo_tdc_offset is array of time offsets for all paddles in a plane
 ;   to move the tdc to between 0 and 4000 channels.
-;lhodo_tdc_offset = 1580, 1580, 1580, 1580, 1580
-lhodo_tdc_offset = 0, 0, 0, 0, 0
+;lladhodo_tdc_offset = 1580, 1580, 1580, 1580, 1580
+lladhodo_tdc_offset = 0, 0, 0, 0, 0
 
-lhodo_adc_tdc_offset = -700., -700., -700., -700., -700.
+lladhodo_adc_tdc_offset = -700., -700., -700., -700., -700.
 ;Offset changed with HCANA update (April 2021)
-;lhodo_adc_tdc_offset = 171., 171., 171., 171., 171.
+;lladhodo_adc_tdc_offset = 171., 171., 171., 171., 171.
 
-; HMS Hodoscope Parameter File Containing TimeWindow Min/Max Cuts
+; HMS ladhodoscope Parameter File Containing TimeWindow Min/Max Cuts
 ;Startup of XEM 2022 with run 4402
 ; variables = H.hod.(1x, 1y, 2x, 2y).GoodBtm(Top)AdcTdcDiffTime
 ;                              1x         1y        2x          2y
-lhodo_TopAdcTimeWindowMin = -1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
+lladhodo_TopAdcTimeWindowMin = -1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
 			    									-1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
 			    									-1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
 			    									-1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
@@ -69,7 +71,7 @@ lhodo_TopAdcTimeWindowMin = -1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
 														-1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0
 
 ;                              1x         1y        2x          2y
-lhodo_TopAdcTimeWindowMax = 2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
+lladhodo_TopAdcTimeWindowMax = 2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
 			    									2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
 			    									2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
 			    									2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
@@ -86,7 +88,7 @@ lhodo_TopAdcTimeWindowMax = 2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
 														2000.0,   2000.0,   2000.0,   2000.0,   2000.0
 
 ;                              1x         1y        2x          2y
-lhodo_BtmAdcTimeWindowMin = -1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
+lladhodo_BtmAdcTimeWindowMin = -1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
 			    									-1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
 			    									-1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
 			    									-1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
@@ -103,7 +105,7 @@ lhodo_BtmAdcTimeWindowMin = -1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0,
 														-1000.0,   -1000.0,   -1000.0,   -1000.0,   -1000.0
 			  
 ;                              1x         1y        2x          2y
-lhodo_BtmAdcTimeWindowMax = 2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
+lladhodo_BtmAdcTimeWindowMax = 2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
 			    									2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
 			    									2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
 			    									2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
@@ -120,7 +122,7 @@ lhodo_BtmAdcTimeWindowMax = 2000.0,   2000.0,   2000.0,   2000.0,   2000.0,
 														2000.0,   2000.0,   2000.0,   2000.0,   2000.0
 
 
-lhodo_top_ped_limit = 1000,1000,1000,1000,1000,
+lladhodo_top_ped_limit = 1000,1000,1000,1000,1000,
                       1000,1000,1000,1000,1000,
                       1000,1000,1000,1000,1000,
                       1000,1000,1000,1000,1000,
@@ -133,7 +135,7 @@ lhodo_top_ped_limit = 1000,1000,1000,1000,1000,
                       1000,1000,1000,1000,1000
 
 ;
-lhodo_btm_ped_limit = 1000,1000,1000,1000,1000,
+lladhodo_btm_ped_limit = 1000,1000,1000,1000,1000,
                       1000,1000,1000,1000,1000,
                       1000,1000,1000,1000,1000,
                       1000,1000,1000,1000,1000,
@@ -146,7 +148,7 @@ lhodo_btm_ped_limit = 1000,1000,1000,1000,1000,
                       1000,1000,1000,1000,1000
 
 ;TODO. Fix the length of vel_light array (and put actual values it not being calculated)
-lhodo_vel_light =  15.0,15.0,15.0,15.0,
+lladhodo_vel_light =  15.0,15.0,15.0,15.0,
                    15.0,15.0,15.0,15.0,
                    15.0,15.0,15.0,15.0,
                    15.0,15.0,15.0,15.0,

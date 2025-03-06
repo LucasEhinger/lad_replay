@@ -16,7 +16,9 @@ block P.hod.*Time
 block P.gtr.*
 block P.kin.*
 
-block L.hod.*
+block P.ladhod.*
+block H.ladhod.*
+
 
 
 # block L.gem.*
