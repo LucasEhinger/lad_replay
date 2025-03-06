@@ -4241,6 +4241,10 @@ SLOT=13
        109,       5,     10,      0!    l5x10T+
        110,       5,     11,      0!    l5x11T+
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 34b549928c4443b7491cc16c37acd9e8810384cc
 !!!! LAD Detector Starts Here
 DETECTOR=34
 ROC=9
