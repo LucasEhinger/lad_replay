@@ -54,7 +54,7 @@ void replay_hodo(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   THcLADSpectrometer *LAD = new THcLADSpectrometer("L", "LAD");
   gHaApps->Add(LAD);
 
-  THcLADHodoscope *lhod = new THcLADHodoscope("hod", "LAD Hodoscope");
+  THcLADHodoscope *lhod = new THcLADHodoscope("ladhod", "LAD Hodoscope");
   LAD->AddDetector(lhod);
 
   //TODO: Add LAD GEM once detector maps (and hall readout) are available

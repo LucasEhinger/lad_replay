@@ -1,7 +1,7 @@
 ; LAD GEM geometry
 ; Total two layers, each has one module
 
-lgem_chanmap_file = "MAPS/LAD/DETEC/GEM/lgem_chan_test.map" ; currently set to testlab chanmap
+lgem_chanmap_file = "MAPS/LAD/DETEC/GEM/lgem_chan.map" ; currently set to dummy chanmap similar to that from test lab
 ;If using sim (is_mc=1), chanmap must be "MAPS/LAD/DETEC/GEM/lgem_chan_mc.map"
 
 lgem_pedfile = "PARAM/LAD/GEM/gem_ped_1683.dat" ;TODO. I don't think it makes a difference having mc or not. Delete the MC files (if mc works without them)
