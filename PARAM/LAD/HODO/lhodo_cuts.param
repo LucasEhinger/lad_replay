@@ -27,6 +27,10 @@ lladstart_time_slop = 100.
 lladhodo_tdc_min = 0
 lladhodo_tdc_max = 1200
 
+; reftime Cuts
+lladhodo_tdcrefcut = -20000.
+lladhodo_adcrefcut = -20000.
+
 ; lladhodo_tdc_to_time   scin tdc time per channel
 lladhodo_tdc_to_time = 0.09766   ; See HC Log Entry 3574348
 

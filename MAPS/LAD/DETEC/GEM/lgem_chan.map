@@ -14,10 +14,10 @@
 ## ORDER of entries in the maps is:                                                                   ##
 ## vtpcrate  slot  fiber  gemid  adc_ch   i2c   pos     invert   axis                              ##
 ########################################################################################################
-# insert chanmap from hall. Currently set to dummy values (that don't conflict with other detectors)
+# insert chanmap from hall. Currently set to dummy values (that don't conflict with other detectors, so crate 2 -> 8)
 
 #Crate slot fiber  GEMID  ADCId   I2C    Pos    Invert   axis
-#============================= Crate_2 Layer_4 GEM_0 ==================
+#============================= Crate_8 Layer_4 GEM_0 ==================
 lgem_m0_chanmap = 
 8      13       1     0     0      15     0      0      1      
 8      13       1     0     1      14     1      0      1  

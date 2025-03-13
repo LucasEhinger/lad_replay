@@ -1,5 +1,5 @@
 // replays both the LAD hodoscope and GEM detectors (not standard spectrometers)
-// #include "../../LAD/LAD_link_defs.h". Leave this line commented. Used for debugging purposes.
+// #include "../../LAD/LAD_link_defs.h" // Leave this line commented. Used for debugging purposes only.
 void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Get RunNumber and MaxEvent if not provided.
@@ -53,7 +53,7 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   THcLADSpectrometer *LAD = new THcLADSpectrometer("L", "LAD");
   gHaApps->Add(LAD);
 
-  THcLADHodoscope *lhod = new THcLADHodoscope("hod", "LAD Hodoscope");
+  THcLADHodoscope *lhod = new THcLADHodoscope("ladhod", "LAD Hodoscope");
   LAD->AddDetector(lhod);
 
   THcLADGEM *gem = new THcLADGEM("gem", "gem");
