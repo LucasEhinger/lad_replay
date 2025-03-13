@@ -6,78 +6,78 @@
 # LAD HODO GOOD ADC Multiplicities 
 #-----------------------------------
 
-TH1F lhodo_000_good_adc_mult_top 'LAD 000+ Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good +ADC Hits' L.hod.000.totNumGoodTopAdcHits 16 0.5 16.5
-TH1F lhodo_001_good_adc_mult_top 'LAD 001+ Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good +ADC Hits' L.hod.001.totNumGoodTopAdcHits 10 0.5 10.5
-TH1F lhodo_100_good_adc_mult_top 'LAD 100+ Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good +ADC Hits' L.hod.100.totNumGoodTopAdcHits 16 0.5 16.5
-TH1F lhodo_101_good_adc_mult_top 'LAD 101+ Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good +ADC Hits' L.hod.101.totNumGoodTopAdcHits 10 0.5 10.5
+TH1F lhodo_000_good_adc_mult_top 'LAD 000+ Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good +ADC Hits' L.ladhod.000.totNumGoodTopAdcHits 16 0.5 16.5
+TH1F lhodo_001_good_adc_mult_top 'LAD 001+ Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good +ADC Hits' L.ladhod.001.totNumGoodTopAdcHits 10 0.5 10.5
+TH1F lhodo_100_good_adc_mult_top 'LAD 100+ Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good +ADC Hits' L.ladhod.100.totNumGoodTopAdcHits 16 0.5 16.5
+TH1F lhodo_101_good_adc_mult_top 'LAD 101+ Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good +ADC Hits' L.ladhod.101.totNumGoodTopAdcHits 10 0.5 10.5
 
-TH1F lhodo_000_good_adc_mult_btm 'LAD 000- Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good -ADC Hits' L.hod.000.totNumGoodBtmAdcHits 16 0.5 16.5
-TH1F lhodo_001_good_adc_mult_btm 'LAD 001- Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good -ADC Hits' L.hod.001.totNumGoodBtmAdcHits 10 0.5 10.5
-TH1F lhodo_100_good_adc_mult_btm 'LAD 100- Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good -ADC Hits' L.hod.100.totNumGoodBtmAdcHits 16 0.5 16.5
-TH1F lhodo_101_good_adc_mult_btm 'LAD 101- Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good -ADC Hits' L.hod.101.totNumGoodBtmAdcHits 10 0.5 10.5
+TH1F lhodo_000_good_adc_mult_btm 'LAD 000- Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good -ADC Hits' L.ladhod.000.totNumGoodBtmAdcHits 16 0.5 16.5
+TH1F lhodo_001_good_adc_mult_btm 'LAD 001- Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good -ADC Hits' L.ladhod.001.totNumGoodBtmAdcHits 10 0.5 10.5
+TH1F lhodo_100_good_adc_mult_btm 'LAD 100- Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good -ADC Hits' L.ladhod.100.totNumGoodBtmAdcHits 16 0.5 16.5
+TH1F lhodo_101_good_adc_mult_btm 'LAD 101- Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good -ADC Hits' L.ladhod.101.totNumGoodBtmAdcHits 10 0.5 10.5
 
-TH1F lhodo_000_good_adc_mult 'LAD 1X Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good ADC Hits' L.hod.000.totNumGoodAdcHits 16 0.5 16.5
-TH1F lhodo_001_good_adc_mult 'LAD 1Y Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good ADC Hits' L.hod.001.totNumGoodAdcHits 10 0.5 10.5
-TH1F lhodo_100_good_adc_mult 'LAD 2X Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good ADC Hits' L.hod.100.totNumGoodAdcHits 16 0.5 16.5
-TH1F lhodo_101_good_adc_mult 'LAD 2Y Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good ADC Hits' L.hod.101.totNumGoodAdcHits 10 0.5 10.5
+TH1F lhodo_000_good_adc_mult 'LAD 1X Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good ADC Hits' L.ladhod.000.totNumGoodAdcHits 16 0.5 16.5
+TH1F lhodo_001_good_adc_mult 'LAD 1Y Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good ADC Hits' L.ladhod.001.totNumGoodAdcHits 10 0.5 10.5
+TH1F lhodo_100_good_adc_mult 'LAD 2X Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good ADC Hits' L.ladhod.100.totNumGoodAdcHits 16 0.5 16.5
+TH1F lhodo_101_good_adc_mult 'LAD 2Y Good ADC Multiplicity; Number of PMTs Hit; Total Number of Good ADC Hits' L.ladhod.101.totNumGoodAdcHits 10 0.5 10.5
 
 #-----------------------------------
 # LAD HODO Good TDC Multiplicities
 #-----------------------------------
 
-TH1F lhodo_000_good_tdc_mult_top 'LAD 000+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.hod.000.totNumGoodTopTdcHits 16 0.5 16.5
-TH1F lhodo_001_good_tdc_mult_top 'LAD 001+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.hod.001.totNumGoodTopTdcHits 10 0.5 10.5
-TH1F lhodo_100_good_tdc_mult_top 'LAD 100+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.hod.100.totNumGoodTopTdcHits 16 0.5 16.5
-TH1F lhodo_101_good_tdc_mult_top 'LAD 101+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.hod.101.totNumGoodTopTdcHits 10 0.5 10.5
+TH1F lhodo_000_good_tdc_mult_top 'LAD 000+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.ladhod.000.totNumGoodTopTdcHits 16 0.5 16.5
+TH1F lhodo_001_good_tdc_mult_top 'LAD 001+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.ladhod.001.totNumGoodTopTdcHits 10 0.5 10.5
+TH1F lhodo_100_good_tdc_mult_top 'LAD 100+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.ladhod.100.totNumGoodTopTdcHits 16 0.5 16.5
+TH1F lhodo_101_good_tdc_mult_top 'LAD 101+ Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good +TDC Hits' L.ladhod.101.totNumGoodTopTdcHits 10 0.5 10.5
 
-TH1F lhodo_000_good_tdc_mult_btm 'LAD 000- Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good -TDC Hits' L.hod.000.totNumGoodBtmTdcHits 16 0.5 16.5
-TH1F lhodo_001_good_tdc_mult_btm 'LAD 001- Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good -TDC Hits' L.hod.001.totNumGoodBtmTdcHits 10 0.5 10.5
-TH1F lhodo_100_good_tdc_mult_btm 'LAD 100- Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good -TDC Hits' L.hod.100.totNumGoodBtmTdcHits 16 0.5 16.5
-TH1F lhodo_101_good_tdc_mult_btm 'LAD 101- Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good -TDC Hits' L.hod.101.totNumGoodBtmTdcHits 10 0.5 10.5
+TH1F lhodo_000_good_tdc_mult_btm 'LAD 000- Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good -TDC Hits' L.ladhod.000.totNumGoodBtmTdcHits 16 0.5 16.5
+TH1F lhodo_001_good_tdc_mult_btm 'LAD 001- Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good -TDC Hits' L.ladhod.001.totNumGoodBtmTdcHits 10 0.5 10.5
+TH1F lhodo_100_good_tdc_mult_btm 'LAD 100- Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good -TDC Hits' L.ladhod.100.totNumGoodBtmTdcHits 16 0.5 16.5
+TH1F lhodo_101_good_tdc_mult_btm 'LAD 101- Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good -TDC Hits' L.ladhod.101.totNumGoodBtmTdcHits 10 0.5 10.5
 
-TH1F lhodo_000_good_tdc_mult 'LAD 1X Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good TDC Hits' L.hod.000.totNumGoodTdcHits 16 0.5 16.5
-TH1F lhodo_001_good_tdc_mult 'LAD 1Y Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good TDC Hits' L.hod.001.totNumGoodTdcHits 10 0.5 10.5
-TH1F lhodo_100_good_tdc_mult 'LAD 2X Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good TDC Hits' L.hod.100.totNumGoodTdcHits 16 0.5 16.5
-TH1F lhodo_101_good_tdc_mult 'LAD 2Y Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good TDC Hits' L.hod.101.totNumGoodTdcHits 10 0.5 10.5
+TH1F lhodo_000_good_tdc_mult 'LAD 1X Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good TDC Hits' L.ladhod.000.totNumGoodTdcHits 16 0.5 16.5
+TH1F lhodo_001_good_tdc_mult 'LAD 1Y Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good TDC Hits' L.ladhod.001.totNumGoodTdcHits 10 0.5 10.5
+TH1F lhodo_100_good_tdc_mult 'LAD 2X Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good TDC Hits' L.ladhod.100.totNumGoodTdcHits 16 0.5 16.5
+TH1F lhodo_101_good_tdc_mult 'LAD 2Y Good TDC Multiplicity; Number of PMTs Hit; Total Number of Good TDC Hits' L.ladhod.101.totNumGoodTdcHits 10 0.5 10.5
 
 #---------------------------------
 # LAD HODO GOOD ADC OCCUPANCIES
 #---------------------------------
 
-TH1F lhodo_000_good_adc_occ_top 'LAD 000+ Good ADC Occupancy; PMT Number; Number of Good +ADC Hits' L.hod.000.numGoodTopAdcHits 16 0.5 16.5
-TH1F lhodo_001_good_adc_occ_top 'LAD 001+ Good ADC Occupancy; PMT Number; Number of Good +ADC Hits' L.hod.001.numGoodTopAdcHits 10 0.5 10.5 
-TH1F lhodo_100_good_adc_occ_top 'LAD 100+ Good ADC Occupancy; PMT Number; Number of Good +ADC Hits' L.hod.100.numGoodTopAdcHits 16 0.5 16.5
-TH1F lhodo_101_good_adc_occ_top 'LAD 101+ Good ADC Occupancy; PMT Number; Number of Good +ADC Hits' L.hod.101.numGoodTopAdcHits 10 0.5 10.5
+TH1F lhodo_000_good_adc_occ_top 'LAD 000+ Good ADC Occupancy; PMT Number; Number of Good +ADC Hits' L.ladhod.000.numGoodTopAdcHits 16 0.5 16.5
+TH1F lhodo_001_good_adc_occ_top 'LAD 001+ Good ADC Occupancy; PMT Number; Number of Good +ADC Hits' L.ladhod.001.numGoodTopAdcHits 10 0.5 10.5 
+TH1F lhodo_100_good_adc_occ_top 'LAD 100+ Good ADC Occupancy; PMT Number; Number of Good +ADC Hits' L.ladhod.100.numGoodTopAdcHits 16 0.5 16.5
+TH1F lhodo_101_good_adc_occ_top 'LAD 101+ Good ADC Occupancy; PMT Number; Number of Good +ADC Hits' L.ladhod.101.numGoodTopAdcHits 10 0.5 10.5
 
-TH1F lhodo_000_good_adc_occ_btm 'LAD 000- Good ADC Occupancy; PMT Number; Number of Good -ADC Hits' L.hod.000.numGoodBtmAdcHits 16 0.5 16.5
-TH1F lhodo_001_good_adc_occ_btm 'LAD 001- Good ADC Occupancy; PMT Number; Number of Good -ADC Hits' L.hod.001.numGoodBtmAdcHits 10 0.5 10.5 
-TH1F lhodo_100_good_adc_occ_btm 'LAD 100- Good ADC Occupancy; PMT Number; Number of Good -ADC Hits' L.hod.100.numGoodBtmAdcHits 16 0.5 16.5
-TH1F lhodo_101_good_adc_occ_btm 'LAD 101- Good ADC Occupancy; PMT Number; Number of Good -ADC Hits' L.hod.101.numGoodBtmAdcHits 10 0.5 10.5
+TH1F lhodo_000_good_adc_occ_btm 'LAD 000- Good ADC Occupancy; PMT Number; Number of Good -ADC Hits' L.ladhod.000.numGoodBtmAdcHits 16 0.5 16.5
+TH1F lhodo_001_good_adc_occ_btm 'LAD 001- Good ADC Occupancy; PMT Number; Number of Good -ADC Hits' L.ladhod.001.numGoodBtmAdcHits 10 0.5 10.5 
+TH1F lhodo_100_good_adc_occ_btm 'LAD 100- Good ADC Occupancy; PMT Number; Number of Good -ADC Hits' L.ladhod.100.numGoodBtmAdcHits 16 0.5 16.5
+TH1F lhodo_101_good_adc_occ_btm 'LAD 101- Good ADC Occupancy; PMT Number; Number of Good -ADC Hits' L.ladhod.101.numGoodBtmAdcHits 10 0.5 10.5
 
 #--------------------------------
 # LAD HODO GOOD TDC OCCUPANCIES
 #--------------------------------
 
-TH1F lhodo_000_good_tdc_occ_top 'LAD 000+ Good TDC Occupancy; PMT Number; Number of Good +TDC Hits' L.hod.000.numGoodTopTdcHits 16 0.5 16.5
-TH1F lhodo_001_good_tdc_occ_top 'LAD 001+ Good TDC Occupancy; PMT Number; Number of Good +TDC Hits' L.hod.001.numGoodTopTdcHits 10 0.5 10.5 
-TH1F lhodo_100_good_tdc_occ_top 'LAD 100+ Good TDC Occupancy; PMT Number; Number of Good +TDC Hits' L.hod.100.numGoodTopTdcHits 16 0.5 16.5
-TH1F lhodo_101_good_tdc_occ_top 'LAD 101+ Good TDC Occupancy; PMT Number; Number of Good +TDC Hits' L.hod.101.numGoodTopTdcHits 10 0.5 10.5
+TH1F lhodo_000_good_tdc_occ_top 'LAD 000+ Good TDC Occupancy; PMT Number; Number of Good +TDC Hits' L.ladhod.000.numGoodTopTdcHits 16 0.5 16.5
+TH1F lhodo_001_good_tdc_occ_top 'LAD 001+ Good TDC Occupancy; PMT Number; Number of Good +TDC Hits' L.ladhod.001.numGoodTopTdcHits 10 0.5 10.5 
+TH1F lhodo_100_good_tdc_occ_top 'LAD 100+ Good TDC Occupancy; PMT Number; Number of Good +TDC Hits' L.ladhod.100.numGoodTopTdcHits 16 0.5 16.5
+TH1F lhodo_101_good_tdc_occ_top 'LAD 101+ Good TDC Occupancy; PMT Number; Number of Good +TDC Hits' L.ladhod.101.numGoodTopTdcHits 10 0.5 10.5
 
-TH1F lhodo_000_good_tdc_occ_btm 'LAD 000- Good TDC Occupancy; PMT Number; Number of Good -TDC Hits' L.hod.000.numGoodBtmTdcHits 16 0.5 16.5
-TH1F lhodo_001_good_tdc_occ_btm 'LAD 001- Good TDC Occupancy; PMT Number; Number of Good -TDC Hits' L.hod.001.numGoodBtmTdcHits 10 0.5 10.5 
-TH1F lhodo_100_good_tdc_occ_btm 'LAD 100- Good TDC Occupancy; PMT Number; Number of Good -TDC Hits' L.hod.100.numGoodBtmTdcHits 16 0.5 16.5
-TH1F lhodo_101_good_tdc_occ_btm 'LAD 101- Good TDC Occupancy; PMT Number; Number of Good -TDC Hits' L.hod.101.numGoodBtmTdcHits 10 0.5 10.5
+TH1F lhodo_000_good_tdc_occ_btm 'LAD 000- Good TDC Occupancy; PMT Number; Number of Good -TDC Hits' L.ladhod.000.numGoodBtmTdcHits 16 0.5 16.5
+TH1F lhodo_001_good_tdc_occ_btm 'LAD 001- Good TDC Occupancy; PMT Number; Number of Good -TDC Hits' L.ladhod.001.numGoodBtmTdcHits 10 0.5 10.5 
+TH1F lhodo_100_good_tdc_occ_btm 'LAD 100- Good TDC Occupancy; PMT Number; Number of Good -TDC Hits' L.ladhod.100.numGoodBtmTdcHits 16 0.5 16.5
+TH1F lhodo_101_good_tdc_occ_btm 'LAD 101- Good TDC Occupancy; PMT Number; Number of Good -TDC Hits' L.ladhod.101.numGoodBtmTdcHits 10 0.5 10.5
 
 #------------------------------
 # LAD HODO Good PULSE PEDESTAL
 #------------------------------
 
-TH2F lhodo_000_good_pped_vs_pmt_top 'LAD 000+ Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.hod.000.GoodTopAdcPed 16 0.5 16.5 200 100 150 L.hod.000.GoodTopAdcPed>0.0
-TH2F lhodo_001_good_pped_vs_pmt_top 'LAD 001+ Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.hod.001.GoodTopAdcPed 10 0.5 10.5 200 100 150 L.hod.001.GoodTopAdcPed>0.0
-TH2F lhodo_100_good_pped_vs_pmt_top 'LAD 100+ Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.hod.100.GoodTopAdcPed 16 0.5 16.5 200 100 150 L.hod.100.GoodTopAdcPed>0.0
-TH2F lhodo_101_good_pped_vs_pmt_top 'LAD 101+ Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.hod.101.GoodTopAdcPed 10 0.5 10.5 200 100 150 L.hod.101.GoodTopAdcPed>0.0
+TH2F lhodo_000_good_pped_vs_pmt_top 'LAD 000+ Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.ladhod.000.GoodTopAdcPed 16 0.5 16.5 200 100 150 L.ladhod.000.GoodTopAdcPed>0.0
+TH2F lhodo_001_good_pped_vs_pmt_top 'LAD 001+ Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.ladhod.001.GoodTopAdcPed 10 0.5 10.5 200 100 150 L.ladhod.001.GoodTopAdcPed>0.0
+TH2F lhodo_100_good_pped_vs_pmt_top 'LAD 100+ Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.ladhod.100.GoodTopAdcPed 16 0.5 16.5 200 100 150 L.ladhod.100.GoodTopAdcPed>0.0
+TH2F lhodo_101_good_pped_vs_pmt_top 'LAD 101+ Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.ladhod.101.GoodTopAdcPed 10 0.5 10.5 200 100 150 L.ladhod.101.GoodTopAdcPed>0.0
 
-TH2F lhodo_000_good_pped_vs_pmt_btm 'LAD 000- Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.hod.000.GoodBtmAdcPed 16 0.5 16.5 200 100 150 L.hod.000.GoodBtmAdcPed>0.0
-TH2F lhodo_001_good_pped_vs_pmt_btm 'LAD 001- Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.hod.001.GoodBtmAdcPed 10 0.5 10.5 200 100 150 L.hod.001.GoodBtmAdcPed>0.0
-TH2F lhodo_100_good_pped_vs_pmt_btm 'LAD 100- Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.hod.100.GoodBtmAdcPed 16 0.5 16.5 200 100 150 L.hod.100.GoodBtmAdcPed>0.0
-TH2F lhodo_101_good_pped_vs_pmt_btm 'LAD 101- Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.hod.101.GoodBtmAdcPed 10 0.5 10.5 200 100 150 L.hod.101.GoodBtmAdcPed>0.0
+TH2F lhodo_000_good_pped_vs_pmt_btm 'LAD 000- Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.ladhod.000.GoodBtmAdcPed 16 0.5 16.5 200 100 150 L.ladhod.000.GoodBtmAdcPed>0.0
+TH2F lhodo_001_good_pped_vs_pmt_btm 'LAD 001- Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.ladhod.001.GoodBtmAdcPed 10 0.5 10.5 200 100 150 L.ladhod.001.GoodBtmAdcPed>0.0
+TH2F lhodo_100_good_pped_vs_pmt_btm 'LAD 100- Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.ladhod.100.GoodBtmAdcPed 16 0.5 16.5 200 100 150 L.ladhod.100.GoodBtmAdcPed>0.0
+TH2F lhodo_101_good_pped_vs_pmt_btm 'LAD 101- Good Pulse Pedestal vs. PMT Number; PMT Number; Good Pulse Pedestal 0.25 mV' [I+1] L.ladhod.101.GoodBtmAdcPed 10 0.5 10.5 200 100 150 L.ladhod.101.GoodBtmAdcPed>0.0
