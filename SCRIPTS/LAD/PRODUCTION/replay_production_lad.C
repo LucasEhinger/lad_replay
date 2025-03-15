@@ -1,5 +1,5 @@
 // replays both the LAD hodoscope and GEM detectors (not standard spectrometers)
-// #include "../../LAD/LAD_link_defs.h" // Leave this line commented. Used for debugging purposes only.
+#include "../../LAD/LAD_link_defs.h" // Leave this line commented. Used for debugging purposes only.
 void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Get RunNumber and MaxEvent if not provided.
@@ -20,7 +20,8 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Create file name patterns.
   // const char *RunFileNamePattern = "lad_esb_%01d.evio.0";
-  const char *RunFileNamePattern = "ladvme1_%03d.dat.0";
+  // const char *RunFileNamePattern = "ladvme1_%03d.dat.0";
+  const char *RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
   vector<TString> pathList;
   pathList.push_back(".");
   // pathList.push_back("./ROOTfiles/COSMICS/raw/");
@@ -28,7 +29,7 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic");
 
 
-  const char *ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_cosmic_hall_%d_%d.root";
+  const char *ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_wREF_cosmic_hall_%d_%d.root";
 
   // Load Global parameters
   // Add variables to global list.

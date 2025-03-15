@@ -137,12 +137,14 @@ SLOT=20
         12,      5,      9,      0!    l5x09A+
         13,      5,     10,      0!    l5x10A+
         14,      5,     11,      0!    l5x11A+
+        7,       6,     1,       1!    l6x01A+ !Refbar 1
+        15,      6,     1,       0!    l6x01A+ !Refbar 1
 
 ! Caen 1190 module
 SLOT=31
 REFINDEX=3
 ! chan    plane     bar    sig
-     111,   1000,      0,     3!  lFADC_TREF_ROC1
+     127,   1000,      0,     0!  lFADC_TREF_ROC1
 
 SLOT=31
 ! REFINDEX=3
@@ -269,3 +271,5 @@ SLOT=31
        108,       5,      9,      2!    l5x09T+
        109,       5,     10,      2!    l5x10T+
        110,       5,     11,      2!    l5x11T+
+       103,       6,     1,       3!    l6x01T- !Refbar
+       111,       6,     1,       2!    l6x01T+ !Refbar
