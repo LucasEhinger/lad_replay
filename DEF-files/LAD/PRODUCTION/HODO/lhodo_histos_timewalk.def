@@ -16,3 +16,5 @@ TH2F lhodo_101_adc_int_vs_tdc_lead_time_top 'LAD 101+ ADC Int vs. TDC Time; ADC 
 TH2F lhodo_101_adc_int_vs_tdc_lead_time_btm 'LAD 101- ADC Int vs. TDC Time; ADC Int; TDC Time' L.ladhod.101.GoodBtmAdcPulseInt L.ladhod.101.GoodBtmTdcTimeUnCorr  100 0 100 100 0 100
 TH2F lhodo_200_adc_int_vs_tdc_lead_time_top 'LAD 200+ ADC Int vs. TDC Time; ADC Int; TDC Time' L.ladhod.200.GoodTopAdcPulseInt L.ladhod.200.GoodTopTdcTimeUnCorr  100 0 100 100 0 100
 TH2F lhodo_200_adc_int_vs_tdc_lead_time_btm 'LAD 200- ADC Int vs. TDC Time; ADC Int; TDC Time' L.ladhod.200.GoodBtmAdcPulseInt L.ladhod.200.GoodBtmTdcTimeUnCorr  100 0 100 100 0 100
+TH2F lhodo_REFBAR_adc_int_vs_tdc_lead_time_top 'LAD REFBAR_R ADC Int vs. TDC Time; ADC Int; TDC Time' L.ladhod.REFBAR.GoodTopAdcPulseInt L.ladhod.REFBAR.GoodTopTdcTimeUnCorr  100 0 100 100 0 100
+TH2F lhodo_REFBAR_adc_int_vs_tdc_lead_time_btm 'LAD REFBAR_L ADC Int vs. TDC Time; ADC Int; TDC Time' L.ladhod.REFBAR.GoodBtmAdcPulseInt L.ladhod.REFBAR.GoodBtmTdcTimeUnCorr  100 0 100 100 0 100
