@@ -78,9 +78,13 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
     ROOTFileName    = Form(ROOTFileNamePattern, RunNumber, FirstEvent, MaxEvent);
   }
 
-  //LHE. Temp hack for file names
+  pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic");
+  //LHE. Temp edit for file names
+  pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic");
   ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_COIN_cosmic_hall_%d_%d.root";
   ROOTFileName = Form(ROOTFileNamePattern, RunNumber, MaxEvent);
+  //LHE. End temp.
+
   // Load global parameters
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
   gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD_COIN/standard.database");
@@ -247,7 +251,9 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   // THcRun* run = new THcRun( pathList, Form(RunFileNamePattern, RunNumber) );
   // Could lead to an infinite loop, all segments in range analyzed.
 
-  RunFileNamePattern = "ladvme1_%03d.dat.0";
+  // RunFileNamePattern = "ladvme1_%03d.dat.0";
+  RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
+
   vector<string> fileNames = {};
   TString codafilename;
   if (MaxSegment == -1) {

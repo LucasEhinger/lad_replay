@@ -41,4 +41,5 @@ end epics
 #include "DEF-files/COIN/PRODUCTION/GTR/coin_gtr_histos.def"
 #include "DEF-files/COIN/PRODUCTION/KIN/coin_pElec_hProt_kin_histos.def"
 #include "DEF-files/COIN/PRODUCTION/TRIG/coin_trig_histos.def"
+#include "DEF-files/LAD_COIN/PRODUCTION/HODO/ladhod_histos.def"
 
