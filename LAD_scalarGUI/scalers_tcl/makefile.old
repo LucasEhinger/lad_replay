@@ -1,0 +1,36 @@
+
+#############################################
+#            Channel Access Makefile        #
+#############################################
+
+EPICSVER = r3.11
+#INCDIR = -I/usr/site2/epics/$(EPICSVER)/share/epicsH -I/usr/user3/johannes/tcl/tcl
+INCDIR = -I/usr/site5/epics/dvl/hallc_hv/r3_12/base/include \
+	-I/usr/user3/johannes/tcl/hoc
+LIBS = -lca -lUnix -lCom -lPW 
+#LIBDIR = -L/usr/site2/epics/$(EPICSVER)/Unix/hp/bin -L/usr/user3/johannes/tcl/epics
+LIBDIR = -L/usr/site5/epics/dvl/hallc_hv/r3_12/base/lib \
+	-L/usr/user3/johannes/tcl/lib
+
+#SUNOS stuff
+EPICSVER=r3.13
+INCDIR = -I/usr/local/epics/base/include -I../../tcl7.6/generic
+LIBDIR = -L/usr/local/epics/base/lib
+
+CC_SWITCHES = $(INCDIR)
+RANLIB = ranlib
+CC = gcc
+
+OBJS = tcl_ca.o
+
+all: libcatcl.a
+
+libcatcl.a: $(OBJS)
+	rm -f libcatcl.a
+	ar cr libcatcl.a ${OBJS}
+	$(RANLIB) libcatcl.a
+
+.c.o:
+	$(CC) -c $(CC_SWITCHES) $<
+
+
