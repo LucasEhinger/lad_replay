@@ -252,7 +252,8 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   // Could lead to an infinite loop, all segments in range analyzed.
 
   // RunFileNamePattern = "ladvme1_%03d.dat.0";
-  RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
+  // RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
+  RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
 
   vector<string> fileNames = {};
   TString codafilename;
@@ -289,7 +290,9 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   // Set EPICS event type
   analyzer->SetEpicsEvtType(181);
   // Define crate map
-  analyzer->SetCrateMapFileName("MAPS/db_cratemap.dat");
+  // analyzer->SetCrateMapFileName("MAPS/db_cratemap.dat");
+  analyzer->SetCrateMapFileName("MAPS/db_cratemap_lad.dat");// Temp set it to only LAD to avoid error
+
   // Define output ROOT file
   analyzer->SetOutFile(ROOTFileName.Data());
   // Define DEF-file
