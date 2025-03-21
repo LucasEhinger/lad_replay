@@ -10,6 +10,8 @@
 #include "PARAM/LAD/HODO/lhodo_cuts.param"
 #include "PARAM/LAD/HODO/lhodo_calib.param"
 #include "PARAM/LAD/GEN/l_reftime_cut_laddaq.param"
+#include "PARAM/LAD/HODO/lhodo_TWcalib_186.param"
+#include "PARAM/LAD/HODO/ladhodo_Vpcalib.param"
 
 ; LAD GEM Parameter files
 #include "PARAM/LAD/GEM/lgem_geom.param"

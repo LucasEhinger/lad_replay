@@ -31,7 +31,7 @@ TFile *histoFile, *outFile;
 ofstream outParam;
 
 // Declare constants
-static const UInt_t nPlanes    = 5;
+static const UInt_t nPlanes    = 6;
 static const UInt_t nSides     = 2;
 static const UInt_t nBarsMax   = 11;
 static const UInt_t nTwFitPars = 2;
@@ -55,14 +55,16 @@ static const Double_t maxScale     = 0.75;
 static const UInt_t lineWidth = 4;
 static const UInt_t lineStyle = 7;
 
-static const UInt_t nbars[nPlanes]             = {11, 11, 11, 11, 11};
-static const TString planeNames[nPlanes]       = {"000", "001", "100", "101", "200"};
+static const UInt_t nbars[nPlanes]             = {11, 11, 11, 11, 11, 1};
+static const TString planeNames[nPlanes]       = {"000", "001", "100", "101", "200", "REFBAR"};
 static const TString sideNames[nSides]         = {"Top", "Btm"};
 static const TString twFitParNames[nTwFitPars] = {"c_{1}", "c_{2}"};
 
 // Declare directories
 TDirectory *dataDir, *planeDir[nPlanes], *sideDir[nPlanes][nSides];
 TDirectory *twDir[nPlanes][nSides];
+
+TDirectory *outPlaneDir[nPlanes], *outSideDir[nPlanes][nSides];
 // Declare fits
 TF1 *twFit[nPlanes][nSides][nBarsMax], *avgParFit[nPlanes][nSides][nTwFitPars];
 // Declare arrays
@@ -241,9 +243,9 @@ void drawParams(UInt_t iplane) {
     avgParLegend[iplane][ipar]   = new TLegend(0.6, 0.7, 0.9, 0.9);
     for (UInt_t iside = 0; iside < nSides; iside++) {
       if (iside == 0)
-        twFitParLegend[iplane][ipar]->AddEntry(twFitParGraph[iplane][iside][ipar], "Positive Side", "p");
+        twFitParLegend[iplane][ipar]->AddEntry(twFitParGraph[iplane][iside][ipar], "Top Side", "p");
       if (iside == 1)
-        twFitParLegend[iplane][ipar]->AddEntry(twFitParGraph[iplane][iside][ipar], "Negative Side", "p");
+        twFitParLegend[iplane][ipar]->AddEntry(twFitParGraph[iplane][iside][ipar], "Btm Side", "p");
       avgParLegend[iplane][ipar]->AddEntry(
           avgParFit[iplane][iside][ipar],
           "#bar{" + twFitParNames[ipar] + "}" + Form(" = %.2f", avgPar[iplane][iside][ipar]), "l");
@@ -299,7 +301,7 @@ void WriteFitParam(int runNUM) {
   outParam << Form(";LAD Hodoscopes Output Parameter File: Run %d", runNUM) << endl;
   outParam << " " << endl;
   //  outParam << "htofusinginvadc=0 " << " ;set to zero to NOT read old style hodo calib parameters" << endl;
-  outParam << "hTDC_threshold=" << tdcThresh << ". ;units of mV " << endl;
+  outParam << "lTDC_threshold=" << tdcThresh << ". ;units of mV " << endl;
   outParam << " " << endl;
 
   // Fill 3D Par array
@@ -322,72 +324,124 @@ void WriteFitParam(int runNUM) {
 
   // Wrtie to Param FIle
 
-  outParam << ";Param c1-Pos" << endl;
-  outParam << "; " << setw(12) << planeNames[0] << setw(15) << planeNames[1] << setw(15) << planeNames[2] << setw(15) << planeNames[3]<< setw(15) << planeNames[4] << endl;
-  outParam << "hc1_Pos = ";
+  outParam << ";Param c1-Top" << endl;
+  outParam << "; ";
+  for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+    outParam << setw(15) << planeNames[iplane];
+  }
+  outParam << endl;
+  outParam << "lladhodo_c1_Top = ";
   // Loop over all paddles
   for (UInt_t ipaddle = 0; ipaddle < nBarsMax; ipaddle++) {
-    // Write c1-Pos values
+    // Write c1-Top values
     if (ipaddle == 0) {
-      outParam << c1[0][0][ipaddle] << "," << setw(15) << c1[1][0][ipaddle] << "," << setw(15) << c1[2][0][ipaddle]
-               << "," << setw(15) << c1[3][0][ipaddle]<< ","<< setw(15) << c1[4][0][ipaddle] << fixed << endl;
+      for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+        outParam << c1[iplane][0][ipaddle];
+        if (iplane < nPlanes - 1) outParam << "," << setw(15);
+      }
+      outParam << fixed << endl;
     } else {
-      outParam << setw(17) << c1[0][0][ipaddle] << "," << setw(15) << c1[1][0][ipaddle] << "," << setw(15)
-               << c1[2][0][ipaddle] << "," << setw(15) << c1[3][0][ipaddle]<< ","<< setw(15) << c1[4][0][ipaddle] << fixed << endl;
+      for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+        outParam << setw(17) << c1[iplane][0][ipaddle];
+        if (iplane < nPlanes - 1) outParam << "," << setw(15);
+      }
+      outParam << fixed << endl;
     }
   } // end loop over paddles
 
   outParam << " " << endl;
-  outParam << ";Param c1-Neg" << endl;
-  outParam << "; " << setw(12) << planeNames[0] << setw(15) << planeNames[1] << setw(15) << planeNames[2] << setw(15) << planeNames[3]<< setw(15) << planeNames[4] << endl;
-  outParam << "hc1_Neg = ";
+  outParam << ";Param c1-Btm" << endl;
+  outParam << "; ";
+  for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+    outParam << setw(15) << planeNames[iplane];
+  }
+  outParam << endl;
+  outParam << "lladhodo_c1_Btm = ";
   // Loop over all paddles
   for (UInt_t ipaddle = 0; ipaddle < nBarsMax; ipaddle++) {
-    // Write c1-Neg values
+    // Write c1-Btm values
     if (ipaddle == 0) {
-      outParam << c1[0][1][ipaddle] << "," << setw(15) << c1[1][1][ipaddle] << "," << setw(15) << c1[2][1][ipaddle]
-               << "," << setw(15) << c1[3][1][ipaddle]<< ","<< setw(15) << c1[4][1][ipaddle] << fixed << endl;
+      for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+        outParam << c1[iplane][1][ipaddle];
+        if (iplane < nPlanes - 1) outParam << "," << setw(15);
+      }
+      outParam << fixed << endl;
     } else {
-      outParam << setw(17) << c1[0][1][ipaddle] << "," << setw(15) << c1[1][1][ipaddle] << "," << setw(15)
-               << c1[2][1][ipaddle] << "," << setw(15) << c1[3][1][ipaddle]<< ","<< setw(15) << c1[4][1][ipaddle] << fixed << endl;
+      for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+        outParam << setw(17) << c1[iplane][1][ipaddle];
+        if (iplane < nPlanes - 1) outParam << "," << setw(15);
+      }
+      outParam << fixed << endl;
     }
   } // end loop over paddles
 
   outParam << " " << endl;
-  outParam << ";Param c2-Pos" << endl;
-  outParam << "; " << setw(12) << planeNames[0] << setw(15) << planeNames[1] << setw(15) << planeNames[2] << setw(15) << planeNames[3]<< setw(15) << planeNames[4] << endl;
-  outParam << "hc2_Pos = ";
+  outParam << ";Param c2-Top" << endl;
+  outParam << "; ";
+  for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+    outParam << setw(15) << planeNames[iplane];
+  }
+  outParam << endl;
+  outParam << "lladhodo_c2_Top = ";
   // Loop over all paddles
   for (UInt_t ipaddle = 0; ipaddle < nBarsMax; ipaddle++) {
-    // Write c2-Pos values
+    // Write c2-Top values
     if (ipaddle == 0) {
-      outParam << c2[0][0][ipaddle] << "," << setw(15) << c2[1][0][ipaddle] << "," << setw(15) << c2[2][0][ipaddle]
-               << "," << setw(15) << c2[3][0][ipaddle]<< "," << setw(15) << c2[4][0][ipaddle] << fixed << endl;
+      for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+        outParam << c2[iplane][0][ipaddle];
+        if (iplane < nPlanes - 1) outParam << "," << setw(15);
+      }
+      outParam << fixed << endl;
     } else {
-      outParam << setw(17) << c2[0][0][ipaddle] << "," << setw(15) << c2[1][0][ipaddle] << "," << setw(15)
-               << c2[2][0][ipaddle] << "," << setw(15) << c2[3][0][ipaddle]<< "," << setw(15) << c2[4][0][ipaddle] << fixed << endl;
+      for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+        outParam << setw(17) << c2[iplane][0][ipaddle];
+        if (iplane < nPlanes - 1) outParam << "," << setw(15);
+      }
+      outParam << fixed << endl;
     }
   } // end loop over paddles
 
   outParam << " " << endl;
-  outParam << ";Param c2-Neg" << endl;
-  outParam << "; " << setw(12) << planeNames[0] << setw(15) << planeNames[1] << setw(15) << planeNames[2] << setw(15) << planeNames[3]<< setw(15) << planeNames[4] << endl;
-  outParam << "hc2_Neg = ";
+  outParam << ";Param c2-Btm" << endl;
+  outParam << "; ";
+  for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+    outParam << setw(15) << planeNames[iplane];
+  }
+  outParam << endl;
+  outParam << "lladhodo_c2_Btm = ";
   // Loop over all paddles
   for (UInt_t ipaddle = 0; ipaddle < nBarsMax; ipaddle++) {
-    // Write c2-Neg values
+    // Write c2-Btm values
     if (ipaddle == 0) {
-      outParam << c2[0][1][ipaddle] << "," << setw(15) << c2[1][1][ipaddle] << "," << setw(15) << c2[2][1][ipaddle]
-               << "," << setw(15) << c2[3][1][ipaddle]<< "," << setw(15) << c2[4][1][ipaddle] << fixed << endl;
+      for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+        outParam << c2[iplane][1][ipaddle];
+        if (iplane < nPlanes - 1) outParam << "," << setw(15);
+      }
+      outParam << fixed << endl;
     } else {
-      outParam << setw(17) << c2[0][1][ipaddle] << "," << setw(15) << c2[1][1][ipaddle] << "," << setw(15)
-               << c2[2][1][ipaddle] << "," << setw(15) << c2[3][1][ipaddle]<< "," << setw(15) << c2[4][1][ipaddle] << fixed << endl;
+      for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+        outParam << setw(17) << c2[iplane][1][ipaddle];
+        if (iplane < nPlanes - 1) outParam << "," << setw(15);
+      }
+      outParam << fixed << endl;
     }
   } // end loop over paddles
 
   outParam.close();
 } // end method
 
+// Save all canvases to the output file
+void saveCanvases() {
+  outFile->cd();
+  for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+    for (UInt_t iside = 0; iside < nSides; iside++) {
+      twFitCan[iplane][iside]->Write();
+    }
+  }
+  for (UInt_t ipar = 0; ipar < nTwFitPars; ipar++) {
+    twFitParCan[ipar]->Write();
+  }
+}
 //=:=:=:=:=
 //=: Main
 //=:=:=:=:=
@@ -412,9 +466,19 @@ void timeWalkCalib(int run) {
   histoFile = new TFile("timeWalkHistos.root", "READ");
   // Obtain the top level directory
   dataDir = dynamic_cast<TDirectory *>(histoFile->FindObjectAny("hodoUncalib"));
+
+  // Create the output file
+  outFile = new TFile("timeWalkCalibFits.root", "RECREATE");
+  // Create directories for each plane and side
+  // for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
+  //   outPlaneDir[iplane] = outFile->mkdir(planeNames[iplane]);
+  //   for (UInt_t iside = 0; iside < nSides; iside++) {
+  //     outSideDir[iplane][iside] = outPlaneDir[iplane]->mkdir(sideNames[iside]);
+  //   }
+  // }
   // Create the parameter canvases
   for (UInt_t ipar = 0; ipar < nTwFitPars; ipar++)
-    twFitParCan[ipar] = makeCan(2, 2, 1600, 800, twFitParCan[ipar], twFitParNames[ipar] + "FitParCan",
+    twFitParCan[ipar] = makeCan(2, 3, 1600, 800, twFitParCan[ipar], twFitParNames[ipar] + "FitParCan",
                                 "Parameter " + twFitParNames[ipar] + " Canvas");
   // Loop over the planes
   for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
@@ -466,4 +530,9 @@ void timeWalkCalib(int run) {
   } // Plane loop
   // Write to a param file
   WriteFitParam(run);
+  // Save all canvases to the output file
+  saveCanvases();
+  // Close the ROOT files
+  histoFile->Close();
+  outFile->Close();
 }

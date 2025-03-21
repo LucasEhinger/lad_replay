@@ -32,7 +32,7 @@ TFile *replayFile, *outFile;
 TTree *rawDataTree;
 
 // Declare constants
-static const UInt_t nPlanes     = 5;
+static const UInt_t nPlanes     = 6;
 static const UInt_t nSides      = 2;
 static const UInt_t nAdcSignals = 3;
 static const UInt_t nTdcSignals = 1;
@@ -42,12 +42,12 @@ static const UInt_t maxAdcHits  = 4;
 static const UInt_t nMaxBars    = 11;
 
 static const TString spec  = "L";
-static const TString detec = "hod";
+static const TString detec = "ladhod";
 // static const TString trig  = "T";
 // static const TString hms   = "hms";
 
-static const UInt_t nbars[nPlanes]       = {11, 11, 11, 11, 11};
-static const TString planeNames[nPlanes] = {"000", "001", "100", "101", "200"};
+static const UInt_t nbars[nPlanes]       = {11, 11, 11, 11, 11, 1};
+static const TString planeNames[nPlanes] = {"000", "001", "100", "101", "200", "REFBAR"};
 static const TString sideNames[nSides]   = {"Top", "Btm"};
 // static const TString sideNames[nSides]     = {"GoodTop", "GoodBtm"};
 static const TString signalNames[nSignals] = {"Adc", "Tdc"};
@@ -66,10 +66,11 @@ static const Double_t refAdcPulseAmpCutLow   = 50.0;   // Units of mV
 static const Double_t refAdcPulseAmpCutHigh  = 60.0;   // Units of mV
 static const Double_t refAdcPulseTimeCutLow  = 210.0;  // Units of ns
 static const Double_t refAdcPulseTimeCutHigh = 225.0;  // Units of ns
-static const Double_t adcTdcTimeDiffCutLow   = -100.0; // Units of ns
+static const Double_t adcTdcTimeDiffCutLow   = -400.0; // Units of ns
 static const Double_t adcTdcTimeDiffCutHigh  = 100.0;  // Units of ns
 static const Double_t calEtotCutVal          = 0.100;  // Units of GeV
 static const Double_t cerNpeSumCutVal        = 1.5;    // Units of NPE
+static const Double_t ADC_TDC_Diff_Center    = -345.0;    // Units of ns
 // static const Double_t adcTdcTimeDiffCutLow   = -6000.0;  // Units of ns
 // static const Double_t adcTdcTimeDiffCutHigh  = 1000.0;  // Units of ns
 
@@ -87,14 +88,15 @@ Double_t hodoAdcPulseAmp[nPlanes][nSides][nSignals][nMaxBars * maxAdcHits];
 Double_t hodoAdcErrorFlag[nPlanes][nSides][nSignals][nMaxBars * maxAdcHits];
 // TDC Data
 Double_t hodoTdcTimeRaw[nPlanes][nSides][nSignals][nMaxBars * maxTdcHits];
+Double_t hodoRefTdcTimeRaw[nPlanes][nSides][nSignals][nMaxBars * maxTdcHits];
 // Trigger apparatus data
 Double_t refAdcPulseTimeRaw, refAdcPulseAmp, refAdcMultiplicity;
-Double_t refT1TdcTimeRaw, refT2TdcTimeRaw;
+Double_t refT2TdcTimeRaw;
 // Declare variables to steer data to arrays
 TString *adcBaseName, *adcNdataName, *adcPaddleName;
 TString *adcErrorFlagName, *adcPulseTimeRawName, *adcPulseAmpName;
 TString *tdcBaseName, *tdcNdataName, *tdcPaddleName;
-TString *tdcTimeRawName;
+TString *tdcTimeRawName, *tdcRefTimeRawName;
 // Declare directories for output ROOT file
 TDirectory *trigRawDir, *hodoRawDir, *hodoUncalibDir;
 TDirectory *planeRawDir[nPlanes], *sideRawDir[nPlanes][nSides], *planeUncalibDir[nPlanes],
@@ -103,7 +105,7 @@ TDirectory *adcTimeWalkDir[nPlanes][nSides], *tdcTimeWalkDir[nPlanes][nSides], *
 // Declare histos
 // 1D histos
 TH1F *h1_refAdcPulseTimeRaw, *h1_refAdcPulseAmp, *h1_refAdcMultiplicity;
-TH1F *h1_refT1TdcTimeRaw, *h1_refT2TdcTimeRaw;
+TH1F *h1_refT2TdcTimeRaw;
 // 2D histos
 TH2F *h2_adcErrorFlag[nPlanes][nSides];
 TH2F *h2_adcPulseTimeRaw[nPlanes][nSides];
@@ -124,7 +126,7 @@ UInt_t nentries, ievent, adcPaddleNum, tdcPaddleNum;
 Int_t numAdcHits, numTdcHits;
 
 Double_t adcErrorFlag, adcPulseTimeRaw, adcPulseTime, adcPulseAmp;
-Double_t tdcTimeRaw, tdcTime, adcTdcTimeDiff;
+Double_t tdcTimeRaw, tdcRefTime, tdcTime, adcTdcTimeDiff;
 Double_t calEtot, cerNpeSum;
 
 Bool_t adcRefMultiplicityCut, adcRefPulseAmpCut, adcRefPulseTimeCut;
@@ -155,11 +157,6 @@ void generatePlots(UInt_t iplane, UInt_t iside, UInt_t ipaddle) {
         new TH1F("h1_refAdcMultiplicity", "ROC1 FADC Reference Multiplicity; Raw FADC Multiplicity; Number of Entries",
                  5, -0.5, 4.5);
   // TDC reference
-  if (!h1_refT1TdcTimeRaw)
-    h1_refT1TdcTimeRaw = new TH1F(
-        "h1_refT1TdcTimeRaw",
-        "ROC1 T1 Raw TDC Reference TDC Time (Slot 20, Channel 15); Raw TDC Time (ns); Number of Entries / 100 ps", 6000,
-        0, 600);
   if (!h1_refT2TdcTimeRaw)
     h1_refT2TdcTimeRaw = new TH1F(
         "h1_refT2TdcTimeRaw",
@@ -207,7 +204,7 @@ void generatePlots(UInt_t iplane, UInt_t iside, UInt_t ipaddle) {
     h2_tdcTimeRaw[iplane][iside] = new TH2F("h2_tdcTimeRaw",
                                             "Raw TDC Time Plane " + planeNames[iplane] + " Side " + sideNames[iside] +
                                                 "; PMT Number; Raw TDC Time (ns) / 100 ps",
-                                            nbars[iplane], 0.5, nbars[iplane] + 0.5, 4000, 0, 400);
+                                            nbars[iplane], 0.5, nbars[iplane] + 0.5, 4000, 0, 1500);//FIXME. Changed 400 -> 1500
 
   // Create plane directory for uncalibrated hodoscope quantities
   hodoUncalibDir = dynamic_cast<TDirectory *>(outFile->Get("hodoUncalib"));
@@ -293,16 +290,16 @@ void generatePlots(UInt_t iplane, UInt_t iside, UInt_t ipaddle) {
         new TH2F(Form("h2_adcTdcTimeDiffWalk_paddle_%d", ipaddle + 1),
                  "TDC-ADC Time vs. Pulse Amp Plane " + planeNames[iplane] + " Side " + sideNames[iside] +
                      Form(" Paddle %d", ipaddle + 1) + "; Pulse Amplitude (mV) / 1 mV;  TDC-ADC Time (ns) / 100 ps",
-                 1000, 0, 1000, 150, -20, 20);
+                 1000, 0, 1000, 150, ADC_TDC_Diff_Center-20, ADC_TDC_Diff_Center+20); //FIXME. Changed pm20 -> pm400
 
 } // generatePlots()
 
-// void timeWalkHistos(TString inputname,Int_t runNum, string SPEC_flg) {    //SPEC_flg ---> "hms"  or "coin"
+// void timeWalkHistos(TString inputname,Int_t runNum) {    //SPEC_flg ---> "hms"  or "coin"
 void timeWalkHistos(Int_t runNum) { // SPEC_flg ---> "hms"  or "coin"
 
   // TODO: fixme. remove the hard coding here
   // TString inputname = Form("../../ROOTfiles/hms_replay_production_5000_-1.root");
-  TString inputname = Form("../../ROOTfiles/hms_replay_sim_5000_-1.root");
+  TString inputname = Form("../../ROOTfiles/COSMICS/LAD_wREF_cosmic_hall_186_-1.root");
   string SPEC_flg   = "hms";
 
   // Global ROOT settings
@@ -332,7 +329,6 @@ void timeWalkHistos(Int_t runNum) { // SPEC_flg ---> "hms"  or "coin"
   rawDataTree->SetBranchAddress(Form("T.%s.hFADC_TREF_ROC1_adcPulseTimeRaw", SPEC_flg.c_str()), &refAdcPulseTimeRaw);
   rawDataTree->SetBranchAddress(Form("T.%s.hFADC_TREF_ROC1_adcPulseAmp", SPEC_flg.c_str()), &refAdcPulseAmp);
   rawDataTree->SetBranchAddress(Form("T.%s.hFADC_TREF_ROC1_adcMultiplicity", SPEC_flg.c_str()), &refAdcMultiplicity);
-  rawDataTree->SetBranchAddress(Form("T.%s.hT1_tdcTimeRaw", SPEC_flg.c_str()), &refT1TdcTimeRaw);
   rawDataTree->SetBranchAddress(Form("T.%s.hT2_tdcTimeRaw", SPEC_flg.c_str()), &refT2TdcTimeRaw);
   rawDataTree->SetBranchAddress("H.cal.etot", &calEtot);
   rawDataTree->SetBranchAddress("H.cer.npeSum", &cerNpeSum);
@@ -389,7 +385,9 @@ void timeWalkHistos(Int_t runNum) { // SPEC_flg ---> "hms"  or "coin"
           for (UInt_t itdcdata = 0; itdcdata < nTdcSignals; itdcdata++) {
             if (tdcData[itdcdata] == "TimeRaw") {
               tdcTimeRawName = new TString(*tdcBaseName + "TimeRaw");
+              tdcRefTimeRawName = new TString(*tdcBaseName + "RefTime");
               rawDataTree->SetBranchAddress(*tdcTimeRawName, &hodoTdcTimeRaw[iplane][iside][isignal]);
+              rawDataTree->SetBranchAddress(*tdcRefTimeRawName, &hodoRefTdcTimeRaw[iplane][iside][isignal]);
             } // Raw TDC time leaf
           } // TDC signal data loop
         } // TDC signal
@@ -419,7 +417,6 @@ void timeWalkHistos(Int_t runNum) { // SPEC_flg ---> "hms"  or "coin"
     h1_refAdcPulseTimeRaw->Fill(refAdcPulseTimeRaw * adcChanToTime);
     h1_refAdcPulseAmp->Fill(refAdcPulseAmp);
     h1_refAdcMultiplicity->Fill(refAdcMultiplicity);
-    h1_refT1TdcTimeRaw->Fill(refT1TdcTimeRaw * tdcChanToTime);
     h1_refT2TdcTimeRaw->Fill(refT2TdcTimeRaw * tdcChanToTime);
     // Loop over the planes, sides, signals, data arrays, and fill hodoscope histograms
     for (UInt_t iplane = 0; iplane < nPlanes; iplane++) {
@@ -464,7 +461,8 @@ void timeWalkHistos(Int_t runNum) { // SPEC_flg ---> "hms"  or "coin"
                 // Obtain variables
                 tdcPaddleNum = tdcPaddle[iplane][iside][isignal][itdchit];
                 tdcTimeRaw   = hodoTdcTimeRaw[iplane][iside][isignal][itdchit] * tdcChanToTime;
-                tdcTime      = tdcTimeRaw - refT2TdcTimeRaw * tdcChanToTime;
+                tdcRefTime    = hodoRefTdcTimeRaw[iplane][iside][isignal][itdchit] * tdcChanToTime;
+                tdcTime       = tdcTimeRaw - tdcRefTime;
                 if (tdcData[itdcdata] == "TimeRaw") {
                   h2_tdcTimeRaw[iplane][iside]->Fill(tdcPaddleNum, tdcTimeRaw); // LHE debug
                   h2_tdcTime[iplane][iside]->Fill(tdcPaddleNum, tdcTime);
@@ -473,11 +471,11 @@ void timeWalkHistos(Int_t runNum) { // SPEC_flg ---> "hms"  or "coin"
             } // TDC signal data loop
           } // TDC signal
 
-          // Define cuts
-          adcRefMultiplicityCut = (refAdcMultiplicity == 1.0);
-          adcRefPulseAmpCut     = (refAdcPulseAmp < refAdcPulseAmpCutLow || refAdcPulseAmp > refAdcPulseAmpCutHigh);
-          adcRefPulseTimeCut    = (refAdcPulseTimeRaw * adcChanToTime < refAdcPulseTimeCutLow ||
-                                refAdcPulseTimeRaw * adcChanToTime > refAdcPulseTimeCutHigh);
+          // Define cuts (Don't have ADC ref)
+          // adcRefMultiplicityCut = (refAdcMultiplicity == 1.0); 
+          // adcRefPulseAmpCut     = (refAdcPulseAmp < refAdcPulseAmpCutLow || refAdcPulseAmp > refAdcPulseAmpCutHigh);
+          // adcRefPulseTimeCut    = (refAdcPulseTimeRaw * adcChanToTime < refAdcPulseTimeCutLow ||
+          //                       refAdcPulseTimeRaw * adcChanToTime > refAdcPulseTimeCutHigh);
           // Implement cuts
           // if (adcRefMultiplicityCut || adcRefPulseAmpCut || adcRefPulseTimeCut) continue;
           // Acquire the hodoscope ADC data objects
@@ -520,14 +518,15 @@ void timeWalkHistos(Int_t runNum) { // SPEC_flg ---> "hms"  or "coin"
                         // Obtain variables
                         tdcPaddleNum   = UInt_t(tdcPaddle[iplane][iside][jsignal][itdchit]);
                         tdcTimeRaw     = hodoTdcTimeRaw[iplane][iside][jsignal][itdchit] * tdcChanToTime;
-                        tdcTime        = tdcTimeRaw - refT2TdcTimeRaw * tdcChanToTime;
+                        tdcRefTime     = hodoRefTdcTimeRaw[iplane][iside][jsignal][itdchit] * tdcChanToTime;
+                        tdcTime        = tdcTimeRaw - tdcRefTime;
                         adcTdcTimeDiff = tdcTime - adcPulseTime;
                         // Define cuts
                         adcAndTdcHitCut = (adcPaddleNum != tdcPaddleNum);
                         adcTdcTimeDiffCut =
                             (adcTdcTimeDiff < adcTdcTimeDiffCutLow || adcTdcTimeDiff > adcTdcTimeDiffCutHigh);
                         // Implement cuts
-                        // if (adcAndTdcHitCut || adcTdcTimeDiffCut) continue; //TODO: fixme. remove the hard coding
+                        if (adcAndTdcHitCut || adcTdcTimeDiffCut) continue; //TODO: fixme. remove the hard coding
                         // here and uncomment this line
                         h2_adcPulseAmpCuts[iplane][iside]->Fill(tdcPaddleNum, adcPulseAmp);
                         h2_adcTdcTimeDiff[iplane][iside]->Fill(tdcPaddleNum, adcTdcTimeDiff);
