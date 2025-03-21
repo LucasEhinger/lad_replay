@@ -21,15 +21,19 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // Create file name patterns.
   // const char *RunFileNamePattern = "lad_esb_%01d.evio.0";
   // const char *RunFileNamePattern = "ladvme1_%03d.dat.0";
-  const char *RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
+  // const char *RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
+  // const char *RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
+  // const char *RunFileNamePattern = "lad_LADonly_%02d.dat.0";
+  const char *RunFileNamePattern = "lad_GEMonly_%02d.dat.0";
+
   vector<TString> pathList;
   pathList.push_back(".");
   // pathList.push_back("./ROOTfiles/COSMICS/raw/");
   pathList.push_back("/cache/hallc/c-lad/raw/");
   pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic");
 
-
-  const char *ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_wREF_cosmic_hall_%d_%d.root";
+  const char *ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_wGEM_cosmic_hall_%d_%d.root";
+  // const char *ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_wREF_cosmic_hall_%d_%d.root";
 
   // Load Global parameters
   // Add variables to global list.
@@ -49,7 +53,6 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   gHcDetectorMap = new THcDetectorMap();
   gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo.map");
 
-
   // Add LAD detector
   THcLADSpectrometer *LAD = new THcLADSpectrometer("L", "LAD");
   gHaApps->Add(LAD);
@@ -59,9 +62,6 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   THcLADGEM *gem = new THcLADGEM("gem", "gem");
   LAD->AddDetector(gem);
-
-
-
 
   // // Add handler for prestart event 125.
   // THcConfigEvtHandler *ev125 = new THcConfigEvtHandler("HC", "Config Event type 125");
@@ -131,5 +131,6 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   analyzer->Process(run);
   // Create report file from template.
   // analyzer->PrintReport("TEMPLATES/LAD/PRODUCTION/lstackana_production.template",
-  //                       Form("REPORT_OUTPUT/LAD/PRODUCTION/replay_lad_production_%d_%d.report", RunNumber, MaxEvent));
+  //                       Form("REPORT_OUTPUT/LAD/PRODUCTION/replay_lad_production_%d_%d.report", RunNumber,
+  //                       MaxEvent));
 }
