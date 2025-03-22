@@ -1,0 +1,7 @@
+Block: LAD
+
+# Cuts:
+P_singletrack         P.gem.trk.ntracks==1
+H_singletrack         H.gem.trk.ntracks==1
+P_anytrack            P.gem.trk.ntracks>0
+H_anytrack            H.gem.trk.ntracks>0

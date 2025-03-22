@@ -118,17 +118,6 @@ TH2F pladhod_200_good_diff_dist_track 'LAD 200 Good Diff Dist Track; PMT Number;
 TH2F pladhod_REFBAR_good_diff_dist_track 'LAD REFBAR Good Diff Dist Track; PMT Number; Hit Position' [I+1] P.ladhod.REFBAR.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500
 
 #---------------------------------
-# LAD HODO GOOD DIFF DIST TRACK
-#---------------------------------
-
-TH2F pladhod_000_good_diff_dist_track 'LAD 000 Good Diff Dist Track; PMT Number; Hit Position' [I+1] P.ladhod.000.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-TH2F pladhod_001_good_diff_dist_track 'LAD 001 Good Diff Dist Track; PMT Number; Hit Position' [I+1] P.ladhod.001.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-TH2F pladhod_100_good_diff_dist_track 'LAD 100 Good Diff Dist Track; PMT Number; Hit Position' [I+1] P.ladhod.100.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-TH2F pladhod_101_good_diff_dist_track 'LAD 101 Good Diff Dist Track; PMT Number; Hit Position' [I+1] P.ladhod.101.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-TH2F pladhod_200_good_diff_dist_track 'LAD 200 Good Diff Dist Track; PMT Number; Hit Position' [I+1] P.ladhod.200.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-TH2F pladhod_REFBAR_good_diff_dist_track 'LAD REFBAR Good Diff Dist Track; PMT Number; Hit Position' [I+1] P.ladhod.REFBAR.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-
-#---------------------------------
 # LAD HODO GOOD HIT TIME DIFF
 #---------------------------------
 
@@ -287,17 +276,6 @@ TH2F hladhod_100_good_diff_dist_track 'LAD 100 Good Diff Dist Track; PMT Number;
 TH2F hladhod_101_good_diff_dist_track 'LAD 101 Good Diff Dist Track; PMT Number; Hit Position' [I+1] H.ladhod.101.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
 TH2F hladhod_200_good_diff_dist_track 'LAD 200 Good Diff Dist Track; PMT Number; Hit Position' [I+1] H.ladhod.200.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
 TH2F hladhod_REFBAR_good_diff_dist_track 'LAD REFBAR Good Diff Dist Track; PMT Number; Hit Position' [I+1] H.ladhod.REFBAR.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500
-
-#---------------------------------
-# LAD HODO GOOD DIFF DIST TRACK
-#---------------------------------
-
-TH2F hladhod_000_good_diff_dist_track 'LAD 000 Good Diff Dist Track; PMT Number; Hit Position' [I+1] H.ladhod.000.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-TH2F hladhod_001_good_diff_dist_track 'LAD 001 Good Diff Dist Track; PMT Number; Hit Position' [I+1] H.ladhod.001.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-TH2F hladhod_100_good_diff_dist_track 'LAD 100 Good Diff Dist Track; PMT Number; Hit Position' [I+1] H.ladhod.100.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-TH2F hladhod_101_good_diff_dist_track 'LAD 101 Good Diff Dist Track; PMT Number; Hit Position' [I+1] H.ladhod.101.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-TH2F hladhod_200_good_diff_dist_track 'LAD 200 Good Diff Dist Track; PMT Number; Hit Position' [I+1] H.ladhod.200.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
-TH2F hladhod_REFBAR_good_diff_dist_track 'LAD REFBAR Good Diff Dist Track; PMT Number; Hit Position' [I+1] H.ladhod.REFBAR.GoodDiffDistTrack[I] 11 0.5 11.5 200 -500 500 
 
 #---------------------------------
 # LAD HODO GOOD HIT TIME DIFF
