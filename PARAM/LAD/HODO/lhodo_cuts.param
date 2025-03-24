@@ -18,7 +18,7 @@ lladhodo_adc_mode=1
 
 ;Tolerance between hodo hit position and track position
 lladhodo_track_tolerance_long = 400 ;cm
-lladhodo_track_tolerance_trans = 5. ;cm
+lladhodo_track_tolerance_trans = 500 ;cm
 
 ; lstart_time_center  center of allowed time window (ns)
 lladstart_time_center = 32.

@@ -157,8 +157,8 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   THaGoldenTrack *gtr = new THaGoldenTrack("P.gtr", "SHMS Golden Track", "P");
   gHaPhysics->Add(gtr);
   // Calculate primary (scattered beam - usually electrons) kinematics
-  THcPrimaryKine *kin = new THcPrimaryKine("P.kin", "SHMS Single Arm Kinematics", "P", "P.rb");
-  gHaPhysics->Add(kin);
+  THcPrimaryKine *pkin = new THcPrimaryKine("P.kin", "SHMS Single Arm Kinematics", "P", "P.rb");
+  gHaPhysics->Add(pkin);
   // Calculate the hodoscope efficiencies
   THcHodoEff *peff = new THcHodoEff("phodeff", "SHMS hodo efficiency", "P.hod");
   gHaPhysics->Add(peff);
@@ -211,6 +211,11 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   // Calculate golden track quantities
   THaGoldenTrack *hgtr = new THaGoldenTrack("H.gtr", "HMS Golden Track", "H");
   gHaPhysics->Add(hgtr);
+
+  // Calculate primary (scattered beam - usually electrons) kinematics
+  THcPrimaryKine *hkin = new THcPrimaryKine("H.kin", "HMS Single Arm Kinematics", "H", "H.rb");
+  gHaPhysics->Add(hkin);
+
   // Calculate the hodoscope efficiencies
   THcHodoEff *heff = new THcHodoEff("hhodeff", "HMS hodo efficiency", "H.hod");
   gHaPhysics->Add(heff);
@@ -232,8 +237,8 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
 
 
   // Add event handler for DAQ configuration event
-  THcConfigEvtHandler *pconfig = new THcConfigEvtHandler("pconfig", "Hall C configuration event handler");
-  gHaEvtHandlers->Add(pconfig);
+  THcConfigEvtHandler *config = new THcConfigEvtHandler("config", "Hall C configuration event handler");
+  gHaEvtHandlers->Add(config);
 
   // Set up the analyzer - we use the standard one,
   // but this could be an experiment-specific one as well.
@@ -252,8 +257,8 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   // Could lead to an infinite loop, all segments in range analyzed.
 
   // RunFileNamePattern = "ladvme1_%03d.dat.0";
-  // RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
-  RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
+  RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
+  // RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
 
   vector<string> fileNames = {};
   TString codafilename;
@@ -290,8 +295,8 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   // Set EPICS event type
   analyzer->SetEpicsEvtType(181);
   // Define crate map
-  // analyzer->SetCrateMapFileName("MAPS/db_cratemap.dat");
-  analyzer->SetCrateMapFileName("MAPS/db_cratemap_lad.dat");// Temp set it to only LAD to avoid error
+  analyzer->SetCrateMapFileName("MAPS/db_cratemap.dat");
+  // analyzer->SetCrateMapFileName("MAPS/db_cratemap_lad.dat");// Temp set it to only LAD to avoid error
 
   // Define output ROOT file
   analyzer->SetOutFile(ROOTFileName.Data());
