@@ -9,8 +9,8 @@ ROC=9
 SLOT=31
 REFINDEX=3
 ! chan    plane     bar    sig
-    113,   1000,      0,     3!  lTrig2 (use this for cosmics)
-!!    112,   1000,      0,     3!  lTrig1
+!    113,   1000,      0,     3!  lTrig2 (LAD hodo only)
+    112,   1000,      0,     3!  lTrig1 (GEM refbar + LAD hodo)
 
 ! F250 modules
 SLOT=14
