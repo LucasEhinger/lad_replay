@@ -1,5 +1,5 @@
-; block T.coin.hTRIG*
-; block T.coin.pTRIG*
+# block T.coin.hTRIG*
+# block T.coin.pTRIG*
 
 
 block H.cer.npe*
