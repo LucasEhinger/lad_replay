@@ -2,11 +2,11 @@
 
 ; flags
 lgem_commonmode_flag = 2
-lgem_zerosuppress = 0
+lgem_zerosuppress = 1 ; changed
 lgem_zerosuppress_nsigma = 5.0
 lgem_onlinezerosuppress = 0
-lgem_pedsub_online = 0
-lgem_max2Dhits = 10000;
+lgem_pedsub_online = 1 ;changed
+lgem_max2Dhits = 10000000 ;changed
 
 ; place holder for flags, parameters
 lgem_pededstal_mode = 0

@@ -4,8 +4,8 @@
 lgem_chanmap_file = "MAPS/LAD/DETEC/GEM/lgem_chan.map" ; 
 ;If using sim (is_mc=1), chanmap must be "MAPS/LAD/DETEC/GEM/lgem_chan_mc.map"
 
-lgem_pedfile = "PARAM/LAD/GEM/gem_ped_255.dat" ;
-lgem_cmfile = "PARAM/LAD/GEM/CommonModeRange_255.txt" ; 
+lgem_pedfile = "PARAM/LAD/GEM/gem_ped_295.dat" ;
+lgem_cmfile = "PARAM/LAD/GEM/CommonModeRange_295.txt" ; 
 
 lgem_num_modules = 2;
 lgem_num_layers = 2;

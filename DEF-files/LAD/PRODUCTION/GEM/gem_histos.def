@@ -33,8 +33,8 @@ TH1D h1_gem_clustTimeMeanV_1 'Cluster time 1' L.gem.clust.adc[I] 6 -0.5 5.5 L.ge
 
 # tracks
 TH1D h1_gem_ntracks 'Number of track candidates; N tracks found' L.gem.trk.ntracks 20 -0.5 19.5 
-TH2D h2_gem_2dhit_0 'Layer 0 XY space points (2Dhits); x; y' L.gem.trk.y1 L.gem.trk.x1 100 -1 1 100 -1 1
-TH2D h2_gem_2dhit_1 'Layer 1 XY space points (2Dhits); x; y' L.gem.trk.y2 L.gem.trk.x2 100 -1 1 100 -1 1
+TH2D h2_gem_2dhit_0 'Layer 0 XY space points (2Dhits); x; y' L.gem.trk.x1_local L.gem.trk.y1_local 100 -0.65 0.65 100 -0.35 0.35
+TH2D h2_gem_2dhit_1 'Layer 1 XY space points (2Dhits); x; y' L.gem.trk.x2_local L.gem.trk.y2_local 100 -0.65 0.65 100 -0.35 0.35
 TH1D h1_gem_track_t 'Time mean; Avg. time' L.gem.trk.t 100 0 100
 TH1D h1_gem_track_dt 'Time difference; dt' L.gem.trk.dt 100 -10 10
 TH1D h1_gem_track_d0 'Track DCA; DCA' L.gem.trk.d0 150 0 1.5
