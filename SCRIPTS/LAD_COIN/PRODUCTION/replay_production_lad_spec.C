@@ -91,8 +91,9 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
-  // Load parameters for SHMS trigger configuration
-  // gHcParms->Load("PARAM/TRIG/tshms.param");
+  // Load parameters for HMS and SHMS trigger configuration
+  gHcParms->Load("PARAM/TRIG/tshms.param");
+  gHcParms->Load("PARAM/TRIG/thms.param");
   // Load fadc debug parameters
   // gHcParms->Load("PARAM/SHMS/GEN/p_fadc_debug.param");
 
@@ -104,17 +105,18 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   // Podd::DecData *decData = new Podd::DecData("D", "Decoder Raw Data");
   // gHaApps->Add(decData);
 
-  //FIXME. LHE. Temporarily commenting this out, since it caused errors
   // Add trigger apparatus
-  // THaApparatus *TRG = new THcTrigApp("T", "TRG");
-  // gHaApps->Add(TRG);
-  // // Add trigger detector to trigger apparatus
-  // THcTrigDet *shms = new THcTrigDet("shms", "SHMS Trigger Information");
-  // TRG->AddDetector(shms);
+  THaApparatus *TRG = new THcTrigApp("T", "TRG");
+  gHaApps->Add(TRG);
 
   //////////////////////////////////////////////////////////////////////////
   //      SHMS
   //////////////////////////////////////////////////////////////////////////
+
+  // Add trigger detector to trigger apparatus
+  THcTrigDet *shms = new THcTrigDet("shms", "SHMS Trigger Information");
+  TRG->AddDetector(shms);
+
   // Set up the equipment to be analyzed
   THcHallCSpectrometer *SHMS = new THcHallCSpectrometer("P", "SHMS");
   gHaApps->Add(SHMS);
@@ -174,6 +176,9 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   //////////////////////////////////////////////////////////////////////////
   //      HMS
   //////////////////////////////////////////////////////////////////////////
+  THcTrigDet *hms = new THcTrigDet("hms", "HMS Trigger Information");
+  TRG->AddDetector(hms);
+
   THcHallCSpectrometer *HMS = new THcHallCSpectrometer("H", "HMS");
   gHaApps->Add(HMS);
   // Add drift chambers to HMS apparatus
@@ -257,8 +262,8 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   // Could lead to an infinite loop, all segments in range analyzed.
 
   // RunFileNamePattern = "ladvme1_%03d.dat.0";
-  RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
-  // RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
+  // RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
+  RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
 
   vector<string> fileNames = {};
   TString codafilename;
