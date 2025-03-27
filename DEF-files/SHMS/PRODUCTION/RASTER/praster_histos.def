@@ -54,12 +54,12 @@ TH2F pFRBpos_XvsY_us 'SHMS FRB X vs Y (Upstream Foil Cut); FRB X Position (cm); 
 TH2F pFRApos_XvsY_ds 'SHMS FRA X vs Y (Downstream Foil Cut); FRA X Position (cm); FRA Y Position (cm)' P.rb.raster.fr_xa P.rb.raster.fr_ya 300 -0.6 0.6 300 -0.6 0.6 P.dc.ntrack>0&&P.react.z>6.67&&P.react.z<20.01
 TH2F pFRBpos_XvsY_ds 'SHMS FRB X vs Y (Downstream Foil Cut); FRB X Position (cm); FRB Y Position (cm)' P.rb.raster.fr_xb P.rb.raster.fr_yb 300 -0.6 0.6 300 -0.6 0.6 P.dc.ntrack>0&&P.react.z>6.67&&P.react.z<20.01
 
-TH1F hBPMA_X 'Beam BPMA_X ; BPMA_X  (CM); Counts' P.rb.raster.fr_xbpmA 300 -.3 .3
-TH1F hBPMB_X 'Beam BPMB_X ; BPMB_X  (CM); Counts' P.rb.raster.fr_xbpmB 300 -.3 .3
-TH1F hBPMC_X 'Beam BPMC_X ; BPMC_X  (CM); Counts' P.rb.raster.fr_xbpmC 300 -.3 .3
-TH1F hBPMT_X 'Beam BPMT_X ; BPM_X projected to target  (CM); Counts' P.rb.raster.fr_xbpm_tar 300 -.3 .3
-TH1F hBPMA_Y 'Beam BPMA_Y ; BPMA_Y  (CM); Counts' P.rb.raster.fr_ybpmA 300 -.3 .3
-TH1F hBPMB_Y 'Beam BPMB_Y ; BPMB_Y  (CM); Counts' P.rb.raster.fr_ybpmB 300 -.3 .3
-TH1F hBPMC_Y 'Beam BPMC_Y ; BPMC_Y  (CM); Counts' P.rb.raster.fr_ybpmC 300 -.3 .3
-TH1F hBPMT_Y 'Beam BPMT_Y ; BPM_Y projected to target  (CM); Counts' P.rb.raster.fr_ybpm_tar 300 -.3 .3
+TH1F pBPMA_X 'Beam BPMA_X ; BPMA_X  (CM); Counts' P.rb.raster.fr_xbpmA 300 -.3 .3
+TH1F pBPMB_X 'Beam BPMB_X ; BPMB_X  (CM); Counts' P.rb.raster.fr_xbpmB 300 -.3 .3
+TH1F pBPMC_X 'Beam BPMC_X ; BPMC_X  (CM); Counts' P.rb.raster.fr_xbpmC 300 -.3 .3
+TH1F pBPMT_X 'Beam BPMT_X ; BPM_X projected to target  (CM); Counts' P.rb.raster.fr_xbpm_tar 300 -.3 .3
+TH1F pBPMA_Y 'Beam BPMA_Y ; BPMA_Y  (CM); Counts' P.rb.raster.fr_ybpmA 300 -.3 .3
+TH1F pBPMB_Y 'Beam BPMB_Y ; BPMB_Y  (CM); Counts' P.rb.raster.fr_ybpmB 300 -.3 .3
+TH1F pBPMC_Y 'Beam BPMC_Y ; BPMC_Y  (CM); Counts' P.rb.raster.fr_ybpmC 300 -.3 .3
+TH1F pBPMT_Y 'Beam BPMT_Y ; BPM_Y projected to target  (CM); Counts' P.rb.raster.fr_ybpm_tar 300 -.3 .3
 
