@@ -25,25 +25,25 @@ void ped_tracking_ladonly(TString golden_file = "", TString detector = "",
   }
 
   TString histname = Form("%s%s", spect.Data(), detector.Data());
-  if (histname.Contains("hodo") && histname.Contains("000") && polarity == 1)
+  if (histname.Contains("ladhod") && histname.Contains("000") && polarity == 1)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_top");
-  if (histname.Contains("hodo") && histname.Contains("000") && polarity == 2)
+  if (histname.Contains("ladhod") && histname.Contains("000") && polarity == 2)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_btm");
-  if (histname.Contains("hodo") && histname.Contains("001") && polarity == 1)
+  if (histname.Contains("ladhod") && histname.Contains("001") && polarity == 1)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_top");
-  if (histname.Contains("hodo") && histname.Contains("001") && polarity == 2)
+  if (histname.Contains("ladhod") && histname.Contains("001") && polarity == 2)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_btm");
-  if (histname.Contains("hodo") && histname.Contains("100") && polarity == 1)
+  if (histname.Contains("ladhod") && histname.Contains("100") && polarity == 1)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_top");
-  if (histname.Contains("hodo") && histname.Contains("100") && polarity == 2)
+  if (histname.Contains("ladhod") && histname.Contains("100") && polarity == 2)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_btm");
-  if (histname.Contains("hodo") && histname.Contains("101") && polarity == 1)
+  if (histname.Contains("ladhod") && histname.Contains("101") && polarity == 1)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_top");
-  if (histname.Contains("hodo") && histname.Contains("101") && polarity == 2)
+  if (histname.Contains("ladhod") && histname.Contains("101") && polarity == 2)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_btm");
-  if (histname.Contains("hodo") && histname.Contains("200") && polarity == 1)
+  if (histname.Contains("ladhod") && histname.Contains("200") && polarity == 1)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_top");
-  if (histname.Contains("hodo") && histname.Contains("200") && polarity == 2)
+  if (histname.Contains("ladhod") && histname.Contains("200") && polarity == 2)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_btm");
   if (histname.Contains("aero") && polarity == 1)
     histname = Form("%s%s", histname.Data(), "_good_pped_vs_pmt_top");
