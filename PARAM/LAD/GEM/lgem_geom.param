@@ -20,7 +20,7 @@ lgem_m0_apvmap = 1
 lgem_m1_apvmap = 1
 
 ; Positions, all units in m
-lgem_m0_position = 0, 0, 0.75
+lgem_m0_position = 0, 0, 0.76571; Position from survey
 lgem_m1_position = 0, 0, 0.95
 ;lgem_m0_position = 0, 0, 1.00
 ;lgem_m1_position = 0, 0, 1.20
