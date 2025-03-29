@@ -9,6 +9,12 @@ TH2D h2_gem_NstripsV_layer 'Number of Y strips fired; layer; Number of strips fi
 TH2D h2_gem_NclustU_layer 'Number of X clusters; layer; Number of clusters' [I] L.gem.hit.nclustu_layer[I] 2 -0.5 1.5 101 -0.5 100.5
 TH2D h2_gem_NclustV_layer 'Number of Y clusters; layer; Number of clusters' [I] L.gem.hit.nclustv_layer[I] 2 -0.5 1.5 101 -0.5 100.5
 
+
+TH2D h2_gem_stripU_adc_0 'Layer 0 Y Strip vs ADC Strip Sum; Strip; ADC Sum' L.gem.m0.strip.istrip[I] L.gem.m0.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 8000 L.gem.m0.strip.IsU[I] 
+TH2D h2_gem_stripV_adc_0 'Layer 0 X Strip vs ADC Strip Sum; Strip; ADC Sum' L.gem.m0.strip.istrip[I] L.gem.m0.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 8000 L.gem.m0.strip.IsV[I] 
+TH2D h2_gem_stripU_adc_1 'Layer 1 Y Strip vs ADC Strip Sum; Strip; ADC Sum' L.gem.m1.strip.istrip[I] L.gem.m1.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 8000 L.gem.m0.strip.IsU[I] 
+TH2D h2_gem_stripV_adc_1 'Layer 1 X Strip vs ADC Strip Sum; Strip; ADC Sum' L.gem.m1.strip.istrip[I] L.gem.m1.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 8000 L.gem.m0.strip.IsV[I] 
+
 # cluster plots
 TH1D h1_gem_clustWidthU_0 'X cluster size Layer 0; cluster size' L.gem.clust.nstrip[I] 10 0.5 10.5 L.gem.clust.axis[I]<1&&L.gem.clust.layer[I]<1
 TH1D h1_gem_clustWidthV_0 'Y cluster size Layer 0; cluster size' L.gem.clust.nstrip[I] 10 0.5 10.5 L.gem.clust.axis[I]>0&&L.gem.clust.layer[I]<1

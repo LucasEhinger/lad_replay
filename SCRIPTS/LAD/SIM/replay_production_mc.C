@@ -1,4 +1,4 @@
-// #include "../LAD_link_defs.h"
+#include "../LAD_link_defs.h"
 void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Get RunNumber and MaxEvent if not provided.
@@ -33,7 +33,7 @@ void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   THcLADSpectrometer *LAD = new THcLADSpectrometer("L", "LAD");
   gHaApps->Add(LAD);
 
-  THcLADHodoscope *lhod = new THcLADHodoscope("hod", "LAD Hodoscope");
+  THcLADHodoscope *lhod = new THcLADHodoscope("ladhod", "LAD Hodoscope");
   LAD->AddDetector(lhod);
 
   THcLADGEM *gem = new THcLADGEM("gem", "gem");
@@ -71,7 +71,7 @@ void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   analyzer->SetCrateMapFileName("MAPS/db_cratemap_mc.dat");
   // Define output ROOT file
 
-  analyzer->SetOutFile(Form("ROOTfiles/full_mc_%dMeV_%d.root", RunNumber, MaxEvent));
+  analyzer->SetOutFile(Form("ROOTfiles/full_mc_%dMeV_%d_v2.root", RunNumber, MaxEvent));
   // // Define output DEF-file
   analyzer->SetOdefFile("DEF-files/LAD/PRODUCTION/lstackana_production_all.def");
   // // Define cuts file
