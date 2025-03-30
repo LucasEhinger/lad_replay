@@ -144,14 +144,14 @@ TH2F lladhod_REFBAR_good_hit_time_avg 'LAD REFBAR Good Hit Time Avg; PMT Number;
 #---------------------------------
 TH1F lladhod_n_hits_wTracks 'Number of Hits with Tracks; Hit Multiplicity; Counts' L.ladhod.goodhit_n 20 0.5 20.5
 
-TH2F lladhodwTrack_000_good_hit_time_avg 'LAD 000 Good Hit with Track Edep; PMT Number; Hit Edep' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 0 500000  L.ladhod.goodhit_plane[I]==0
-TH2F lladhodwTrack_001_good_hit_time_avg 'LAD 001 Good Hit with Track Edep; PMT Number; Hit Edep' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 0 500000  L.ladhod.goodhit_plane[I]==1
-TH2F lladhodwTrack_100_good_hit_time_avg 'LAD 100 Good Hit with Track Edep; PMT Number; Hit Edep' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 0 500000  L.ladhod.goodhit_plane[I]==2
-TH2F lladhodwTrack_101_good_hit_time_avg 'LAD 101 Good Hit with Track Edep; PMT Number; Hit Edep' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 0 500000  L.ladhod.goodhit_plane[I]==3
-TH2F lladhodwTrack_200_good_hit_time_avg 'LAD 200 Good Hit with Track Edep; PMT Number; Hit Edep' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 0 500000  L.ladhod.goodhit_plane[I]==4
-
-TH2F lladhodwTrack_000_good_hit_beta 'LAD 000 Good Hit with Track Beta; PMT Number; Hit Beta' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 L.ladhod.goodhit_plane[I]==0
-TH2F lladhodwTrack_001_good_hit_beta 'LAD 001 Good Hit with Track Beta; PMT Number; Hit Beta' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 L.ladhod.goodhit_plane[I]==1
-TH2F lladhodwTrack_100_good_hit_beta 'LAD 100 Good Hit with Track Beta; PMT Number; Hit Beta' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 L.ladhod.goodhit_plane[I]==2
-TH2F lladhodwTrack_101_good_hit_beta 'LAD 101 Good Hit with Track Beta; PMT Number; Hit Beta' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 L.ladhod.goodhit_plane[I]==3
-TH2F lladhodwTrack_200_good_hit_beta 'LAD 200 Good Hit with Track Beta; PMT Number; Hit Beta' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 L.ladhod.goodhit_plane[I]==4
+#TH2F lladhodwTrack_000_good_hit_time_avg 'LAD 000 Good Hit with Track Edep; PMT Number; Hit Edep' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 0 500000  L.ladhod.goodhit_plane[I]==0
+#TH2F lladhodwTrack_001_good_hit_time_avg 'LAD 001 Good Hit with Track Edep; PMT Number; Hit Edep' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 0 500000  L.ladhod.goodhit_plane[I]==1
+#TH2F lladhodwTrack_100_good_hit_time_avg 'LAD 100 Good Hit with Track Edep; PMT Number; Hit Edep' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 0 500000  L.ladhod.goodhit_plane[I]==2
+#TH2F lladhodwTrack_101_good_hit_time_avg 'LAD 101 Good Hit with Track Edep; PMT Number; Hit Edep' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 0 500000  L.ladhod.goodhit_plane[I]==3
+#TH2F lladhodwTrack_200_good_hit_time_avg 'LAD 200 Good Hit with Track Edep; PMT Number; Hit Edep' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 0 500000  L.ladhod.goodhit_plane[I]==4
+#
+#TH2F lladhodwTrack_000_good_hit_beta 'LAD 000 Good Hit with Track Beta; PMT Number; Hit Beta' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 L.ladhod.goodhit_plane[I]==0
+#TH2F lladhodwTrack_001_good_hit_beta 'LAD 001 Good Hit with Track Beta; PMT Number; Hit Beta' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 L.ladhod.goodhit_plane[I]==1
+#TH2F lladhodwTrack_100_good_hit_beta 'LAD 100 Good Hit with Track Beta; PMT Number; Hit Beta' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 L.ladhod.goodhit_plane[I]==2
+#TH2F lladhodwTrack_101_good_hit_beta 'LAD 101 Good Hit with Track Beta; PMT Number; Hit Beta' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 L.ladhod.goodhit_plane[I]==3
+#TH2F lladhodwTrack_200_good_hit_beta 'LAD 200 Good Hit with Track Beta; PMT Number; Hit Beta' L.ladhod.goodhit_paddle[I] L.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 L.ladhod.goodhit_plane[I]==4
