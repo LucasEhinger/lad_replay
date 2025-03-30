@@ -1,3 +1,8 @@
+// Created by ehingerl on 03/29/25.
+// Certain LAD histograms for GEM and hodo don't work, as they require cuts over specific elements within a vector.
+// Wasn't worth the time to debug this. Instead, this macro should make the histograms. It's really inefficient, but it
+// works, and is really easy to add new histograms (takes one line).
+
 #include <TCanvas.h>
 #include <TFile.h>
 #include <TH1D.h>
@@ -8,6 +13,7 @@
 #include <TTree.h>
 #include <iostream>
 #include <vector>
+#include <iomanip>
 
 struct Histo1DCommand {
   TString name;       // Histogram name
@@ -33,8 +39,8 @@ struct Histo2DCommand {
 };
 
 // void gem_histos(const char *inputFileName, const char *treeName) {
-void gem_histos() {
-  const char *inputFileName = "/volatile/hallc/c-lad/ehingerl/ROOTfiles/COSMICS/LAD_wGEM_cosmic_hall_296_-1.root";
+void lad_histos(const char *inputFileName="/volatile/hallc/c-lad/ehingerl/ROOTfiles/COSMICS/LAD_wGEM_cosmic_hall_296_-1.root",
+                bool lad_only=false, int num_evts=-1) {
   const char *treeName      = "T";
   // Open the ROOT file and get the tree
   TFile *inputFile = TFile::Open(inputFileName, "UPDATE");
@@ -51,64 +57,76 @@ void gem_histos() {
   }
 
   // Define the list of histogram commands
-  std::vector<Histo1DCommand> histCommands = {
-      {"h1_gem_clustWidthU_0", "X cluster size Layer 0; cluster size", "L.gem.clust.nstrip", 10, 0.5, 10.5,
-       "L.gem.clust.axis<1&&L.gem.clust.layer<1"},
-      {"h1_gem_clustWidthV_0", "Y cluster size Layer 0; cluster size", "L.gem.clust.nstrip", 10, 0.5, 10.5,
-       "L.gem.clust.axis>0&&L.gem.clust.layer<1"},
-      {"h1_gem_clustWidthU_1", "X cluster size Layer 1; cluster size", "L.gem.clust.nstrip", 10, 0.5, 10.5,
-       "L.gem.clust.axis<1&&L.gem.clust.layer>0"},
-      {"h1_gem_clustWidthV_1", "Y cluster size Layer 1; cluster size", "L.gem.clust.nstrip", 10, 0.5, 10.5,
-       "L.gem.clust.axis>0&&L.gem.clust.layer>0"},
-      {"h1_gem_clustSampMaxU_0", "Peak time sample Layer 0; Peak time sample (X strip)", "L.gem.clust.maxsamp", 6, -0.5,
-       5.5, "L.gem.clust.axis<1&&L.gem.clust.layer<1"},
-      {"h1_gem_clustSampMaxV_0", "Peak time sample Layer 0; Peak time sample (Y strip)", "L.gem.clust.maxsamp", 6, -0.5,
-       5.5, "L.gem.clust.axis>0&&L.gem.clust.layer<1"},
-      {"h1_gem_clustSampMaxU_1", "Peak time sample Layer 1; Peak time sample (X strip)", "L.gem.clust.maxsamp", 6, -0.5,
-       5.5, "L.gem.clust.axis<1&&L.gem.clust.layer>0"},
-      {"h1_gem_clustSampMaxV_1", "Peak time sample Layer 1; Peak time sample (Y strip)", "L.gem.clust.maxsamp", 6, -0.5,
-       5.5, "L.gem.clust.axis>0&&L.gem.clust.layer>0"},
-      {"h1_gem_clustADCMaxU_0", "X cluster Max strip ADC Layer 0; MAX strip ADC", "L.gem.clust.maxadc", 1500, 0, 1500,
-       "L.gem.clust.axis<1&&L.gem.clust.layer<1"},
-      {"h1_gem_clustADCMaxV_0", "Y cluster Max strip ADC Layer 0; MAX strip ADC", "L.gem.clust.maxadc", 1500, 0, 1500,
-       "L.gem.clust.axis>0&&L.gem.clust.layer<1"},
-      {"h1_gem_clustADCMaxU_1", "X cluster Max strip ADC Layer 1; MAX strip ADC", "L.gem.clust.maxadc", 1500, 0, 1500,
-       "L.gem.clust.axis<1&&L.gem.clust.layer>0"},
-      {"h1_gem_clustADCMaxV_1", "Y cluster Max strip ADC Layer 1; MAX strip ADC", "L.gem.clust.maxadc", 1500, 0, 1500,
-       "L.gem.clust.axis>0&&L.gem.clust.layer>0"},
-      {"h1_gem_clustADCSumU_0", "X cluster ADC sum Layer 0; ADC sum", "L.gem.clust.adc", 1500, 0, 3000,
-       "L.gem.clust.axis<1&&L.gem.clust.layer<1"},
-      {"h1_gem_clustADCSumV_0", "Y cluster ADC sum Layer 0; ADC sum", "L.gem.clust.adc", 1500, 0, 3000,
-       "L.gem.clust.axis>0&&L.gem.clust.layer<1"},
-      {"h1_gem_clustADCSumU_1", "X cluster ADC sum Layer 1; ADC sum", "L.gem.clust.adc", 1500, 0, 3000,
-       "L.gem.clust.axis<1&&L.gem.clust.layer>0"},
-      {"h1_gem_clustADCSumV_1", "Y cluster ADC sum Layer 1; ADC sum", "L.gem.clust.adc", 1500, 0, 3000,
-       "L.gem.clust.axis>0&&L.gem.clust.layer>0"},
-      {"h1_gem_clustTimeMeanU_0", "Cluster time 0", "L.gem.clust.adc", 6, -0.5, 5.5,
-       "L.gem.clust.axis==0&&L.gem.clust.layer==0"},
-      {"h1_gem_clustTimeMeanV_0", "Cluster time 0", "L.gem.clust.adc", 6, -0.5, 5.5,
-       "L.gem.clust.axis==1&&L.gem.clust.layer==0"},
-      {"h1_gem_clustTimeMeanU_1", "Cluster time 1", "L.gem.clust.adc", 6, -0.5, 5.5,
-       "L.gem.clust.axis==0&&L.gem.clust.layer==1"},
-      {"h1_gem_clustTimeMeanV_1", "Cluster time 1", "L.gem.clust.adc", 6, -0.5, 5.5,
-       "L.gem.clust.axis==1&&L.gem.clust.layer==1"}
-      // Add more histogram commands here as needed
-  };
+  std::vector<TString> prefixes; 
+  if (lad_only) {
+    prefixes.push_back("L");
+  } else {
+    prefixes.push_back("H");
+    prefixes.push_back("P");
+  }
+  std::vector<Histo1DCommand> histCommands;
+  std::vector<Histo2DCommand> hist2DCommands;
 
-  // All TH2D already included in DEF file
-  std::vector<Histo2DCommand> hist2DCommands = {};
-  //     {"h2_gem_stripU_adc_0", "Layer 0 Y Strip vs ADC Strip Sum; Strip; ADC Sum", "L.gem.m0.strip.istrip",
-  //      "L.gem.m0.strip.ADCsum", 1536, -0.5, 1535.5, 100, 0, 8000, "L.gem.m0.strip.IsU"},
-  //     {"h2_gem_stripV_adc_0", "Layer 0 X Strip vs ADC Strip Sum; Strip; ADC Sum", "L.gem.m0.strip.istrip",
-  //      "L.gem.m0.strip.ADCsum", 3072, -0.5, 3071.5, 100, 0, 8000, "L.gem.m0.strip.IsV"},
-  //     {"h2_gem_stripU_adc_1", "Layer 1 Y Strip vs ADC Strip Sum; Strip; ADC Sum", "L.gem.m1.strip.istrip",
-  //      "L.gem.m1.strip.ADCsum", 1536, -0.5, 1535.5, 100, 0, 8000, "L.gem.m0.strip.IsU"},
-  //     {"h2_gem_stripV_adc_1", "Layer 1 X Strip vs ADC Strip Sum; Strip; ADC Sum", "L.gem.m1.strip.istrip",
-  //      "L.gem.m1.strip.ADCsum", 3072, -0.5, 3071.5, 100, 0, 8000, "L.gem.m0.strip.IsV"}
-  // };
+  for (const auto &prefix : prefixes) {
+    // Add 1D histogram commands for each prefix
+    histCommands.insert(
+        histCommands.end(),
+        {{prefix + "_h1_gem_clustWidthU_0", "X cluster size Layer 0; cluster size", prefix + ".gem.clust.nstrip", 10,
+          0.5, 10.5, prefix + ".gem.clust.axis<1&&" + prefix + ".gem.clust.layer<1"},
+         {prefix + "_h1_gem_clustWidthV_0", "Y cluster size Layer 0; cluster size", prefix + ".gem.clust.nstrip", 10,
+          0.5, 10.5, prefix + ".gem.clust.axis>0&&" + prefix + ".gem.clust.layer<1"},
+         {prefix + "_h1_gem_clustWidthU_1", "X cluster size Layer 1; cluster size", prefix + ".gem.clust.nstrip", 10,
+          0.5, 10.5, prefix + ".gem.clust.axis<1&&" + prefix + ".gem.clust.layer>0"},
+         {prefix + "_h1_gem_clustWidthV_1", "Y cluster size Layer 1; cluster size", prefix + ".gem.clust.nstrip", 10,
+          0.5, 10.5, prefix + ".gem.clust.axis>0&&" + prefix + ".gem.clust.layer>0"},
+         {prefix + "_h1_gem_clustSampMaxU_0", "Peak time sample Layer 0; Peak time sample (X strip)",
+          prefix + ".gem.clust.maxsamp", 6, -0.5, 5.5, prefix + ".gem.clust.axis<1&&" + prefix + ".gem.clust.layer<1"},
+         {prefix + "_h1_gem_clustSampMaxV_0", "Peak time sample Layer 0; Peak time sample (Y strip)",
+          prefix + ".gem.clust.maxsamp", 6, -0.5, 5.5, prefix + ".gem.clust.axis>0&&" + prefix + ".gem.clust.layer<1"},
+         {prefix + "_h1_gem_clustSampMaxU_1", "Peak time sample Layer 1; Peak time sample (X strip)",
+          prefix + ".gem.clust.maxsamp", 6, -0.5, 5.5, prefix + ".gem.clust.axis<1&&" + prefix + ".gem.clust.layer>0"},
+         {prefix + "_h1_gem_clustSampMaxV_1", "Peak time sample Layer 1; Peak time sample (Y strip)",
+          prefix + ".gem.clust.maxsamp", 6, -0.5, 5.5, prefix + ".gem.clust.axis>0&&" + prefix + ".gem.clust.layer>0"},
+         {prefix + "_h1_gem_clustADCMaxU_0", "X cluster Max strip ADC Layer 0; MAX strip ADC",
+          prefix + ".gem.clust.maxadc", 1500, 0, 1500, prefix + ".gem.clust.axis<1&&" + prefix + ".gem.clust.layer<1"},
+         {prefix + "_h1_gem_clustADCMaxV_0", "Y cluster Max strip ADC Layer 0; MAX strip ADC",
+          prefix + ".gem.clust.maxadc", 1500, 0, 1500, prefix + ".gem.clust.axis>0&&" + prefix + ".gem.clust.layer<1"},
+         {prefix + "_h1_gem_clustADCMaxU_1", "X cluster Max strip ADC Layer 1; MAX strip ADC",
+          prefix + ".gem.clust.maxadc", 1500, 0, 1500, prefix + ".gem.clust.axis<1&&" + prefix + ".gem.clust.layer>0"},
+         {prefix + "_h1_gem_clustADCMaxV_1", "Y cluster Max strip ADC Layer 1; MAX strip ADC",
+          prefix + ".gem.clust.maxadc", 1500, 0, 1500, prefix + ".gem.clust.axis>0&&" + prefix + ".gem.clust.layer>0"},
+         {prefix + "_h1_gem_clustADCSumU_0", "X cluster ADC sum Layer 0; ADC sum", prefix + ".gem.clust.adc", 1500, 0,
+          3000, prefix + ".gem.clust.axis<1&&" + prefix + ".gem.clust.layer<1"},
+         {prefix + "_h1_gem_clustADCSumV_0", "Y cluster ADC sum Layer 0; ADC sum", prefix + ".gem.clust.adc", 1500, 0,
+          3000, prefix + ".gem.clust.axis>0&&" + prefix + ".gem.clust.layer<1"},
+         {prefix + "_h1_gem_clustADCSumU_1", "X cluster ADC sum Layer 1; ADC sum", prefix + ".gem.clust.adc", 1500, 0,
+          3000, prefix + ".gem.clust.axis<1&&" + prefix + ".gem.clust.layer>0"},
+         {prefix + "_h1_gem_clustADCSumV_1", "Y cluster ADC sum Layer 1; ADC sum", prefix + ".gem.clust.adc", 1500, 0,
+          3000, prefix + ".gem.clust.axis>0&&" + prefix + ".gem.clust.layer>0"}});
 
+    // Add 2D histogram commands for each prefix
+    TString prefix_lower = prefix;
+    prefix_lower.ToLower();
+    hist2DCommands.insert(
+        hist2DCommands.end(),
+        {{prefix_lower + "ladhodwTrack_000_good_hit_time_avg", "LAD 000 Good Hit with Track Edep; PMT Number; Hit Edep",
+          prefix + ".ladhod.goodhit_paddle", prefix + ".ladhod.goodhit_hit_edep", 11, 0.5, 11.5, 200, 0, 500000,
+          prefix + ".ladhod.goodhit_plane==0"},
+         {prefix_lower + "ladhodwTrack_001_good_hit_time_avg", "LAD 001 Good Hit with Track Edep; PMT Number; Hit Edep",
+          prefix + ".ladhod.goodhit_paddle", prefix + ".ladhod.goodhit_hit_edep", 11, 0.5, 11.5, 200, 0, 500000,
+          prefix + ".ladhod.goodhit_plane==1"},
+         {prefix_lower + "ladhodwTrack_100_good_hit_time_avg", "LAD 100 Good Hit with Track Edep; PMT Number; Hit Edep",
+          prefix + ".ladhod.goodhit_paddle", prefix + ".ladhod.goodhit_hit_edep", 11, 0.5, 11.5, 200, 0, 500000,
+          prefix + ".ladhod.goodhit_plane==2"},
+         {prefix_lower + "ladhodwTrack_101_good_hit_time_avg", "LAD 101 Good Hit with Track Edep; PMT Number; Hit Edep",
+          prefix + ".ladhod.goodhit_paddle", prefix + ".ladhod.goodhit_hit_edep", 11, 0.5, 11.5, 200, 0, 500000,
+          prefix + ".ladhod.goodhit_plane==3"},
+         {prefix_lower + "ladhodwTrack_200_good_hit_time_avg", "LAD 200 Good Hit with Track Edep; PMT Number; Hit Edep",
+          prefix + ".ladhod.goodhit_paddle", prefix + ".ladhod.goodhit_hit_edep", 11, 0.5, 11.5, 200, 0, 500000,
+          prefix + ".ladhod.goodhit_plane==4"}});
+  }
   int nHistograms = histCommands.size() + hist2DCommands.size();
-  int histCount = 0; // Counter for histograms
+  int histCount   = 0; // Counter for histograms
   // Loop over the histogram commands and create histograms
   for (const auto &cmd : histCommands) {
     // Create the histogram
@@ -245,7 +263,7 @@ void gem_histos() {
       // Print progress
       if (i % 10 == 0 || i == nEntries - 1) {
         double progress = (static_cast<double>(i + 1 + histCount * nEntries) / (nHistograms * nEntries)) * 100.0;
-        std::cout << "\rProgress: " << progress << "%" << std::flush;
+        std::cout << "\rProgress: " << std::fixed << std::setprecision(1) << progress << "%" << std::flush;
       }
     }
     histCount++;
@@ -277,6 +295,9 @@ void gem_histos() {
 
     // Loop over the entries in the tree and fill the 2D histogram
     Long64_t nEntries = tree->GetEntries();
+    if (num_evts > 0 && num_evts < nEntries) {
+      nEntries = num_evts;
+    }
     for (Long64_t i = 0; i < nEntries; ++i) {
       tree->GetEntry(i);
 
@@ -387,7 +408,7 @@ void gem_histos() {
       // Print progress
       if (i % 10 == 0 || i == nEntries - 1) {
         double progress = (static_cast<double>(i + 1 + histCount * nEntries) / (nHistograms * nEntries)) * 100.0;
-        std::cout << "\rProgress: " << progress << "%" << std::flush;
+        std::cout << "\rProgress: " << std::fixed << std::setprecision(1) << progress << "%" << std::flush;
       }
     }
     histCount++;

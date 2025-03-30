@@ -1,9 +1,10 @@
 #include "MultiFileRun.h"
+#include <iostream>
 
 // #include "../../LAD/LAD_link_defs.h" //Leave this line commented. Used for debugging purposes only.
 
-void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEvent = 1, int MaxSegment = 1,
-                                int FirstSegment = 0, const char *fname_prefix = "shms_all") {
+void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_type = 1, int FirstEvent = 1,
+                                int MaxSegment = 1, int FirstSegment = 0, const char *fname_prefix = "shms_all") {
 
   // Get RunNumber and MaxEvent if not provided.
   if (RunNumber == 0) {
@@ -42,48 +43,78 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   pathList.push_back("./cache");
   pathList.push_back("/cache/hallc/c-lad/raw/");
 
-  // Many experiments use separate path for each spectrometer SHMS, HMS, COIN
-  // There are subdirectories for PRODUCTION, SCALER, 50K, etc.
-  // This is similar to the pathing for REPORT_OUTPUT and Summary files
-  // Changing the 50K replay loaction will effect run_ scripts in UTIL_OL
-  // All other replays, save to production
-  // 50K and default format: runNumber, FirstEvent, MaxEvent
-  // For the segment format: runNumber, FirstSegment, FirstEvent, MaxEvent
-  // Segments have different naming to avoid name collisions
   const char *ROOTFileNamePattern;
-  if (MaxEvent == 50000 && FirstEvent == 1) {
-    REPORTFileNamePattern  = "REPORT_OUTPUT/SHMS/PRODUCTION/replay_shms_all_production_%d_%d_%d.report";
-    SummaryFileNamePattern = "REPORT_OUTPUT/SHMS/PRODUCTION/summary_all_production_%d_%d_%d.report";
-    ROOTFileNamePattern    = "ROOTfiles/shms_replay_production_all_%d_%d_%d.root";
-  } else if (MaxEvent == -1 && (FirstSegment - MaxSegment) == 0) {
-    REPORTFileNamePattern  = "REPORT_OUTPUT/SHMS/PRODUCTION/replay_shms_all_production_%d_%d_%d_%d.report";
-    SummaryFileNamePattern = "REPORT_OUTPUT/SHMS/PRODUCTION/summary_all_production_%d_%d_%d_%d.report";
-    ROOTFileNamePattern    = "ROOTfiles/shms_replay_production_all_%d_%d_%d_%d.root";
-  } else {
-    REPORTFileNamePattern  = "REPORT_OUTPUT/SHMS/PRODUCTION/replay_shms_all_production_%d_%d_%d.report";
-    SummaryFileNamePattern = "REPORT_OUTPUT/SHMS/PRODUCTION/summary_all_production_%d_%d_%d.report";
-    ROOTFileNamePattern    = "ROOTfiles/shms_replay_production_all_%d_%d_%d.root";
-  }
-  // Define the analysis parameters
   TString ROOTFileName;
-  TString REPORTFileName;
-  TString SummaryFileName;
-  if (MaxEvent == -1 && (FirstSegment - MaxSegment) == 0) {
-    REPORTFileName  = Form(REPORTFileNamePattern, RunNumber, FirstSegment, FirstEvent, MaxEvent);
-    SummaryFileName = Form(SummaryFileNamePattern, RunNumber, FirstSegment, FirstEvent, MaxEvent);
-    ROOTFileName    = Form(ROOTFileNamePattern, RunNumber, FirstSegment, FirstEvent, MaxEvent);
-  } else {
-    REPORTFileName  = Form(REPORTFileNamePattern, RunNumber, FirstEvent, MaxEvent);
-    SummaryFileName = Form(SummaryFileNamePattern, RunNumber, FirstEvent, MaxEvent);
-    ROOTFileName    = Form(ROOTFileNamePattern, RunNumber, FirstEvent, MaxEvent);
-  }
-
-  pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic");
-  //LHE. Temp edit for file names
   pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic");
   ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_COIN_cosmic_hall_%d_%d.root";
+
+  switch (run_type) {
+  case 0:
+    RunFileNamePattern = "lad_Production_%02d.dat.0";
+    break;
+  case 1:
+    RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
+    break;
+  case 2:
+    RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
+    break;
+  case 3:
+    RunFileNamePattern = "lad_GEMonly_%02d.dat.0";
+    break;
+  case 4:
+    RunFileNamePattern = "lad_LADonly_%02d.dat.0";
+    break;
+  case 5:
+    RunFileNamePattern = "lad_SHMS_HMS_%02d.dat.0";
+    break;
+  case 6:
+    RunFileNamePattern = "lad_SHMS_%02d.dat.0";
+    break;
+  case 7:
+    RunFileNamePattern = "lad_HMS_%02d.dat.0";
+    break;
+  default:
+    cout << "Invalid run type: " << run_type << ". Please enter a valid run type." << endl;
+    return;
+    break;
+  }
   ROOTFileName = Form(ROOTFileNamePattern, RunNumber, MaxEvent);
-  //LHE. End temp.
+  // LHE. End temp.
+  //  Many experiments use separate path for each spectrometer SHMS, HMS, COIN
+  //  There are subdirectories for PRODUCTION, SCALER, 50K, etc.
+  //  This is similar to the pathing for REPORT_OUTPUT and Summary files
+  //  Changing the 50K replay loaction will effect run_ scripts in UTIL_OL
+  //  All other replays, save to production
+  //  50K and default format: runNumber, FirstEvent, MaxEvent
+  //  For the segment format: runNumber, FirstSegment, FirstEvent, MaxEvent
+  //  Segments have different naming to avoid name collisions
+
+  // if (MaxEvent == 50000 && FirstEvent == 1) {
+  //   REPORTFileNamePattern  = "REPORT_OUTPUT/SHMS/PRODUCTION/replay_shms_all_production_%d_%d_%d.report";
+  //   SummaryFileNamePattern = "REPORT_OUTPUT/SHMS/PRODUCTION/summary_all_production_%d_%d_%d.report";
+  //   ROOTFileNamePattern    = "ROOTfiles/shms_replay_production_all_%d_%d_%d.root";
+  // } else if (MaxEvent == -1 && (FirstSegment - MaxSegment) == 0) {
+  //   REPORTFileNamePattern  = "REPORT_OUTPUT/SHMS/PRODUCTION/replay_shms_all_production_%d_%d_%d_%d.report";
+  //   SummaryFileNamePattern = "REPORT_OUTPUT/SHMS/PRODUCTION/summary_all_production_%d_%d_%d_%d.report";
+  //   ROOTFileNamePattern    = "ROOTfiles/shms_replay_production_all_%d_%d_%d_%d.root";
+  // } else {
+  //   REPORTFileNamePattern  = "REPORT_OUTPUT/SHMS/PRODUCTION/replay_shms_all_production_%d_%d_%d.report";
+  //   SummaryFileNamePattern = "REPORT_OUTPUT/SHMS/PRODUCTION/summary_all_production_%d_%d_%d.report";
+  //   ROOTFileNamePattern    = "ROOTfiles/shms_replay_production_all_%d_%d_%d.root";
+  // }
+  // // Define the analysis parameters
+  // TString ROOTFileName;
+  // TString REPORTFileName;
+  // TString SummaryFileName;
+  // if (MaxEvent == -1 && (FirstSegment - MaxSegment) == 0) {
+  //   REPORTFileName  = Form(REPORTFileNamePattern, RunNumber, FirstSegment, FirstEvent, MaxEvent);
+  //   SummaryFileName = Form(SummaryFileNamePattern, RunNumber, FirstSegment, FirstEvent, MaxEvent);
+  //   ROOTFileName    = Form(ROOTFileNamePattern, RunNumber, FirstSegment, FirstEvent, MaxEvent);
+  // } else {
+  //   REPORTFileName  = Form(REPORTFileNamePattern, RunNumber, FirstEvent, MaxEvent);
+  //   SummaryFileName = Form(SummaryFileNamePattern, RunNumber, FirstEvent, MaxEvent);
+  //   ROOTFileName    = Form(ROOTFileNamePattern, RunNumber, FirstEvent, MaxEvent);
+  // }
 
   // Load global parameters
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
@@ -225,7 +256,6 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   THcHodoEff *heff = new THcHodoEff("hhodeff", "HMS hodo efficiency", "H.hod");
   gHaPhysics->Add(heff);
 
-
   // Add event handler for prestart event 125.
   THcConfigEvtHandler *ev125 = new THcConfigEvtHandler("HC", "Config Event type 125");
   gHaEvtHandlers->Add(ev125);
@@ -239,7 +269,6 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   hscaler->SetDelayedType(129);
   hscaler->SetUseFirstEvent(kTRUE);
   gHaEvtHandlers->Add(hscaler);
-
 
   // Add event handler for DAQ configuration event
   THcConfigEvtHandler *config = new THcConfigEvtHandler("config", "Hall C configuration event handler");
@@ -261,26 +290,23 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   // THcRun* run = new THcRun( pathList, Form(RunFileNamePattern, RunNumber) );
   // Could lead to an infinite loop, all segments in range analyzed.
 
-  // RunFileNamePattern = "ladvme1_%03d.dat.0";
-  // RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
-  RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
-
-  vector<string> fileNames = {};
-  TString codafilename;
-  if (MaxSegment == -1) {
-    cout << RunFileNamePattern;
-    codafilename.Form(RunFileNamePattern, fname_prefix, RunNumber);
-    cout << "codafilename = " << codafilename << endl;
-    fileNames.emplace_back(codafilename.Data());
-  } else {
-    for (Int_t iseg = FirstSegment; iseg <= MaxSegment; iseg++) {
-      codafilename.Form(RunFileNamePattern, fname_prefix, RunNumber, iseg);
-      cout << "codafilename = " << codafilename << endl;
-      fileNames.emplace_back(codafilename.Data());
-    }
-  }
+  // vector<string> fileNames = {};
+  // TString codafilename;
+  // if (MaxSegment == -1) {
+  //   cout << RunFileNamePattern;
+  //   codafilename.Form(RunFileNamePattern, fname_prefix, RunNumber);
+  //   cout << "codafilename = " << codafilename << endl;
+  //   fileNames.emplace_back(codafilename.Data());
+  // } else {
+  //   for (Int_t iseg = FirstSegment; iseg <= MaxSegment; iseg++) {
+  //     codafilename.Form(RunFileNamePattern, fname_prefix, RunNumber, iseg);
+  //     cout << "codafilename = " << codafilename << endl;
+  //     fileNames.emplace_back(codafilename.Data());
+  //   }
+  // }
   // auto *run = new Podd::MultiFileRun(pathList, fileNames);
-  THcRun *run = new THcRun(pathList, Form(RunFileNamePattern, RunNumber));//FIXME: Ultimately will want to use MiltiFileRun
+  THcRun *run =
+      new THcRun(pathList, Form(RunFileNamePattern, RunNumber)); // FIXME: Ultimately will want to use MiltiFileRun
 
   // Set to read in Hall C run database parameters
   run->SetRunParamClass("THcRunParameters");
@@ -315,5 +341,6 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int FirstEv
   analyzer->Process(run);
   // Create report file from template
 
-  // analyzer->PrintReport("TEMPLATES/SHMS/PRODUCTION/pstackana_production.template", REPORTFileName.Data()); // optional
+  // analyzer->PrintReport("TEMPLATES/SHMS/PRODUCTION/pstackana_production.template", REPORTFileName.Data()); //
+  // optional
 }

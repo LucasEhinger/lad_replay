@@ -11,11 +11,27 @@ SPEC="LAD_COIN"
 # )
 
 #Need to fix file paths and names here once things are finalized.
-lastRun=$( \
-  ls /cache/hallc/c-lad/raw/lad_Production_no*.dat.* -R 2>/dev/null | perl -ne 'if(/0*(\d+)/) {print "$1\n"}' | sort -n | tail -1 \
+lastRunFile=$(
+  ls /cache/hallc/c-lad/raw/lad_Production_no*.dat.* -R 2>/dev/null | sort -V | tail -1
 )
-#/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic/
 
+lastRun=$(
+  echo "$lastRunFile" | perl -ne 'if(/0*(\d+)/) {print "$1\n"}'
+)
+
+#/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic/
+# Determine the run_type based on the lastRun value
+case "$lastRunFile" in
+  *Production_noGEM*) run_type=1 ;;
+  *Production*) run_type=0 ;;
+  *LADwGEMwROC2*) run_type=2 ;;
+  *GEMonly*) run_type=3 ;;
+  *LADonly*) run_type=4 ;;
+  *SHMS_HMS*) run_type=5 ;;
+  *SHMS*) run_type=6 ;;
+  *HMS*) run_type=7 ;;
+  *) run_type=-1 ;; # Default case if no match is found
+esac
 # Which run to analyze.
 runNum=$1
 if [ -z "$runNum" ]; then
@@ -46,7 +62,7 @@ reportMonOutDir="./MON_OUTPUT/${SPEC}/REPORT"
 reportMonFile="summary_output_${runNum}.txt"
 
 # Which commands to run.
-runHcana="hcana -q \"${script}(${runNum}, ${numEvents})\""
+runHcana="hcana -q \"${script}(${runNum}, ${numEvents},${run_type})\""
 #runHcana="/home/cdaq/cafe-2022/hcana/hcana -q \"${script}(${runNum}, ${numEvents})\""
 # The original onlineGUI commands (single configuration):
 # runOnlineGUI="panguin -f ${config} -r ${runNum}"
@@ -107,7 +123,7 @@ expert_configs=(
 {
   echo ""
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
-  echo "" 
+  echo ""
   date
   echo ""
   echo "Running ${SPEC} analysis on the run ${runNum}:"
@@ -127,8 +143,36 @@ expert_configs=(
   ln -fs "../../COSMICS/${SPEC}_cosmic_hall_${runNum}_${numEvents}.root" ${latestRootFile}
 
   sleep 2
-  
-  echo "" 
+  function yes_or_no() {
+    while true; do
+      read -p "$* [y/n]: " yn
+      case $yn in
+      [Yy]*) return 0 ;;
+      [Nn]*)
+        echo "No entered"
+        return 1
+        ;;
+      esac
+    done
+  }
+
+  echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
+  echo ""
+  echo "Do you want to generate expert LAD detector (gem + hodoscope) plots?"
+  yes_or_no "This may take ~5 min." &&
+  {
+    echo "Generating expert LAD detector plots."
+    # This script runs a ROOT macro to process the latest ROOT file and generate histograms.
+    # The macro "lad_histos.C" is executed with two arguments:
+    # - The first argument (${latestRootFile}) specifies the latest ROOT file to process.
+    # - The second argument (0) indicates that the histograms are generated for both HMS and SHMS LAD.
+    root -l -b -q "macros/LAD/lad_histos.C(\"${latestRootFile}\",0,1000)"
+    # Currently on generating for 1k events. Will have to come up with a faster way to make these histograms.
+  }
+
+
+
+  echo ""
   echo ""
   echo ""
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
@@ -150,34 +194,34 @@ expert_configs=(
     outFile="${spec}_production_${runNum}_${tag}"
     outExpertFile="summaryPlots_${runNum}_${expertConfig##*/}"
     outExpertFile="${outExpertFile%.cfg}"
-    
+
     echo ""
     echo "Processing GUI for configuration: ${tag}"
     echo " -> CONFIG:  ${config}"
     echo " -> EXPERT CONFIG: ${expertConfig}"
     echo " -> RUN:     ${runNum}"
     echo "-------------------------------------------------------------"
-    
+
     sleep 2
     cd onlineGUI || exit 1
-    
+
     # Run the normal GUI command.
     #panguin -f "${config}" -r "${runNum}"
-    
+
     # Run the expert GUI command (-P flag).
     panguin -f "${expertConfig}" -r "${runNum}" -P
-    
+
     # Display current directory and output file info.
     pwd
     echo " -> outExpertFile: ${outExpertFile}"
     echo "../HISTOGRAMS/${SPEC}/PDF/${outFile}.pdf"
-    
+
     # Move the resulting expert PDF to the appropriate directory with the tag in its name.
     #monExpertPdfFile="../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf"
     echo "Moving Expert PDF to ${monExpertPdfFile}"
     monExpertPdfFile="$(readlink -f "../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf")"
     mv "${outExpertFile}.pdf" ${monExpertPdfFile}
-    
+
     mergedPDFs+=("${monExpertPdfFile}")
     cd .. || exit 1
   done
@@ -210,35 +254,26 @@ expert_configs=(
   # Update the latest PDF link (using the expert PDF of the last configuration processed).
   #ln -fs ${latestMonPdFile} ${latestMonPdfFile}
 
-###########################################################
-# function used to prompt user for questions
-function yes_or_no(){
-  while true; do
-    read -p "$* [y/n]: " yn
-    case $yn in
-      [Yy]*) return 0 ;;
-      [Nn]*) echo "No entered" ; return 1 ;;
-    esac
-  done
-}
-# post pdfs in hclog
-yes_or_no "Upload these plots to logbook HCLOG? " && \
+  ###########################################################
+  # function used to prompt user for questions
+  # post pdfs in hclog
+  yes_or_no "Upload these plots to logbook HCLOG? " &&
     /site/ace/certified/apps/bin/logentry \
-    -cert /home/cdaq/.elogcert \
-    -t "${numEventsk}k replay plots for run ${runNum} TEST TEST TEST" \
-    -e cdaq \
-    -l TLOG \
-    -a ${latestMonPdfFile} \
+      -cert /home/cdaq/.elogcert \
+      -t "${numEventsk}k replay plots for run ${runNum} TEST TEST TEST" \
+      -e cdaq \
+      -l TLOG \
+      -a ${latestMonPdfFile}
 
-#    /home/cdaq/bin/hclog \
-#    --logbook "HCLOG" \
-#    --tag Autolog \
-#    --title ${events}" replay plots for run ${runnum} TEST TEST TEST" \
-#    --attach ${latestMonPdfFile} 
-###########################################################
-#    --title ${events}" replay plots for run ${runnum}" \
+  #    /home/cdaq/bin/hclog \
+  #    --logbook "HCLOG" \
+  #    --tag Autolog \
+  #    --title ${events}" replay plots for run ${runnum} TEST TEST TEST" \
+  #    --attach ${latestMonPdfFile}
+  ###########################################################
+  #    --title ${events}" replay plots for run ${runnum}" \
 
-  echo "" 
+  echo ""
   echo ""
   echo ""
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
@@ -249,7 +284,7 @@ yes_or_no "Upload these plots to logbook HCLOG? " && \
 
   sleep 2
 
-  echo "" 
+  echo ""
   echo ""
   echo ""
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
@@ -257,10 +292,10 @@ yes_or_no "Upload these plots to logbook HCLOG? " && \
   echo "Generating report file monitoring data file ${SPEC} run ${runNum}."
   echo ""
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
-  
-#  eval ${runReportMon}
-#  mv "${outFileMonitor}" "${reportMonOutDir}/${reportMonFile}"
-#  eval ${openReportMon}
+
+  #  eval ${runReportMon}
+  #  mv "${outFileMonitor}" "${reportMonOutDir}/${reportMonFile}"
+  #  eval ${openReportMon}
 
   sleep 2
 
@@ -273,18 +308,18 @@ yes_or_no "Upload these plots to logbook HCLOG? " && \
   echo ""
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
 
-#if [[ "${spec}" == "shms" ]]; then
-#  ./hcana -l << EOF
-#  .L ${shmsCounter}
-#  run_el_counter_${spec}("${latestRootFile}");
-#EOF
-#fi
-#if [[ "${spec}" == "hms" ]]; then
-#  ./hcana -l << EOF
-#  .L ${hmsCounter}
-#  run_el_counter_${spec}("${latestRootFile}");
-#EOF
-#fi
+  #if [[ "${spec}" == "shms" ]]; then
+  #  ./hcana -l << EOF
+  #  .L ${shmsCounter}
+  #  run_el_counter_${spec}("${latestRootFile}");
+  #EOF
+  #fi
+  #if [[ "${spec}" == "hms" ]]; then
+  #  ./hcana -l << EOF
+  #  .L ${hmsCounter}
+  #  run_el_counter_${spec}("${latestRootFile}");
+  #EOF
+  #fi
 
   sleep 2
 
@@ -296,7 +331,7 @@ yes_or_no "Upload these plots to logbook HCLOG? " && \
   echo "Done!"
   echo ""
   echo "-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|"
-  echo "" 
+  echo ""
   echo ""
   echo ""
 
