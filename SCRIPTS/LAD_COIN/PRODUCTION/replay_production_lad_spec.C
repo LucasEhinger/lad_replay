@@ -1,4 +1,5 @@
 #include "MultiFileRun.h"
+#include "LADFilteredStreamBuf.h"
 #include <iostream>
 
 // #include "../../LAD/LAD_link_defs.h" //Leave this line commented. Used for debugging purposes only.
@@ -337,6 +338,9 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   analyzer->SetCutFile("DEF-files/LAD_COIN/PRODUCTION/CUTS/coin_production_cuts_lad.def"); // optional
   // File to record accounting information for cuts
   // analyzer->SetSummaryFile(SummaryFileName.Data()); // optional
+
+  LADFilteredStreamBuf ladbuf(std::cout);
+  ladbuf.addFilterString("HitList(event");
   // Start the actual analysis.
   analyzer->Process(run);
   // Create report file from template
