@@ -34,7 +34,7 @@ case "$lastRunFile" in
 esac
 # Which run to analyze.
 runNum=$1
-if [ -z "$runNum" ]; then
+if ! [[ "$runNum" =~ ^[0-9]+$ ]]; then
   runNum=$lastRun
 fi
 
