@@ -106,7 +106,6 @@ REFINDEX=0
     74,       2,     54,     1 ! hPRE150
     75,       2,     55,     1 ! hPRE200
     
-
 !CAEN1190 module
 SLOT=20
 REFINDEX=0
@@ -133,6 +132,15 @@ SLOT=13
 SLOT=2
  127,  2,  22,   1  ! hDCREF5
 
+ROC=9
+
+SLOT=31
+! Custom logic TDC inputs from LAD crate
+ 112,       2,     60,     1  ! ltrig1
+ 113,       2,     61,     1  ! ltrig2
+ 114,       2,     62,     1  ! photodiode
+ 116,       2,     63,     1  ! shmsTrig
+ 117,       2,     64,     1  ! hmsTrig
 
 ! SHMS Trig:
 ! Plane = 1 >> ADC Only
@@ -255,6 +263,16 @@ SLOT=14
 
 SLOT=15
   47,   2,  22,   1  ! pDCREF10
+
+ROC=9
+
+SLOT=31
+! Custom logic TDC inputs from LAD crate
+ 112,       2,     60,     1  ! ltrig1
+ 113,       2,     61,     1  ! ltrig2
+ 114,       2,     62,     1  ! photodiode
+ 116,       2,     63,     1  ! shmsTrig
+ 117,       2,     64,     1  ! hmsTrig
 
 
 DETECTOR=11  ! HMS 12 gev chambers

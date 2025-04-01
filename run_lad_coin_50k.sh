@@ -12,7 +12,7 @@ SPEC="LAD_COIN"
 
 #Need to fix file paths and names here once things are finalized.
 lastRunFile=$(
-  ls /cache/hallc/c-lad/raw/lad_Production_no*.dat.* -R 2>/dev/null | sort -V | tail -1
+  ls /cache/hallc/c-lad/raw/lad_Production_*.dat.* -R 2>/dev/null | sort -V | tail -1
 )
 
 lastRun=$(
@@ -206,7 +206,7 @@ expert_configs=(
     cd onlineGUI || exit 1
 
     # Run the normal GUI command.
-    #panguin -f "${config}" -r "${runNum}"
+    panguin -f "${config}" -r "${runNum}"
 
     # Run the expert GUI command (-P flag).
     panguin -f "${expertConfig}" -r "${runNum}" -P

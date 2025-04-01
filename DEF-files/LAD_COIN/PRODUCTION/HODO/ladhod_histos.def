@@ -140,6 +140,25 @@ TH2F pladhod_200_good_hit_time_avg 'LAD 200 Good Hit Time Avg; PMT Number; Hit T
 TH2F pladhod_REFBAR_good_hit_time_avg 'LAD REFBAR Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500  
 
 #---------------------------------
+# LAD HODO GOOD HIT TIME TOF
+#---------------------------------
+
+TH2F pladhod_000_good_hit_time_TOF 'LAD 000 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.000.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+TH2F pladhod_001_good_hit_time_TOF 'LAD 001 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.001.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+TH2F pladhod_100_good_hit_time_TOF 'LAD 100 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.100.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+TH2F pladhod_101_good_hit_time_TOF 'LAD 101 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.101.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+TH2F pladhod_200_good_hit_time_TOF 'LAD 200 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.200.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+TH2F pladhod_REFBAR_good_hit_time_TOF 'LAD REFBAR Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500  
+
+TH2F pladhod_000_good_hit_TOFvsEDEP 'LAD 000 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.000.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+TH2F pladhod_001_good_hit_TOFvsEDEP 'LAD 001 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.001.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+TH2F pladhod_100_good_hit_TOFvsEDEP 'LAD 100 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.100.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+TH2F pladhod_101_good_hit_TOFvsEDEP 'LAD 101 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.101.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+TH2F pladhod_200_good_hit_TOFvsEDEP 'LAD 200 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.200.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+TH2F pladhod_REFBAR_good_hit_TOFvsEDEP 'LAD REFBAR Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+
+
+#---------------------------------
 # LAD HODO Hits with a Track
 #---------------------------------
 TH1F pladhod_n_hits_wTracks 'Number of Hits with Tracks; Hit Multiplicity; Counts' P.ladhod.goodhit_n 20 0.5 20.5
@@ -300,6 +319,24 @@ TH2F hladhod_200_good_hit_time_avg 'LAD 200 Good Hit Time Avg; PMT Number; Hit T
 TH2F hladhod_REFBAR_good_hit_time_avg 'LAD REFBAR Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500  
 
 #---------------------------------
+# LAD HODO GOOD HIT TIME TOF
+#---------------------------------
+
+TH2F hladhod_000_good_hit_time_TOF 'LAD 000 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.000.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+TH2F hladhod_001_good_hit_time_TOF 'LAD 001 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.001.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+TH2F hladhod_100_good_hit_time_TOF 'LAD 100 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.100.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+TH2F hladhod_101_good_hit_time_TOF 'LAD 101 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.101.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+TH2F hladhod_200_good_hit_time_TOF 'LAD 200 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.200.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+TH2F hladhod_REFBAR_good_hit_time_TOF 'LAD REFBAR Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500  
+
+TH2F hladhod_000_good_hit_TOFvsEDEP 'LAD 000 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.000.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+TH2F hladhod_001_good_hit_TOFvsEDEP 'LAD 001 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.001.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+TH2F hladhod_100_good_hit_TOFvsEDEP 'LAD 100 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.100.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+TH2F hladhod_101_good_hit_TOFvsEDEP 'LAD 101 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.101.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+TH2F hladhod_200_good_hit_TOFvsEDEP 'LAD 200 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.200.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+TH2F hladhod_REFBAR_good_hit_TOFvsEDEP 'LAD REFBAR Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+
+#---------------------------------
 # LAD HODO Hits with a Track
 #---------------------------------
 TH1F hladhod_n_hits_wTracks 'Number of Hits with Tracks; Hit Multiplicity; Counts' H.ladhod.goodhit_n 20 0.5 20.5
@@ -315,3 +352,12 @@ TH1F hladhod_n_hits_wTracks 'Number of Hits with Tracks; Hit Multiplicity; Count
 #TH2F hladhodwTrack_100_good_hit_beta 'LAD 100 Good Hit with Track Beta; PMT Number; Hit Beta' H.ladhod.goodhit_paddle[I] H.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 H.ladhod.goodhit_plane[I]==2
 #TH2F hladhodwTrack_101_good_hit_beta 'LAD 101 Good Hit with Track Beta; PMT Number; Hit Beta' H.ladhod.goodhit_paddle[I] H.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 H.ladhod.goodhit_plane[I]==3
 #TH2F hladhodwTrack_200_good_hit_beta 'LAD 200 Good Hit with Track Beta; PMT Number; Hit Beta' H.ladhod.goodhit_paddle[I] H.ladhod.goodhit_beta[I] 11 0.5 11.5 200 0 2 H.ladhod.goodhit_plane[I]==4
+
+#---------------------------------
+# LAD Crate Checks
+#---------------------------------
+
+TH1F hlad_REF_time_diff 'HMS-LAD Reference Time Diff; Delta t; Hits' H.hod.1x.PosTdcRefTime-T.hms.hmsTrig_tdcTime 100 -200 200
+TH1F plad_REF_time_diff 'SHMS-LAD Reference Time Diff; Delta t; Hits' P.hod.1x.PosTdcRefTime-T.shms.shmsTrig_tdcTime 100 -200 200
+TH1F hlad_T2_P6_diff 'HMS-LAD T2 P6 Time Diff; Delta t; Hits' T.hms.ltrig2_tdcTime-T.hms.hTRIG6_tdcTime 100 -200 200
+TH1F plad_T2_P6_diff 'SHMS-LAD T2 P6 Time Diff; Delta t; Hits' T.shms.ltrig2_tdcTime-T.shms.pTRIG6_tdcTime 100 -200 200

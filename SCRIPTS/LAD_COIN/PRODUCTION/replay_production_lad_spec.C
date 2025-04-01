@@ -147,6 +147,7 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
 
   // Add trigger detector to trigger apparatus
   THcTrigDet *shms = new THcTrigDet("shms", "SHMS Trigger Information");
+  //shms->SetSpectName("P");
   TRG->AddDetector(shms);
 
   // Set up the equipment to be analyzed
@@ -209,6 +210,7 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   //      HMS
   //////////////////////////////////////////////////////////////////////////
   THcTrigDet *hms = new THcTrigDet("hms", "HMS Trigger Information");
+  //hms->SetSpectName("H");
   TRG->AddDetector(hms);
 
   THcHallCSpectrometer *HMS = new THcHallCSpectrometer("H", "HMS");

@@ -6,6 +6,17 @@
 # 27Al gtargmass_amu = 26.98  (Dummy target should be analyzed as 1H, since it is the background underneath)
 # ppartmass = 0.493677 for K+ physics production runs
 
+# LAD Standard Kin
+22000-23000
+gpbeam = 6.430
+gtargmass_amu=12.0107
+htheta_lab = -15.
+ptheta_lab = 15.
+hpcentral = 3.
+ppcentral = 3.
+hpartmass = 0.00051099
+ppartmass = 0.00051099
+
 0-1710
 gpbeam = 6.430
 gtargmass_amu=12.0107
