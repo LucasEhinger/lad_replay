@@ -9,11 +9,38 @@ TH2D h2_gem_NstripsV_layer 'Number of Y strips fired; layer; Number of strips fi
 TH2D h2_gem_NclustU_layer 'Number of X clusters; layer; Number of clusters' [I] L.gem.hit.nclustu_layer[I] 2 -0.5 1.5 101 -0.5 100.5
 TH2D h2_gem_NclustV_layer 'Number of Y clusters; layer; Number of clusters' [I] L.gem.hit.nclustv_layer[I] 2 -0.5 1.5 101 -0.5 100.5
 
+TH1D h1_gem_NstripsU_layer_0 'Number of X strips fired; layer; Number of strips fired' L.gem.hit.nstripsu_layer[0] 2001 -0.5 2000.5 
+TH1D h1_gem_NstripsU_layer_1 'Number of X strips fired; layer; Number of strips fired' L.gem.hit.nstripsu_layer[1] 2001 -0.5 2000.5
+TH1D h1_gem_NstripsV_layer_0 'Number of Y strips fired; layer; Number of strips fired' L.gem.hit.nstripsv_layer[0] 4001 -0.5 4000.5
+TH1D h1_gem_NstripsV_layer_1 'Number of Y strips fired; layer; Number of strips fired' L.gem.hit.nstripsv_layer[1] 4001 -0.5 4000.5
+TH1D h1_gem_NclustU_layer_0 'Number of X clusters; layer; Number of clusters' L.gem.hit.nclustu_layer[0] 101 -0.5 100.5
+TH1D h1_gem_NclustU_layer_1 'Number of X clusters; layer; Number of clusters' L.gem.hit.nclustu_layer[1] 101 -0.5 100.5
+TH1D h1_gem_NclustV_layer_0 'Number of Y clusters; layer; Number of clusters' L.gem.hit.nclustv_layer[0] 101 -0.5 100.5
+TH1D h1_gem_NclustV_layer_1 'Number of Y clusters; layer; Number of clusters' L.gem.hit.nclustv_layer[1] 101 -0.5 100.5
+
 
 TH2D h2_gem_stripU_adc_0 'Layer 0 Y Strip vs ADC Strip Sum; Strip; ADC Sum' L.gem.m0.strip.istrip[I] L.gem.m0.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 8000 L.gem.m0.strip.IsU[I] 
 TH2D h2_gem_stripV_adc_0 'Layer 0 X Strip vs ADC Strip Sum; Strip; ADC Sum' L.gem.m0.strip.istrip[I] L.gem.m0.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 8000 L.gem.m0.strip.IsV[I] 
 TH2D h2_gem_stripU_adc_1 'Layer 1 Y Strip vs ADC Strip Sum; Strip; ADC Sum' L.gem.m1.strip.istrip[I] L.gem.m1.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 8000 L.gem.m0.strip.IsU[I] 
 TH2D h2_gem_stripV_adc_1 'Layer 1 X Strip vs ADC Strip Sum; Strip; ADC Sum' L.gem.m1.strip.istrip[I] L.gem.m1.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 8000 L.gem.m0.strip.IsV[I] 
+
+TH2D h2_gem_stripU_adc_max_0 'Layer 0 Y Strip vs ADC Strip Max; Strip; ADC Max' L.gem.m0.strip.istrip[I] L.gem.m0.strip.ADCmax[I] 1536 -0.5 1535.5 100 0 8000 L.gem.m0.strip.IsU[I] 
+TH2D h2_gem_stripV_adc_max_0 'Layer 0 X Strip vs ADC Strip Max; Strip; ADC Max' L.gem.m0.strip.istrip[I] L.gem.m0.strip.ADCmax[I] 3072 -0.5 3071.5 100 0 8000 L.gem.m0.strip.IsV[I] 
+TH2D h2_gem_stripU_adc_max_1 'Layer 1 Y Strip vs ADC Strip Max; Strip; ADC Max' L.gem.m1.strip.istrip[I] L.gem.m1.strip.ADCmax[I] 1536 -0.5 1535.5 100 0 8000 L.gem.m0.strip.IsU[I] 
+TH2D h2_gem_stripV_adc_max_1 'Layer 1 X Strip vs ADC Strip Max; Strip; ADC Max' L.gem.m1.strip.istrip[I] L.gem.m1.strip.ADCmax[I] 3072 -0.5 3071.5 100 0 8000 L.gem.m0.strip.IsV[I]
+
+
+# tracks
+TH1D h1_gem_ntracks 'Number of track candidates; N tracks found' L.gem.trk.ntracks 20 -0.5 19.5 
+TH1D h1_gem_track_t 'Time mean; Avg. time' L.gem.trk.t 100 0 100
+TH1D h1_gem_track_dt 'Time difference; dt' L.gem.trk.dt 100 -10 10
+TH1D h1_gem_track_d0 'Track DCA; DCA' L.gem.trk.d0 150 0 1.5
+
+# Strip hitmap
+TH1D h1_gem_stripsfiredU_m0 'Layer 0 X Strip hit map' L.gem.m0.strip.istrip[I] 1536 -0.5 1535.5 L.gem.m0.strip.IsU[I]
+TH1D h1_gem_stripsfiredV_m0 'Layer 0 Y Strip hit map' L.gem.m0.strip.istrip[I] 3072 -0.5 3071.5 L.gem.m0.strip.IsV[I]
+TH1D h1_gem_stripsfiredU_m1 'Layer 1 X Strip hit map' L.gem.m1.strip.istrip[I] 1536 -0.5 1535.5 L.gem.m1.strip.IsU[I]
+TH1D h1_gem_stripsfiredV_m1 'Layer 1 Y Strip hit map' L.gem.m1.strip.istrip[I] 3072 -0.5 3071.5 L.gem.m1.strip.IsV[I]
 
 # cluster plots (these cuts aren't working due. Currently being called in macros/gem_histos.C)
 #TH1D h1_gem_clustWidthU_0 'X cluster size Layer 0; cluster size' L.gem.clust.nstrip[I] 10 0.5 10.5 L.gem.clust.axis[I]<1&&L.gem.clust.layer[I]<1
@@ -38,29 +65,17 @@ TH2D h2_gem_stripV_adc_1 'Layer 1 X Strip vs ADC Strip Sum; Strip; ADC Sum' L.ge
 #TH1D h1_gem_clustTimeMeanV_1 'Cluster time 1' L.gem.clust.adc[I] 6 -0.5 5.5 L.gem.clust.axis[I]==1&&L.gem.clust.layer[I]==1
 
 # hits
-TH2D h2_gem_2dhit_0 'Layer 0 XY space points (2Dhits); x; y' L.gem.sp.posX_layer0[I] L.gem.sp.posY_layer0[I] 100 -0.65 0.65 100 -0.35 0.35 
-TH2D h2_gem_2dhit_1 'Layer 1 XY space points (2Dhits); x; y' L.gem.sp.posX_layer1[I] L.gem.sp.posY_layer1[I] 100 -0.65 0.65 100 -0.35 0.35 
-TH1D h1_gem_nhits_layer0 'Number of hits in Layer 0; Number of hits' L.gem.sp.nhits_layer0[I] 50 -0.5 49.5
-TH1D h1_gem_nhits_layer1 'Number of hits in Layer 1; Number of hits' L.gem.sp.nhits_layer1[I] 50 -0.5 49.5
-TH1D h1_gem_time_0 'Layer 0 Time Mean; Time Mean' L.gem.sp.time_layer0[I] 100 0 120 
-TH1D h1_gem_time_1 'Layer 1 Time Mean; Time Mean' L.gem.sp.time_layer1[I] 100 0 120 
-TH1D h1_gem_ADCMean_0 'Layer 0 ADC Mean; ADC Mean' L.gem.sp.adc_layer0[I] 100 0 70000 
-TH1D h1_gem_ADCMean_1 'Layer 1 ADC Mean; ADC Mean' L.gem.sp.adc_layer1[I] 100 0 70000 
-TH1D h1_gem_ADCAsym_0 'Layer 0 ADC Asymmetry; ADC Asymmetry' L.gem.sp.asym_layer0[I] 100 -1 1 
-TH1D h1_gem_ADCAsym_1 'Layer 1 ADC Asymmetry; ADC Asymmetry' L.gem.sp.asym_layer1[I] 100 -1 1 
-TH1D h1_gem_TimeDiff_0 'Layer 0 Time Difference; Time Difference' L.gem.sp.dt_layer0[I] 100 -40 40
-TH1D h1_gem_TimeDiff_1 'Layer 1 Time Difference; Time Difference' L.gem.sp.dt_layer1[I] 100 -40 40
-TH1D h1_gem_TimeCorr_0 'Layer 0 Corrected Time; Corrected Time' L.gem.sp.ct_layer0[I] 100 -40 40
-TH1D h1_gem_TimeCorr_1 'Layer 1 Corrected Time; Corrected Time' L.gem.sp.ct_layer1[I] 100 -40 40
-
-# tracks
-TH1D h1_gem_ntracks 'Number of track candidates; N tracks found' L.gem.trk.ntracks 20 -0.5 19.5 
-TH1D h1_gem_track_t 'Time mean; Avg. time' L.gem.trk.t 100 0 100
-TH1D h1_gem_track_dt 'Time difference; dt' L.gem.trk.dt 100 -10 10
-TH1D h1_gem_track_d0 'Track DCA; DCA' L.gem.trk.d0 150 0 1.5
-
-# Strip hitmap
-TH1D h1_gem_stripsfiredU_m0 'Layer 0 X Strip hit map' L.gem.m0.strip.istrip[I] 1536 -0.5 1535.5 L.gem.m0.strip.IsU[I]
-TH1D h1_gem_stripsfiredV_m0 'Layer 0 Y Strip hit map' L.gem.m0.strip.istrip[I] 3072 -0.5 3071.5 L.gem.m0.strip.IsV[I]
-TH1D h1_gem_stripsfiredU_m1 'Layer 1 X Strip hit map' L.gem.m1.strip.istrip[I] 1536 -0.5 1535.5 L.gem.m1.strip.IsU[I]
-TH1D h1_gem_stripsfiredV_m1 'Layer 1 Y Strip hit map' L.gem.m1.strip.istrip[I] 3072 -0.5 3071.5 L.gem.m1.strip.IsV[I]
+#TH2D h2_gem_2dhit_0 'Layer 0 XY space points (2Dhits); x; y' L.gem.sp.posX[I] L.gem.sp.posY[I] 100 -0.65 0.65 100 -0.35 0.35 L.gem.sp.layer[I]==0
+#TH2D h2_gem_2dhit_1 'Layer 1 XY space points (2Dhits); x; y' L.gem.sp.posX[I] L.gem.sp.posY[I] 100 -0.65 0.65 100 -0.35 0.35 L.gem.sp.layer[I]==1
+#TH1D h1_gem_nhits_0 'Number of hits; Number of hits' L.gem.sp.nhits[I] 50 -0.5 49.5 L.gem.sp.layer[I]==0
+#TH1D h1_gem_nhits_1 'Number of hits; Number of hits' L.gem.sp.nhits[I] 50 -0.5 49.5 L.gem.sp.layer[I]==1
+#TH1D h1_gem_time_0 'Time Mean; Time Mean' L.gem.sp.time[I] 100 0 120 L.gem.sp.layer[I]==0
+#TH1D h1_gem_time_1 'Time Mean; Time Mean' L.gem.sp.time[I] 100 0 120 L.gem.sp.layer[I]==1
+#TH1D h1_gem_ADCMean_0 'ADC Mean; ADC Mean' L.gem.sp.adc[I] 100 0 70000 L.gem.sp.layer[I]==0
+#TH1D h1_gem_ADCMean_1 'ADC Mean; ADC Mean' L.gem.sp.adc[I] 100 0 70000 L.gem.sp.layer[I]==1
+#TH1D h1_gem_ADCAsym_0 'ADC Asymmetry; ADC Asymmetry' L.gem.sp.asym[I] 100 -1 1 L.gem.sp.layer[I]==0
+#TH1D h1_gem_ADCAsym_1 'ADC Asymmetry; ADC Asymmetry' L.gem.sp.asym[I] 100 -1 1 L.gem.sp.layer[I]==1
+#TH1D h1_gem_TimeDiff_0 'Time Difference; Time Difference' L.gem.sp.dt[I] 100 -40 40 L.gem.sp.layer[I]==0
+#TH1D h1_gem_TimeDiff_1 'Time Difference; Time Difference' L.gem.sp.dt[I] 100 -40 40 L.gem.sp.layer[I]==1
+#TH1D h1_gem_TimeCorr_0 'Corrected Time; Corrected Time' L.gem.sp.ct[I] 100 -40 40 L.gem.sp.layer[I]==0
+#TH1D h1_gem_TimeCorr_1 'Corrected Time; Corrected Time' L.gem.sp.ct[I] 100 -40 40 L.gem.sp.layer[I]==1
