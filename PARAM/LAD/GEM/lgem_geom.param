@@ -19,23 +19,24 @@ lgem_m1_layer = 1
 lgem_m0_apvmap = 1
 lgem_m1_apvmap = 1
 
-; Positions, all units in m
-lgem_m0_position = 0, 0, 0.76571; Position from survey
-lgem_m1_position = 0, 0, 0.95
-;lgem_m0_position = 0, 0, 1.00
-;lgem_m1_position = 0, 0, 1.20
+; Positions, all units in cm
+lgem_m0_position = 0, 0, 76.571; Position from survey
+lgem_m1_position = 0, 0, 96.571
+;lgem_m0_position = 0, 0, 100.0
+;lgem_m1_position = 0, 0, 120.0
 
 lgem_angle = 127; deg
+lgem_d0_cut = 2000.0; cm
 
 
 ; strip angles
 ; X/Y are defined in lab coordinate system 
 ;TODO. Check definitions to make sure x & y are defined correctly
 lgem_m0_uangle = 90.0
-lgem_m0_vangle = 0.0
+lgem_m0_vangle = 180.0
 
 lgem_m1_uangle = 90.0
-lgem_m1_vangle = 0.0
+lgem_m1_vangle = 180.0
 
 ; Number of strips
 ;lgem_m0_nstripsu = 3072
@@ -48,5 +49,5 @@ lgem_m1_nstripsv = 3072
 lgem_m1_nstripsu = 1536
 
 ; all modules have the same strip pitch along both dimensions, 0.4 mm:
-lgem_upitch = 0.0004
-lgem_vpitch = 0.0004
+lgem_upitch = 0.04
+lgem_vpitch = 0.04
