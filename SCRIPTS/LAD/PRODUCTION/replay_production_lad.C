@@ -1,5 +1,6 @@
 // replays both the LAD hodoscope and GEM detectors (not standard spectrometers)
 #include "../../LAD/LAD_link_defs.h" // Leave this line commented. Used for debugging purposes only.
+#include "LADFilteredStreamBuf.h"
 void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Get RunNumber and MaxEvent if not provided.
@@ -21,10 +22,10 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // Create file name patterns.
   // const char *RunFileNamePattern = "lad_esb_%01d.evio.0";
   // const char *RunFileNamePattern = "ladvme1_%03d.dat.0";
-  // const char *RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
+  const char *RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
   // const char *RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
   // const char *RunFileNamePattern = "lad_LADonly_%02d.dat.0";
-  const char *RunFileNamePattern = "lad_GEMonly_%02d.dat.0";
+  // const char *RunFileNamePattern = "lad_GEMonly_%02d.dat.0";
 
   vector<TString> pathList;
   pathList.push_back(".");
@@ -128,6 +129,13 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // analyzer->SetSummaryFile(
   //     Form("REPORT_OUTPUT/HMS/PRODUCTION/summary_production_%d_%d.report", RunNumber, MaxEvent)); // optional
   // Start the actual analysis.
+
+  // Add a buffer filter to handle specific errors
+  LADFilteredStreamBuf ladbuf(std::clog);
+  ladbuf.includeRootErrorMessages(true); // Include ROOT error messages
+  ladbuf.addFilterString("Module L.react does not exist");
+
+  // Start the actual analysis
   analyzer->Process(run);
   // Create report file from template.
   // analyzer->PrintReport("TEMPLATES/LAD/PRODUCTION/lstackana_production.template",
