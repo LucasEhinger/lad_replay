@@ -10,9 +10,10 @@ SPEC="LAD_COIN"
 #     ls raw/"${spec}"_all_*.dat raw/../raw.copiedtotape/"${spec}"_all_*.dat -R 2>/dev/null | perl -ne 'if(/0*(\d+)/) {print "$1\n"}' | sort -n | tail -1 \
 # )
 
-#Need to fix file paths and names here once things are finalized.
+#Currently not pointing to cache. Can change later if necessary 
+# /cache/hallc/c-lad/raw/lad_Production_*.dat.* (or just ./cache soft link)
 lastRunFile=$(
-  ls /cache/hallc/c-lad/raw/lad_Production_*.dat.* -R 2>/dev/null | sort -V | tail -1
+  ls ./raw/lad_Production_*.dat.* -R 2>/dev/null | sort -V | tail -1
 )
 
 lastRun=$(
@@ -141,7 +142,8 @@ expert_configs=(
   #Need to match ${rootFile} to the output name format of the coin_replay
   #ln -fs ${rootFile} ${latestRootFile} #
   ln -fs "../../COSMICS/${SPEC}_cosmic_hall_${runNum}_${numEvents}.root" ${latestRootFile}
-
+  #ln -fs "../../LADC_COIN/PRODUCTION/${SPEC}_production_hall_${runNum}_${numEvents}.root" ${latestRootFile}
+  #ln -fs "../../LADC_COIN/CALIBRATION/${SPEC}_calibration_hall_${runNum}_${numEvents}.root" ${latestRootFile}
   sleep 2
   function yes_or_no() {
     while true; do
@@ -262,7 +264,7 @@ expert_configs=(
       -cert /home/cdaq/.elogcert \
       -t "${numEventsk}k replay plots for run ${runNum} TEST TEST TEST" \
       -e cdaq \
-      -l TLOG \
+      -l HCLOG \
       -a ${latestMonPdfFile}
 
   #    /home/cdaq/bin/hclog \
@@ -289,7 +291,7 @@ expert_configs=(
   echo ""
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
   echo ""
-  echo "Generating report file monitoring data file ${SPEC} run ${runNum}."
+  echo "(Not) Generating report file monitoring data file ${SPEC} run ${runNum}."
   echo ""
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
 
@@ -297,16 +299,16 @@ expert_configs=(
   #  mv "${outFileMonitor}" "${reportMonOutDir}/${reportMonFile}"
   #  eval ${openReportMon}
 
-  sleep 2
+  # sleep 2
 
-  echo ""
-  echo ""
-  echo ""
-  echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
-  echo ""
-  echo "Taking hextuple ratios in  ${latestRootFile}"
-  echo ""
-  echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
+  # echo ""
+  # echo ""
+  # echo ""
+  # echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
+  # echo ""
+  # echo "Taking hextuple ratios in  ${latestRootFile}"
+  # echo ""
+  # echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
 
   #if [[ "${spec}" == "shms" ]]; then
   #  ./hcana -l << EOF

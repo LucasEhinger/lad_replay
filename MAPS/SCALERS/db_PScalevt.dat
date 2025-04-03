@@ -1,11 +1,10 @@
-map 3801 8 6 02800620 ffffffff 13
-map 3801 8 7 02a00720 ffffffff 13
-map 3801 8 8 02c00820 ffffffff 13
-map 3801 8 9 02e00920 ffffffff 13
-map 3801 8 10 03000a20 ffffffff 13
-map 3801 8 11 03200b20 ffffffff 13
-map 3801 8 12 03400c20 ffffffff 13
-map 3801 8 13 03600d20 ffffffff 13 31 1000000
+map 3801 8 6 00000620 ffffffff 13
+map 3801 8 7 00200720 ffffffff 13
+map 3801 8 8 00400820 ffffffff 13
+map 3801 8 9 00600920 ffffffff 13
+map 3801 8 10 00800a20 ffffffff 13
+map 3801 8 11 00a00b20 ffffffff 13
+map 3801 8 12 00c00c20 ffffffff 13 31 1000000
 variable 12 24 1 .hSTOF.scaler HMS STOF
 variable 12 24 2 .hSTOF.scalerRate HMS STOF
 variable 9 31 1 .hod.2y16.posScaler SHMS 2y+ paddle 16

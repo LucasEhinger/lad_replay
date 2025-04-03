@@ -48,7 +48,8 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   TString ROOTFileName;
   pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic");
   ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_COIN_cosmic_hall_%d_%d.root";
-
+  //ROOTFileNamePattern = "ROOTfiles/LAD_COIN/PRODUCTION/LAD_COIN_production_hall_%d_%d.root";
+  //ROOTFileNamePattern = "ROOTfiles/LAD_COIN/CALIBRATION/LAD_COIN_calibration_hall_%d_%d.root";
   switch (run_type) {
   case 0:
     RunFileNamePattern = "lad_Production_%02d.dat.0";
@@ -80,6 +81,13 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
     break;
   }
   ROOTFileName = Form(ROOTFileNamePattern, RunNumber, MaxEvent);
+
+  //(CA)
+  TString REPORTFileName;
+  REPORTFileNamePattern  = "REPORT_OUTPUT/LAD_COIN/PRODUCTION/replayReport_LAD_coin_production_%d_%d_%d.report";
+  REPORTFileName  = Form(REPORTFileNamePattern, RunNumber, FirstEvent, MaxEvent);
+
+  
   // LHE. End temp.
   //  Many experiments use separate path for each spectrometer SHMS, HMS, COIN
   //  There are subdirectories for PRODUCTION, SCALER, 50K, etc.
@@ -348,5 +356,8 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   // Create report file from template
 
   // analyzer->PrintReport("TEMPLATES/SHMS/PRODUCTION/pstackana_production.template", REPORTFileName.Data()); //
+
+  analyzer->PrintReport("TEMPLATES/LAD/PRODUCTION/lstackana_production.template", REPORTFileName.Data()); //
+
   // optional
 }
