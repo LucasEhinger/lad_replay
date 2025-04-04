@@ -349,8 +349,8 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   // File to record accounting information for cuts
   // analyzer->SetSummaryFile(SummaryFileName.Data()); // optional
 
-  LADFilteredStreamBuf ladbuf(std::cout);
-  ladbuf.addFilterString("HitList(event");
+  // LADFilteredStreamBuf ladbuf(std::cout);
+  // ladbuf.addFilterString("HitList(event");
   // Start the actual analysis.
   analyzer->Process(run);
   // Create report file from template
