@@ -122,7 +122,8 @@ set ratecheck(lad-vme1) 493
 
 set Stop_Go 1
 #set epics_bcm_name "hac_bcm_average"
-set epics_bcm_name "ibcm1"
+#set epics_bcm_name "ibcm1"
+set epics_bcm_name "ibcm3H04A"
 set current [epics get $epics_bcm_name]
 set dispcurrent 0.
 set indexnumber ""
