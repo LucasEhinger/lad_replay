@@ -345,7 +345,11 @@ expert_configs=(
   echo ""
   echo "-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|"
   echo ""
-  echo ""
+  echo "Useful links:"
+  echo " -> ROOT file: ${rootFileDir}/${rootFile}"
+  echo " -> Histogram (ROOT) file: ${monRootDir}/${monRootFile}"
+  echo " -> Histogram (PDF) file: ${monPdfDir}/${monPdfFile}"
+  echo " -> Raw EVIO file: ${lastRunFile}"
   echo ""
 
 } 2>&1 | tee "${replayReport}"

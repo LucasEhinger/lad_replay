@@ -160,34 +160,41 @@ TH2F pladhod_REFBAR_good_hit_TOFvsEDEP 'LAD REFBAR Good Hit TOF w/ EDEP; PMT Num
 #---------------------------------
 # Full LAD HODO Hits (not necessarily with a Track)
 #---------------------------------
-TH1F pladhod_000_fullhit_n 'LAD 000 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.000.nFullHodoHits 12 -0.5 11.5
-TH1F pladhod_001_fullhit_n 'LAD 001 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.001.nFullHodoHits 12 -0.5 11.5 
-TH1F pladhod_100_fullhit_n 'LAD 100 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.100.nFullHodoHits 12 -0.5 11.5
-TH1F pladhod_101_fullhit_n 'LAD 101 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.101.nFullHodoHits 12 -0.5 11.5
-TH1F pladhod_200_fullhit_n 'LAD 200 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.200.nFullHodoHits 12 -0.5 11.5
-TH1F pladhod_REFBAR_fullhit_n 'LAD REFBAR Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.REFBAR.nFullHodoHits 2 -0.5 1.5
+TH1F pladhod_000_fullhit_n 'SHMS-LAD 000 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.000.nFullHodoHits 12 -0.5 11.5
+TH1F pladhod_001_fullhit_n 'SHMS-LAD 001 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.001.nFullHodoHits 12 -0.5 11.5 
+TH1F pladhod_100_fullhit_n 'SHMS-LAD 100 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.100.nFullHodoHits 12 -0.5 11.5
+TH1F pladhod_101_fullhit_n 'SHMS-LAD 101 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.101.nFullHodoHits 12 -0.5 11.5
+TH1F pladhod_200_fullhit_n 'SHMS-LAD 200 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.200.nFullHodoHits 12 -0.5 11.5
+TH1F pladhod_REFBAR_fullhit_n 'SHMS-LAD REFBAR Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.REFBAR.nFullHodoHits 2 -0.5 1.5
 
-TH1F pladhod_000_fullhit_time 'LAD 000 Full Hit Time; Time [ns]; Counts' P.ladhod.000.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
-TH1F pladhod_001_fullhit_time 'LAD 001 Full Hit Time; Time [ns]; Counts' P.ladhod.001.HodoHitTime[I] 200 -3100 -800 g.evtyp==1 
-TH1F pladhod_100_fullhit_time 'LAD 100 Full Hit Time; Time [ns]; Counts' P.ladhod.100.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
-TH1F pladhod_101_fullhit_time 'LAD 101 Full Hit Time; Time [ns]; Counts' P.ladhod.101.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
-TH1F pladhod_200_fullhit_time 'LAD 200 Full Hit Time; Time [ns]; Counts' P.ladhod.200.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
-TH1F pladhod_REFBAR_fullhit_time 'LAD REFBAR Full Hit Time; Time [ns]; Counts' P.ladhod.REFBAR.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
+TH1F pladhod_000_fullhit_time 'SHMS-LAD 000 Full Hit Time; Time [ns]; Counts' P.ladhod.000.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
+TH1F pladhod_001_fullhit_time 'SHMS-LAD 001 Full Hit Time; Time [ns]; Counts' P.ladhod.001.HodoHitTime[I] 200 -3100 -800 g.evtyp==1 
+TH1F pladhod_100_fullhit_time 'SHMS-LAD 100 Full Hit Time; Time [ns]; Counts' P.ladhod.100.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
+TH1F pladhod_101_fullhit_time 'SHMS-LAD 101 Full Hit Time; Time [ns]; Counts' P.ladhod.101.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
+TH1F pladhod_200_fullhit_time 'SHMS-LAD 200 Full Hit Time; Time [ns]; Counts' P.ladhod.200.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
+TH1F pladhod_REFBAR_fullhit_time 'SHMS-LAD REFBAR Full Hit Time; Time [ns]; Counts' P.ladhod.REFBAR.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
 
-TH1F pladhod_000_fullhit_paddle 'LAD 000 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.000.HodoHitPaddleNum[I] 11 -0.5 10.5
-TH1F pladhod_001_fullhit_paddle 'LAD 001 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.001.HodoHitPaddleNum[I] 11 -0.5 10.5 
-TH1F pladhod_100_fullhit_paddle 'LAD 100 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.100.HodoHitPaddleNum[I] 11 -0.5 10.5
-TH1F pladhod_101_fullhit_paddle 'LAD 101 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.101.HodoHitPaddleNum[I] 11 -0.5 10.5
-TH1F pladhod_200_fullhit_paddle 'LAD 200 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.200.HodoHitPaddleNum[I] 11 -0.5 10.5
-TH1F pladhod_REFBAR_fullhit_paddle 'LAD REFBAR Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.REFBAR.HodoHitPaddleNum[I] 1 -0.5 0.5
+TH1F pladhod_000_fullhit_ADC 'SHMS-LAD 000 Full Hit ADC; Time [ns]; Counts' P.ladhod.000.HodoHitEdep[I] 200 0 900 g.evtyp==1
+TH1F pladhod_001_fullhit_ADC 'SHMS-LAD 001 Full Hit ADC; Time [ns]; Counts' P.ladhod.001.HodoHitEdep[I] 200 0 900 g.evtyp==1
+TH1F pladhod_100_fullhit_ADC 'SHMS-LAD 100 Full Hit ADC; Time [ns]; Counts' P.ladhod.100.HodoHitEdep[I] 200 0 900 g.evtyp==1
+TH1F pladhod_101_fullhit_ADC 'SHMS-LAD 101 Full Hit ADC; Time [ns]; Counts' P.ladhod.101.HodoHitEdep[I] 200 0 900 g.evtyp==1
+TH1F pladhod_200_fullhit_ADC 'SHMS-LAD 200 Full Hit ADC; Time [ns]; Counts' P.ladhod.200.HodoHitEdep[I] 200 0 900 g.evtyp==1
+TH1F pladhod_REFBAR_fullhit_ADC 'SHMS-LAD REFBAR Full Hit ADC; Time [ns]; Counts' P.ladhod.REFBAR.HodoHitEdep[I] 200 0 900 g.evtyp==1
+
+TH1F pladhod_000_fullhit_paddle 'SHMS-LAD 000 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.000.HodoHitPaddleNum[I] 11 -0.5 10.5
+TH1F pladhod_001_fullhit_paddle 'SHMS-LAD 001 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.001.HodoHitPaddleNum[I] 11 -0.5 10.5 
+TH1F pladhod_100_fullhit_paddle 'SHMS-LAD 100 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.100.HodoHitPaddleNum[I] 11 -0.5 10.5
+TH1F pladhod_101_fullhit_paddle 'SHMS-LAD 101 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.101.HodoHitPaddleNum[I] 11 -0.5 10.5
+TH1F pladhod_200_fullhit_paddle 'SHMS-LAD 200 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.200.HodoHitPaddleNum[I] 11 -0.5 10.5
+TH1F pladhod_REFBAR_fullhit_paddle 'SHMS-LAD REFBAR Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.REFBAR.HodoHitPaddleNum[I] 1 -0.5 0.5
 
 
-#TH1F pladhod_000_fullhit_dy 'LAD 000 Full Hit dv; dy [cm]; Counts' P.ladhod.000.HodoHitPos[I] 200 -300 300
-#TH1F pladhod_001_fullhit_dy 'LAD 001 Full Hit dv; dy [cm]; Counts' P.ladhod.001.HodoHitPos[I] 200 -300 300 
-#TH1F pladhod_100_fullhit_dy 'LAD 100 Full Hit dv; dy [cm]; Counts' P.ladhod.100.HodoHitPos[I] 200 -300 300
-#TH1F pladhod_101_fullhit_dy 'LAD 101 Full Hit dv; dy [cm]; Counts' P.ladhod.101.HodoHitPos[I] 200 -300 300
-#TH1F pladhod_200_fullhit_dy 'LAD 200 Full Hit dv; dy [cm]; Counts' P.ladhod.200.HodoHitPos[I] 200 -300 300
-#TH1F pladhod_REFBAR_fullhit_dy 'LAD REFBAR Full Hit dv; dy [cm]; Counts' P.ladhod.REFBAR.HodoHitPos[I] 200 -300 300
+#TH1F pladhod_000_fullhit_dy 'SHMS-LAD 000 Full Hit dv; dy [cm]; Counts' P.ladhod.000.HodoHitPos[I] 200 -300 300
+#TH1F pladhod_001_fullhit_dy 'SHMS-LAD 001 Full Hit dv; dy [cm]; Counts' P.ladhod.001.HodoHitPos[I] 200 -300 300 
+#TH1F pladhod_100_fullhit_dy 'SHMS-LAD 100 Full Hit dv; dy [cm]; Counts' P.ladhod.100.HodoHitPos[I] 200 -300 300
+#TH1F pladhod_101_fullhit_dy 'SHMS-LAD 101 Full Hit dv; dy [cm]; Counts' P.ladhod.101.HodoHitPos[I] 200 -300 300
+#TH1F pladhod_200_fullhit_dy 'SHMS-LAD 200 Full Hit dv; dy [cm]; Counts' P.ladhod.200.HodoHitPos[I] 200 -300 300
+#TH1F pladhod_REFBAR_fullhit_dy 'SHMS-LAD REFBAR Full Hit dv; dy [cm]; Counts' P.ladhod.REFBAR.HodoHitPos[I] 200 -300 300
 
 #---------------------------------
 # LAD HODO Hits with a Track
@@ -370,33 +377,40 @@ TH2F hladhod_REFBAR_good_hit_TOFvsEDEP 'LAD REFBAR Good Hit TOF w/ EDEP; PMT Num
 #---------------------------------
 # Full LAD HODO Hits (not necessarily with a Track)
 #---------------------------------
-TH1F hladhod_000_fullhit_n 'LAD 000 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.000.nFullHodoHits 12 -0.5 11.5
-TH1F hladhod_001_fullhit_n 'LAD 001 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.001.nFullHodoHits 12 -0.5 11.5 
-TH1F hladhod_100_fullhit_n 'LAD 100 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.100.nFullHodoHits 12 -0.5 11.5
-TH1F hladhod_101_fullhit_n 'LAD 101 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.101.nFullHodoHits 12 -0.5 11.5
-TH1F hladhod_200_fullhit_n 'LAD 200 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.200.nFullHodoHits 12 -0.5 11.5
-TH1F hladhod_REFBAR_fullhit_n 'LAD REFBAR Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.REFBAR.nFullHodoHits 2 -0.5 1.5
+TH1F hladhod_000_fullhit_n 'SHMS-LAD 000 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.000.nFullHodoHits 12 -0.5 11.5
+TH1F hladhod_001_fullhit_n 'SHMS-LAD 001 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.001.nFullHodoHits 12 -0.5 11.5 
+TH1F hladhod_100_fullhit_n 'SHMS-LAD 100 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.100.nFullHodoHits 12 -0.5 11.5
+TH1F hladhod_101_fullhit_n 'SHMS-LAD 101 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.101.nFullHodoHits 12 -0.5 11.5
+TH1F hladhod_200_fullhit_n 'SHMS-LAD 200 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.200.nFullHodoHits 12 -0.5 11.5
+TH1F hladhod_REFBAR_fullhit_n 'SHMS-LAD REFBAR Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.REFBAR.nFullHodoHits 2 -0.5 1.5
 
-TH1F hladhod_000_fullhit_time 'LAD 000 Full Hit Time; Time [ns]; Counts' H.ladhod.000.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
-TH1F hladhod_001_fullhit_time 'LAD 001 Full Hit Time; Time [ns]; Counts' H.ladhod.001.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
-TH1F hladhod_100_fullhit_time 'LAD 100 Full Hit Time; Time [ns]; Counts' H.ladhod.100.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
-TH1F hladhod_101_fullhit_time 'LAD 101 Full Hit Time; Time [ns]; Counts' H.ladhod.101.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
-TH1F hladhod_200_fullhit_time 'LAD 200 Full Hit Time; Time [ns]; Counts' H.ladhod.200.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
-TH1F hladhod_REFBAR_fullhit_time 'LAD REFBAR Full Hit Time; Time [ns]; Counts' H.ladhod.REFBAR.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_000_fullhit_time 'SHMS-LAD 000 Full Hit Time; Time [ns]; Counts' H.ladhod.000.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_001_fullhit_time 'SHMS-LAD 001 Full Hit Time; Time [ns]; Counts' H.ladhod.001.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_100_fullhit_time 'SHMS-LAD 100 Full Hit Time; Time [ns]; Counts' H.ladhod.100.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_101_fullhit_time 'SHMS-LAD 101 Full Hit Time; Time [ns]; Counts' H.ladhod.101.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_200_fullhit_time 'SHMS-LAD 200 Full Hit Time; Time [ns]; Counts' H.ladhod.200.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_REFBAR_fullhit_time 'SHMS-LAD REFBAR Full Hit Time; Time [ns]; Counts' H.ladhod.REFBAR.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
 
-TH1F hladhod_000_fullhit_paddle 'LAD 000 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.000.HodoHitPaddleNum[I] 11 -0.5 10.5
-TH1F hladhod_001_fullhit_paddle 'LAD 001 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.001.HodoHitPaddleNum[I] 11 -0.5 10.5 
-TH1F hladhod_100_fullhit_paddle 'LAD 100 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.100.HodoHitPaddleNum[I] 11 -0.5 10.5
-TH1F hladhod_101_fullhit_paddle 'LAD 101 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.101.HodoHitPaddleNum[I] 11 -0.5 10.5
-TH1F hladhod_200_fullhit_paddle 'LAD 200 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.200.HodoHitPaddleNum[I] 11 -0.5 10.5
-TH1F hladhod_REFBAR_fullhit_paddle 'LAD 200 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.200.HodoHitPaddleNum[I] 1 -0.5 0.5
+TH1F hladhod_000_fullhit_ADC 'SHMS-LAD 000 Full Hit ADC; Time [ns]; Counts' H.ladhod.000.HodoHitEdep[I] 200 0 900 g.evtyp==2
+TH1F hladhod_001_fullhit_ADC 'SHMS-LAD 001 Full Hit ADC; Time [ns]; Counts' H.ladhod.001.HodoHitEdep[I] 200 0 900 g.evtyp==2
+TH1F hladhod_100_fullhit_ADC 'SHMS-LAD 100 Full Hit ADC; Time [ns]; Counts' H.ladhod.100.HodoHitEdep[I] 200 0 900 g.evtyp==2
+TH1F hladhod_101_fullhit_ADC 'SHMS-LAD 101 Full Hit ADC; Time [ns]; Counts' H.ladhod.101.HodoHitEdep[I] 200 0 900 g.evtyp==2
+TH1F hladhod_200_fullhit_ADC 'SHMS-LAD 200 Full Hit ADC; Time [ns]; Counts' H.ladhod.200.HodoHitEdep[I] 200 0 900 g.evtyp==2
+TH1F hladhod_REFBAR_fullhit_ADC 'SHMS-LAD REFBAR Full Hit ADC; Time [ns]; Counts' H.ladhod.REFBAR.HodoHitEdep[I] 200 0 900 g.evtyp==2
 
-#TH1F hladhod_000_fullhit_dy 'LAD 000 Full Hit dv; dy [cm]; Counts' H.ladhod.000.HodoHitPos[I] 200 -300 300
-#TH1F hladhod_001_fullhit_dy 'LAD 001 Full Hit dv; dy [cm]; Counts' H.ladhod.001.HodoHitPos[I] 200 -300 300 
-#TH1F hladhod_100_fullhit_dy 'LAD 100 Full Hit dv; dy [cm]; Counts' H.ladhod.100.HodoHitPos[I] 200 -300 300
-#TH1F hladhod_101_fullhit_dy 'LAD 101 Full Hit dv; dy [cm]; Counts' H.ladhod.101.HodoHitPos[I] 200 -300 300
-#TH1F hladhod_200_fullhit_dy 'LAD 200 Full Hit dv; dy [cm]; Counts' H.ladhod.200.HodoHitPos[I] 200 -300 300
-#TH1F hladhod_REFBAR_fullhit_dy 'LAD REFBAR Full Hit dv; dy [cm]; Counts' H.ladhod.REFBAR.HodoHitPos[I] 200 -300 300
+TH1F hladhod_000_fullhit_paddle 'SHMS-LAD 000 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.000.HodoHitPaddleNum[I] 11 -0.5 10.5
+TH1F hladhod_001_fullhit_paddle 'SHMS-LAD 001 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.001.HodoHitPaddleNum[I] 11 -0.5 10.5 
+TH1F hladhod_100_fullhit_paddle 'SHMS-LAD 100 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.100.HodoHitPaddleNum[I] 11 -0.5 10.5
+TH1F hladhod_101_fullhit_paddle 'SHMS-LAD 101 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.101.HodoHitPaddleNum[I] 11 -0.5 10.5
+TH1F hladhod_200_fullhit_paddle 'SHMS-LAD 200 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.200.HodoHitPaddleNum[I] 11 -0.5 10.5
+TH1F hladhod_REFBAR_fullhit_paddle 'SHMS-LAD 200 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.200.HodoHitPaddleNum[I] 1 -0.5 0.5
+
+#TH1F hladhod_000_fullhit_dy 'SHMS-LAD 000 Full Hit dv; dy [cm]; Counts' H.ladhod.000.HodoHitPos[I] 200 -300 300
+#TH1F hladhod_001_fullhit_dy 'SHMS-LAD 001 Full Hit dv; dy [cm]; Counts' H.ladhod.001.HodoHitPos[I] 200 -300 300 
+#TH1F hladhod_100_fullhit_dy 'SHMS-LAD 100 Full Hit dv; dy [cm]; Counts' H.ladhod.100.HodoHitPos[I] 200 -300 300
+#TH1F hladhod_101_fullhit_dy 'SHMS-LAD 101 Full Hit dv; dy [cm]; Counts' H.ladhod.101.HodoHitPos[I] 200 -300 300
+#TH1F hladhod_200_fullhit_dy 'SHMS-LAD 200 Full Hit dv; dy [cm]; Counts' H.ladhod.200.HodoHitPos[I] 200 -300 300
+#TH1F hladhod_REFBAR_fullhit_dy 'SHMS-LAD REFBAR Full Hit dv; dy [cm]; Counts' H.ladhod.REFBAR.HodoHitPos[I] 200 -300 300
 
 #---------------------------------
 # LAD HODO Hits with a Track
