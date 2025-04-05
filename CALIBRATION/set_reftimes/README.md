@@ -26,5 +26,10 @@ https://hallcweb.jlab.org/doc-private/ShowDocument?docid=1032
 5. Change the corresponding reference time cuts if required in: `PARAM/<SHMS,HMS,COIN>/GEN/<p,h>_reftime_cut.param`.  **Note: the files changed must be the ones actually being loaded by hcana.  For instance, the COIN DAQ may load PARAM/HMS/GEN/h_reftime_cut_coindaq.param.  Check this in your standard.dbase or general.param files.**
 6. Repeat these steps to validate your changes took place.
 
-## Disclaimer
-This code was developed for the EMC/X>1 experiments in Hall C.  Different DAQ configurations may require some changes to this script, specifically the gHcParms.  You can ensure this will work for your experiments purposes by running it over a different experiment's file before your experiment gets on the floor.  Setting the reference times and timing windows has been a major source of pain during experiment startup because the 50k replays and diagnostic histograms may have no events in them!  Familiarize yourself with this code prior to running the experiment.  
+## LAD Quick Start Guide
+Scripts in SHMS and HMS have been updated with correct file names and param files.
+
+`hcana -l -q "SCRIPTS/LAD_COIN/TIMING/replay_no_reference_times_hms.C(XXX,YYY)"`
+`hcana`
+`.L CALIBRATION/set_reftimes/reference_time_setup.C`
+`run_hms_reference_time_setup("ROOTfiles/CALIB/hms_noReferenceTime_XXX_YYY.root",22016,"CALIBRATION/set_reftimes/hms_ref_time")`

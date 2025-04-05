@@ -6,14 +6,14 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
   gROOT->SetBatch(kTRUE);    //do not display plots
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
   if(spec.CompareTo("shms",TString::kIgnoreCase)==0) {
-    gHcParms->AddString("g_ctp_database_filename", "DBASE/SHMS/standard.database");
+    gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD_COIN/standard.database");
     gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
     gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
     gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
     // Load parameters for SHMS trigger configuration
     gHcParms->Load("PARAM/TRIG/tshms.param");
   } else if (spec.CompareTo("coin",TString::kIgnoreCase)==0) {
-    gHcParms->AddString("g_ctp_database_filename", "DBASE/COIN/standard.database");
+    gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD_COIN/standard.database");
     gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
     gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
     gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
@@ -262,7 +262,7 @@ void run_hms_reference_time_setup(TString infile, int RunNumber, TString outfile
   // Add variables to global list.
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
   if(spec.CompareTo("hms",TString::kIgnoreCase)==0) {
-    gHcParms->AddString("g_ctp_database_filename", "DBASE/HMS/standard.database");
+    gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD_COIN/standard.database");
     gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
     gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
     gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);

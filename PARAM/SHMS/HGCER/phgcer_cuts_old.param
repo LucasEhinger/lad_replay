@@ -22,5 +22,5 @@ phgcer_adc_tdc_offset   =  200.0
 
 ; fall 2019 startup
 ; cut variable is P.hgcer.goodAdcTdcDiffTime
-phgcer_adcTimeWindowMin = -13, -15, -13, -13
-phgcer_adcTimeWindowMax =  27, 25, 27, 27
+phgcer_adcTimeWindowMin = -60.0, -60.0, -60.0, -60.0
+phgcer_adcTimeWindowMax =  80.0,  80.0,  80.0,  80.0

@@ -15,12 +15,22 @@
 ; hcer_adcrefcut=-100000.
 ; hcal_adcrefcut=-100000.
 
+; determined for LAD 2025
+; cut variable = hDCREF2
+hdc_tdcrefcut=-21500.
+; cut variable = hT2
+hhodo_tdcrefcut=-31500.
+; cut variable = hFADC_TREF_ROC1
+hhodo_adcrefcut=-4200.
+hcer_adcrefcut=-4200.
+hcal_adcrefcut=-4200.
+
 ; determined for fall 2019 startup
 ; cut variable = hDCREF2
-hdc_tdcrefcut=-20000.
+; hdc_tdcrefcut=-20000.
 ; cut variable = hT2
-hhodo_tdcrefcut=-1750.
+; hhodo_tdcrefcut=-1750.
 ; cut variable = hFADC_TREF_ROC1
-hhodo_adcrefcut=-4100.
-hcer_adcrefcut=-4100.
-hcal_adcrefcut=-4100.
+; hhodo_adcrefcut=-4100.
+; hcer_adcrefcut=-4100.
+;  hcal_adcrefcut=-4100.

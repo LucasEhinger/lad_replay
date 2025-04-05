@@ -16,20 +16,20 @@ void replay_no_reference_times_hms(Int_t RunNumber=0, Int_t MaxEvent=0) {
   }
 
   // Create file name patterns.
-  const char* RunFileNamePattern = "hms_all_%05d.dat";
+  const char* RunFileNamePattern = "lad_Production_noGEM_%05d.dat.0";
   vector<TString> pathList;
   pathList.push_back(".");
   pathList.push_back("./raw");
   pathList.push_back("./raw/../raw.copiedtotape");
   pathList.push_back("./cache");
-  pathList.push_back("/cache/hallc/xem2/raw/");
+  pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data");
 
-  const char* ROOTFileNamePattern = "ROOTfiles/hms_noReferenceTime_%d_%d.root";
+  const char* ROOTFileNamePattern = "ROOTfiles/CALIB/hms_noReferenceTime_%d_%d.root";
 
   // Load Global parameters
   // Add variables to global list.
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
-  gHcParms->AddString("g_ctp_database_filename", "DBASE/HMS/standard.database");
+  gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD_COIN/standard.database");
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
