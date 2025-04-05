@@ -16,7 +16,7 @@ TSROC 2
   15     250     250
   16     250     250
   17     250     250
-  18     250     250
+  18     250     250 
   19     250     250
   20     1190    1190
   21        4      4
@@ -33,7 +33,7 @@ TSROC 2
   10     250     250
   13     250     250
   14     250     250
-  18     1190    1190
+  #18     1190    1190 #Not currently pointing to anything in the detector map. There is data there in CODA, and this throws a warning
   19     1190    1190
   20     1190    1190
   21       4       4

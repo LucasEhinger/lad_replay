@@ -12,8 +12,11 @@ SPEC="LAD_COIN"
 
 #Currently not pointing to cache. Can change later if necessary 
 # /cache/hallc/c-lad/raw/lad_Production_*.dat.* (or just ./cache soft link)
+# lastRunFile=$(
+#   ls ./raw/lad_Production_*.dat.* -R 2>/dev/null | sort -V | tail -1
+# )
 lastRunFile=$(
-  ls ./raw/lad_Production_*.dat.* -R 2>/dev/null | sort -V | tail -1
+  ls /volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic/lad_Production_*.dat.* -R 2>/dev/null | sort -V | tail -1
 )
 
 lastRun=$(
@@ -345,7 +348,11 @@ expert_configs=(
   echo ""
   echo "-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|"
   echo ""
-  echo ""
+  echo "Useful links:"
+  echo " -> ROOT file: ${rootFileDir}/${rootFile}"
+  echo " -> Histogram (ROOT) file: ${monRootDir}/${monRootFile}"
+  echo " -> Histogram (PDF) file: ${monPdfDir}/${monPdfFile}"
+  echo " -> Raw EVIO file: ${lastRunFile}"
   echo ""
 
 } 2>&1 | tee "${replayReport}"
