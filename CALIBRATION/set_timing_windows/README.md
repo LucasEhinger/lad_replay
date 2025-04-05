@@ -34,5 +34,10 @@ https://hallcweb.jlab.org/doc-private/ShowDocument?docid=1032
 To output the **new** timing window cuts to the screen in hallc_replay format, simply change newWindows to *true* and change the width to the desired value.  Copy the output timing windows by hand to a new cut or replace the existing cuts.  
 '''
 
-## Disclaimer
-This code was developed for the EMC/X>1 experiments in Hall C.  Different DAQ configurations may require some changes to this script, specifically the gHcParms.  You can ensure this will work for your experiments purposes by running it over a different experiment's file before your experiment gets on the floor.  Setting the reference times and timing windows has been a major source of pain during experiment startup because the 50k replays and diagnostic histograms may have no events in them!  Familiarize yourself with this code prior to running the experiment.  
+## LAD Quick Start Guide
+Scripts in SHMS and HMS have been updated with correct file names and param files.
+
+`hcana -l 'SCRIPTS/HMS/TIMING/replay_no_timing_windows_hms.C(22017,-1)'`
+`hcana`
+`.L CALIBRATION/set_timing_windows/timing_window_setup.C(22017,-1)`
+`run_hms_timing_windows("ROOTfiles/CALIB/hms_noTimingWindows_22017_-1.root","CALIBRATION/set_timing_windows/hms_timing_windows.root",22017)`

@@ -16,14 +16,16 @@ void replay_no_timing_windows_shms (Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   }
 
   // Create file name patterns.
-  const char* RunFileNamePattern = "shms_all_%05d.dat";
+  const char* RunFileNamePattern = "lad_Production_noGEM_%05d.dat.0";
   vector<TString> pathList;
   pathList.push_back(".");
   pathList.push_back("./raw");
   pathList.push_back("./raw/../raw.copiedtotape");
   pathList.push_back("./cache");
+  pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data");
 
-  const char* ROOTFileNamePattern = "ROOTfiles/shms_noTimingWindows_%d_%d.root";
+  const char* ROOTFileNamePattern = "ROOTfiles/CALIB/shms_noTimingWindows_%d_%d.root";
+
 
   // Load global parameters
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);

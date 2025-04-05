@@ -22,5 +22,5 @@ pngcer_adc_tdc_offset   =  200.0
 
 ; fall 2019 startup
 ; cut variable is P.ngcer.goodAdcTdcDiffTime
-pngcer_adcTimeWindowMin = -1, -3, -61, -3
-pngcer_adcTimeWindowMax = 39, 37, -21, 37
+pngcer_adcTimeWindowMin = -20.0, -20.0, -20.0, -20.0
+pngcer_adcTimeWindowMax = 80.0, 80.0, 80.0, 80.0
