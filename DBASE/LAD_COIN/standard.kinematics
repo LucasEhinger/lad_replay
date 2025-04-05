@@ -10,10 +10,10 @@
 22000-23000
 gpbeam = 6.430
 gtargmass_amu=12.0107
-htheta_lab = -15.
-ptheta_lab = 15.
-hpcentral = 3.
-ppcentral = 3.
+htheta_lab = -17.01
+ptheta_lab = 17.01
+hpcentral = 3.6.
+ppcentral = 3.6.
 hpartmass = 0.00051099
 ppartmass = 0.00051099
 
