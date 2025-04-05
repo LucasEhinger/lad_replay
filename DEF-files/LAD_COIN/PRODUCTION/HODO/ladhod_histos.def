@@ -132,12 +132,12 @@ TH2F pladhod_REFBAR_good_hit_time_diff 'LAD REFBAR Good Hit Time Diff; PMT Numbe
 # LAD HODO GOOD HIT TIME AVG
 #---------------------------------
 
-TH2F pladhod_000_good_hit_time_avg 'LAD 000 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.000.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500 
-TH2F pladhod_001_good_hit_time_avg 'LAD 001 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.001.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500 
-TH2F pladhod_100_good_hit_time_avg 'LAD 100 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.100.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500 
-TH2F pladhod_101_good_hit_time_avg 'LAD 101 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.101.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500 
-TH2F pladhod_200_good_hit_time_avg 'LAD 200 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.200.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500 
-TH2F pladhod_REFBAR_good_hit_time_avg 'LAD REFBAR Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500  
+TH2F pladhod_000_good_hit_time_avg 'LAD 000 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.000.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
+TH2F pladhod_001_good_hit_time_avg 'LAD 001 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.001.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
+TH2F pladhod_100_good_hit_time_avg 'LAD 100 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.100.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
+TH2F pladhod_101_good_hit_time_avg 'LAD 101 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.101.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
+TH2F pladhod_200_good_hit_time_avg 'LAD 200 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.200.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
+TH2F pladhod_REFBAR_good_hit_time_avg 'LAD REFBAR Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500  
 
 #---------------------------------
 # LAD HODO GOOD HIT TIME TOF
@@ -165,25 +165,29 @@ TH1F pladhod_001_fullhit_n 'LAD 001 Full Hit Multiplicitty; Multiplicity; Counts
 TH1F pladhod_100_fullhit_n 'LAD 100 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.100.nFullHodoHits 12 -0.5 11.5
 TH1F pladhod_101_fullhit_n 'LAD 101 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.101.nFullHodoHits 12 -0.5 11.5
 TH1F pladhod_200_fullhit_n 'LAD 200 Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.200.nFullHodoHits 12 -0.5 11.5
+TH1F pladhod_REFBAR_fullhit_n 'LAD REFBAR Full Hit Multiplicitty; Multiplicity; Counts' P.ladhod.REFBAR.nFullHodoHits 2 -0.5 1.5
 
-
-TH1F pladhod_000_fullhit_time 'LAD 000 Full Hit Time; Time [ns]; Counts' P.ladhod.000.HodoHitTime[I] 200 -1000 1000
-TH1F pladhod_001_fullhit_time 'LAD 001 Full Hit Time; Time [ns]; Counts' P.ladhod.001.HodoHitTime[I] 200 -1000 1000 
-TH1F pladhod_100_fullhit_time 'LAD 100 Full Hit Time; Time [ns]; Counts' P.ladhod.100.HodoHitTime[I] 200 -1000 1000
-TH1F pladhod_101_fullhit_time 'LAD 101 Full Hit Time; Time [ns]; Counts' P.ladhod.101.HodoHitTime[I] 200 -1000 1000
-TH1F pladhod_200_fullhit_time 'LAD 200 Full Hit Time; Time [ns]; Counts' P.ladhod.200.HodoHitTime[I] 200 -1000 1000
+TH1F pladhod_000_fullhit_time 'LAD 000 Full Hit Time; Time [ns]; Counts' P.ladhod.000.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
+TH1F pladhod_001_fullhit_time 'LAD 001 Full Hit Time; Time [ns]; Counts' P.ladhod.001.HodoHitTime[I] 200 -3100 -800 g.evtyp==1 
+TH1F pladhod_100_fullhit_time 'LAD 100 Full Hit Time; Time [ns]; Counts' P.ladhod.100.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
+TH1F pladhod_101_fullhit_time 'LAD 101 Full Hit Time; Time [ns]; Counts' P.ladhod.101.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
+TH1F pladhod_200_fullhit_time 'LAD 200 Full Hit Time; Time [ns]; Counts' P.ladhod.200.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
+TH1F pladhod_REFBAR_fullhit_time 'LAD REFBAR Full Hit Time; Time [ns]; Counts' P.ladhod.REFBAR.HodoHitTime[I] 200 -3100 -800 g.evtyp==1
 
 TH1F pladhod_000_fullhit_paddle 'LAD 000 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.000.HodoHitPaddleNum[I] 11 -0.5 10.5
 TH1F pladhod_001_fullhit_paddle 'LAD 001 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.001.HodoHitPaddleNum[I] 11 -0.5 10.5 
 TH1F pladhod_100_fullhit_paddle 'LAD 100 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.100.HodoHitPaddleNum[I] 11 -0.5 10.5
 TH1F pladhod_101_fullhit_paddle 'LAD 101 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.101.HodoHitPaddleNum[I] 11 -0.5 10.5
 TH1F pladhod_200_fullhit_paddle 'LAD 200 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.200.HodoHitPaddleNum[I] 11 -0.5 10.5
+TH1F pladhod_REFBAR_fullhit_paddle 'LAD REFBAR Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.REFBAR.HodoHitPaddleNum[I] 1 -0.5 0.5
+
 
 #TH1F pladhod_000_fullhit_dy 'LAD 000 Full Hit dv; dy [cm]; Counts' P.ladhod.000.HodoHitPos[I] 200 -300 300
 #TH1F pladhod_001_fullhit_dy 'LAD 001 Full Hit dv; dy [cm]; Counts' P.ladhod.001.HodoHitPos[I] 200 -300 300 
 #TH1F pladhod_100_fullhit_dy 'LAD 100 Full Hit dv; dy [cm]; Counts' P.ladhod.100.HodoHitPos[I] 200 -300 300
 #TH1F pladhod_101_fullhit_dy 'LAD 101 Full Hit dv; dy [cm]; Counts' P.ladhod.101.HodoHitPos[I] 200 -300 300
 #TH1F pladhod_200_fullhit_dy 'LAD 200 Full Hit dv; dy [cm]; Counts' P.ladhod.200.HodoHitPos[I] 200 -300 300
+#TH1F pladhod_REFBAR_fullhit_dy 'LAD REFBAR Full Hit dv; dy [cm]; Counts' P.ladhod.REFBAR.HodoHitPos[I] 200 -300 300
 
 #---------------------------------
 # LAD HODO Hits with a Track
@@ -338,12 +342,12 @@ TH2F hladhod_REFBAR_good_hit_time_diff 'LAD REFBAR Good Hit Time Diff; PMT Numbe
 # LAD HODO GOOD HIT TIME AVG
 #---------------------------------
 
-TH2F hladhod_000_good_hit_time_avg 'LAD 000 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.000.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500 
-TH2F hladhod_001_good_hit_time_avg 'LAD 001 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.001.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500 
-TH2F hladhod_100_good_hit_time_avg 'LAD 100 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.100.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500 
-TH2F hladhod_101_good_hit_time_avg 'LAD 101 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.101.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500 
-TH2F hladhod_200_good_hit_time_avg 'LAD 200 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.200.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500 
-TH2F hladhod_REFBAR_good_hit_time_avg 'LAD REFBAR Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I] 11 0.5 11.5 200 -500 500  
+TH2F hladhod_000_good_hit_time_avg 'LAD 000 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.000.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
+TH2F hladhod_001_good_hit_time_avg 'LAD 001 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.001.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
+TH2F hladhod_100_good_hit_time_avg 'LAD 100 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.100.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
+TH2F hladhod_101_good_hit_time_avg 'LAD 101 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.101.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
+TH2F hladhod_200_good_hit_time_avg 'LAD 200 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.200.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
+TH2F hladhod_REFBAR_good_hit_time_avg 'LAD REFBAR Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500  
 
 #---------------------------------
 # LAD HODO GOOD HIT TIME TOF
@@ -371,25 +375,28 @@ TH1F hladhod_001_fullhit_n 'LAD 001 Full Hit Multiplicitty; Multiplicity; Counts
 TH1F hladhod_100_fullhit_n 'LAD 100 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.100.nFullHodoHits 12 -0.5 11.5
 TH1F hladhod_101_fullhit_n 'LAD 101 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.101.nFullHodoHits 12 -0.5 11.5
 TH1F hladhod_200_fullhit_n 'LAD 200 Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.200.nFullHodoHits 12 -0.5 11.5
+TH1F hladhod_REFBAR_fullhit_n 'LAD REFBAR Full Hit Multiplicitty; Multiplicity; Counts' H.ladhod.REFBAR.nFullHodoHits 2 -0.5 1.5
 
-
-TH1F hladhod_000_fullhit_time 'LAD 000 Full Hit Time; Time [ns]; Counts' H.ladhod.000.HodoHitTime[I] 200 -1000 1000
-TH1F hladhod_001_fullhit_time 'LAD 001 Full Hit Time; Time [ns]; Counts' H.ladhod.001.HodoHitTime[I] 200 -1000 1000 
-TH1F hladhod_100_fullhit_time 'LAD 100 Full Hit Time; Time [ns]; Counts' H.ladhod.100.HodoHitTime[I] 200 -1000 1000
-TH1F hladhod_101_fullhit_time 'LAD 101 Full Hit Time; Time [ns]; Counts' H.ladhod.101.HodoHitTime[I] 200 -1000 1000
-TH1F hladhod_200_fullhit_time 'LAD 200 Full Hit Time; Time [ns]; Counts' H.ladhod.200.HodoHitTime[I] 200 -1000 1000
+TH1F hladhod_000_fullhit_time 'LAD 000 Full Hit Time; Time [ns]; Counts' H.ladhod.000.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_001_fullhit_time 'LAD 001 Full Hit Time; Time [ns]; Counts' H.ladhod.001.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_100_fullhit_time 'LAD 100 Full Hit Time; Time [ns]; Counts' H.ladhod.100.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_101_fullhit_time 'LAD 101 Full Hit Time; Time [ns]; Counts' H.ladhod.101.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_200_fullhit_time 'LAD 200 Full Hit Time; Time [ns]; Counts' H.ladhod.200.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
+TH1F hladhod_REFBAR_fullhit_time 'LAD REFBAR Full Hit Time; Time [ns]; Counts' H.ladhod.REFBAR.HodoHitTime[I] 200 -3100 -800 g.evtyp==2
 
 TH1F hladhod_000_fullhit_paddle 'LAD 000 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.000.HodoHitPaddleNum[I] 11 -0.5 10.5
 TH1F hladhod_001_fullhit_paddle 'LAD 001 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.001.HodoHitPaddleNum[I] 11 -0.5 10.5 
 TH1F hladhod_100_fullhit_paddle 'LAD 100 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.100.HodoHitPaddleNum[I] 11 -0.5 10.5
 TH1F hladhod_101_fullhit_paddle 'LAD 101 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.101.HodoHitPaddleNum[I] 11 -0.5 10.5
 TH1F hladhod_200_fullhit_paddle 'LAD 200 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.200.HodoHitPaddleNum[I] 11 -0.5 10.5
+TH1F hladhod_REFBAR_fullhit_paddle 'LAD 200 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.200.HodoHitPaddleNum[I] 1 -0.5 0.5
 
 #TH1F hladhod_000_fullhit_dy 'LAD 000 Full Hit dv; dy [cm]; Counts' H.ladhod.000.HodoHitPos[I] 200 -300 300
 #TH1F hladhod_001_fullhit_dy 'LAD 001 Full Hit dv; dy [cm]; Counts' H.ladhod.001.HodoHitPos[I] 200 -300 300 
 #TH1F hladhod_100_fullhit_dy 'LAD 100 Full Hit dv; dy [cm]; Counts' H.ladhod.100.HodoHitPos[I] 200 -300 300
 #TH1F hladhod_101_fullhit_dy 'LAD 101 Full Hit dv; dy [cm]; Counts' H.ladhod.101.HodoHitPos[I] 200 -300 300
 #TH1F hladhod_200_fullhit_dy 'LAD 200 Full Hit dv; dy [cm]; Counts' H.ladhod.200.HodoHitPos[I] 200 -300 300
+#TH1F hladhod_REFBAR_fullhit_dy 'LAD REFBAR Full Hit dv; dy [cm]; Counts' H.ladhod.REFBAR.HodoHitPos[I] 200 -300 300
 
 #---------------------------------
 # LAD HODO Hits with a Track

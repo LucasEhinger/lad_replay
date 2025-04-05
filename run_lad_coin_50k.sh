@@ -106,17 +106,25 @@ replayReport="${reportFileDir}/REPLAY_REPORT/replayReport_${spec}_production_${r
 #   2. The normal GUI configuration file.
 #   3. The expert GUI configuration file.
 gui_tags=("lad_coin" "lad_kin" "shms" "hms")
+# gui_tags=("shms" "hms")
+
 gui_configs=(
   "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
   "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
   "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
   "CONFIG/HMS/PRODUCTION/hms_production.cfg"
 )
+#expert_configs=(
+  # "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
+  # "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
+  #"CONFIG/SHMS/PRODUCTION/shms_production_expert.cfg"
+  #"CONFIG/HMS/PRODUCTION/hms_production_expert.cfg"
+#)
 expert_configs=(
   "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
   "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
-  "CONFIG/SHMS/PRODUCTION/shms_production_expert.cfg"
-  "CONFIG/HMS/PRODUCTION/hms_production_expert.cfg"
+  "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
+  "CONFIG/HMS/PRODUCTION/hms_production.cfg"
 )
 #############################################
 
@@ -141,7 +149,7 @@ expert_configs=(
   # Link the ROOT file to latest for online monitoring
   #Need to match ${rootFile} to the output name format of the coin_replay
   #ln -fs ${rootFile} ${latestRootFile} #
-  ln -fs "../../COSMICS/${SPEC}_cosmic_hall_${runNum}_${numEvents}.root" ${latestRootFile}
+  ln -fs "../../CALIB/${SPEC}_${runNum}_${numEvents}.root" ${latestRootFile}
   #ln -fs "../../LADC_COIN/PRODUCTION/${SPEC}_production_hall_${runNum}_${numEvents}.root" ${latestRootFile}
   #ln -fs "../../LADC_COIN/CALIBRATION/${SPEC}_calibration_hall_${runNum}_${numEvents}.root" ${latestRootFile}
   sleep 2
@@ -160,8 +168,8 @@ expert_configs=(
 
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
   echo ""
-  echo "Do you want to generate expert LAD detector (gem + hodoscope) plots?"
-  yes_or_no "This may take ~5 min." &&
+  # echo "Do you want to generate expert LAD detector (gem + hodoscope) plots?"
+  yes_or_no "Do you want to generate expert LAD detector (gem + hodoscope) plots?" &&
   {
     echo "Generating expert LAD detector plots."
     # This script runs a ROOT macro to process the latest ROOT file and generate histograms.
@@ -190,42 +198,45 @@ expert_configs=(
   mergedPDFs=()
   for i in "${!gui_tags[@]}"; do
     tag="${gui_tags[$i]}"
-    config="${gui_configs[$i]}"
-    expertConfig="${expert_configs[$i]}"
-    # Define output name including the tag.
-    outFile="${spec}_production_${runNum}_${tag}"
-    outExpertFile="summaryPlots_${runNum}_${expertConfig##*/}"
-    outExpertFile="${outExpertFile%.cfg}"
+    yes_or_no "Do you want to open plots for ${tag}?" &&
+    {
+      config="${gui_configs[$i]}"
+      expertConfig="${expert_configs[$i]}"
+      # Define output name including the tag.
+      outFile="${spec}_production_${runNum}_${tag}"
+      outExpertFile="summaryPlots_${runNum}_${expertConfig##*/}"
+      outExpertFile="${outExpertFile%.cfg}"
 
-    echo ""
-    echo "Processing GUI for configuration: ${tag}"
-    echo " -> CONFIG:  ${config}"
-    echo " -> EXPERT CONFIG: ${expertConfig}"
-    echo " -> RUN:     ${runNum}"
-    echo "-------------------------------------------------------------"
+      echo ""
+      echo "Processing GUI for configuration: ${tag}"
+      echo " -> CONFIG:  ${config}"
+      echo " -> EXPERT CONFIG: ${expertConfig}"
+      echo " -> RUN:     ${runNum}"
+      echo "-------------------------------------------------------------"
 
-    sleep 2
-    cd onlineGUI || exit 1
+      sleep 2
+      cd onlineGUI || exit 1
 
-    # Run the normal GUI command.
-    panguin -f "${config}" -r "${runNum}"
+      # Run the normal GUI command.
+      panguin -f "${config}" -r "${runNum}"
 
-    # Run the expert GUI command (-P flag).
-    panguin -f "${expertConfig}" -r "${runNum}" -P
+      # Run the expert GUI command (-P flag).
+      panguin -f "${expertConfig}" -r "${runNum}" -P
 
-    # Display current directory and output file info.
-    pwd
-    echo " -> outExpertFile: ${outExpertFile}"
-    echo "../HISTOGRAMS/${SPEC}/PDF/${outFile}.pdf"
+      # Display current directory and output file info.
+      pwd
+      echo " -> outExpertFile: ${outExpertFile}"
+      echo "../HISTOGRAMS/${SPEC}/PDF/${outFile}.pdf"
 
-    # Move the resulting expert PDF to the appropriate directory with the tag in its name.
-    #monExpertPdfFile="../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf"
-    echo "Moving Expert PDF to ${monExpertPdfFile}"
-    monExpertPdfFile="$(readlink -f "../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf")"
-    mv "${outExpertFile}.pdf" ${monExpertPdfFile}
+      # Move the resulting expert PDF to the appropriate directory with the tag in its name.
+      #monExpertPdfFile="../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf"
+      echo "Moving Expert PDF to ${monExpertPdfFile}"
+      monExpertPdfFile="$(readlink -f "../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf")"
+      mv "${outExpertFile}.pdf" ${monExpertPdfFile}
 
-    mergedPDFs+=("${monExpertPdfFile}")
+      mergedPDFs+=("${monExpertPdfFile}")
     cd .. || exit 1
+    }
   done
   #merge the pdfs from difference specs
   echo "Merging PDF file from all specs ${mergedPDFs[@]}"
@@ -262,7 +273,7 @@ expert_configs=(
   yes_or_no "Upload these plots to logbook HCLOG? " &&
     /site/ace/certified/apps/bin/logentry \
       -cert /home/cdaq/.elogcert \
-      -t "${numEventsk}k replay plots for run ${runNum} TEST TEST TEST" \
+      -t "${numEventsk}k replay plots for run ${runNum}" \
       -e cdaq \
       -l HCLOG \
       -a ${latestMonPdfFile}

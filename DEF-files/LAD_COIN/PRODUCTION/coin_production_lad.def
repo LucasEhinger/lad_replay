@@ -2,6 +2,9 @@
 # block T.coin.pTRIG*
 block T.*
 
+
+block g.*
+
 block H.cer.npe*
 block H.cal.e*
 block H.hod.*time
