@@ -1,0 +1,2 @@
+; Constants determined from post-run analysis
+hcer_adc_to_npe = 1./10.01, 1./9.46
