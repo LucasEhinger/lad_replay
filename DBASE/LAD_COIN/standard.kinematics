@@ -7,7 +7,7 @@
 # ppartmass = 0.493677 for K+ physics production runs
 
 # LAD Standard Kin
-22000-23000
+22000-22048
 gpbeam = 6.430
 gtargmass_amu=12.0107
 htheta_lab = -17.01
@@ -17,6 +17,39 @@ ppcentral = 3.6.
 hpartmass = 0.00051099
 ppartmass = 0.00051099
 
+
+22049-22049
+gpbeam = 6.430
+gtargmass_amu=1.00791 
+htheta_lab = -24.40
+ptheta_lab = 17.01
+hpcentral = 4.4.
+ppcentral = 5.71
+hpartmass = 0.00051099
+ppartmass = 0.00051099
+
+22050-22051
+gpbeam = 6.430
+gtargmass_amu=1.00791 
+htheta_lab = -24.32
+ptheta_lab = 17.01
+hpcentral = 4.4.
+ppcentral = 5.528
+hpartmass = 0.00051099
+ppartmass = 0.00051099
+
+22052-22055
+gpbeam = 6.430
+gtargmass_amu=1.00791 
+htheta_lab = -24.32
+ptheta_lab = 17.01
+hpcentral = 4.4.
+ppcentral = 5.237
+hpartmass = 0.00051099
+ppartmass = 0.00051099
+
+#END LAD
+#######################
 0-1710
 gpbeam = 6.430
 gtargmass_amu=12.0107
@@ -5057,5 +5090,45 @@ htheta_lab = -13.50
 ptheta_lab = 13.50
 hpcentral = 6.269
 ppcentral = 6.269
+ppartmass = 0.0005109
+hpartmass = 0.0005109
+
+22000-22048
+pbeam = 6.451
+gtargmass_amu = 1.00794
+htheta_lab = -17.01
+ptheta_lab = 17.01
+hpcentral = 3.6
+ppcentral = 3.6
+ppartmass = 0.0005109
+hpartmass = 0.0005109
+
+22049-22049
+pbeam = 6.451
+gtargmass_amu = 1.00794
+htheta_lab = -24.4
+ptheta_lab = 17.01
+hpcentral = 4.4
+ppcentral = 5.718
+ppartmass = 0.0005109
+hpartmass = 0.0005109
+
+22050-22050
+pbeam = 6.451
+gtargmass_amu = 1.00794
+htheta_lab = -24.32
+ptheta_lab = 17.01
+hpcentral = 4.4
+ppcentral = 5.528
+ppartmass = 0.0005109
+hpartmass = 0.0005109
+
+22051-22052
+pbeam = 6.451
+gtargmass_amu = 1.00794
+htheta_lab = -24.32
+ptheta_lab = 17.01
+hpcentral = 4.4
+ppcentral = 5.237
 ppartmass = 0.0005109
 hpartmass = 0.0005109

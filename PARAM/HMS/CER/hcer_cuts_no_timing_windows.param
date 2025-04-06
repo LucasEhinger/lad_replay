@@ -4,5 +4,5 @@
 hcer_adc_tdc_window= 200.
 
 ; ADC time window cut values used to select "good" ADC events
-hcer_adcTimeWindowMin = -1000., -1000.
-hcer_adcTimeWindowMax = 1000., 1000.
+hcer_adcTimeWindowMin = -100000., -100000.
+hcer_adcTimeWindowMax = 100000., 100000.

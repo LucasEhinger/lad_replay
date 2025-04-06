@@ -139,23 +139,30 @@ TH2F pladhod_101_good_hit_time_avg 'LAD 101 Good Hit Time Avg; PMT Number; Hit T
 TH2F pladhod_200_good_hit_time_avg 'LAD 200 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.200.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
 TH2F pladhod_REFBAR_good_hit_time_avg 'LAD REFBAR Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500  
 
+TH2F pladhod_000_good_hit_TavgvsEDEP 'LAD 000 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.000.GoodHitTimeAvg[I]:P.ladhod.000.HodoHitEdep[I] 11 0.5 11.5 200 -3000 0
+TH2F pladhod_001_good_hit_TavgvsEDEP 'LAD 001 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.001.GoodHitTimeAvg[I]:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+TH2F pladhod_100_good_hit_TavgvsEDEP 'LAD 100 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.100.GoodHitTimeAvg[I]:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+TH2F pladhod_101_good_hit_TavgvsEDEP 'LAD 101 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.101.GoodHitTimeAvg[I]:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+TH2F pladhod_200_good_hit_TavgvsEDEP 'LAD 200 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.200.GoodHitTimeAvg[I]:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+TH2F pladhod_REFBAR_good_hit_TavgvsEDEP 'LAD REFBAR Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I]:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+
 #---------------------------------
-# LAD HODO GOOD HIT TIME TOF
+# LAD HODO GOOD HIT TIME EDEP
 #---------------------------------
 
-TH2F pladhod_000_good_hit_time_TOF 'LAD 000 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.000.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
-TH2F pladhod_001_good_hit_time_TOF 'LAD 001 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.001.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
-TH2F pladhod_100_good_hit_time_TOF 'LAD 100 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.100.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
-TH2F pladhod_101_good_hit_time_TOF 'LAD 101 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.101.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
-TH2F pladhod_200_good_hit_time_TOF 'LAD 200 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.200.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
-TH2F pladhod_REFBAR_good_hit_time_TOF 'LAD REFBAR Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500  
+#TH2F pladhod_000_good_hit_time_TOF 'LAD 000 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.000.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -5000 5000 
+#TH2F pladhod_001_good_hit_time_TOF 'LAD 001 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.001.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500
+#TH2F pladhod_100_good_hit_time_TOF 'LAD 100 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.100.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+#TH2F pladhod_101_good_hit_time_TOF 'LAD 101 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.101.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+#TH2F pladhod_200_good_hit_time_TOF 'LAD 200 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.200.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+#TH2F pladhod_REFBAR_good_hit_time_TOF 'LAD REFBAR Good Hit Time TOF; PMT Number; Hit TOF' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500  
 
-TH2F pladhod_000_good_hit_TOFvsEDEP 'LAD 000 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.000.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
-TH2F pladhod_001_good_hit_TOFvsEDEP 'LAD 001 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.001.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
-TH2F pladhod_100_good_hit_TOFvsEDEP 'LAD 100 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.100.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
-TH2F pladhod_101_good_hit_TOFvsEDEP 'LAD 101 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.101.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
-TH2F pladhod_200_good_hit_TOFvsEDEP 'LAD 200 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.200.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
-TH2F pladhod_REFBAR_good_hit_TOFvsEDEP 'LAD REFBAR Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F pladhod_000_good_hit_TOFvsEDEP 'LAD 000 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.000.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -5000 5000
+#TH2F pladhod_001_good_hit_TOFvsEDEP 'LAD 001 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.001.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F pladhod_100_good_hit_TOFvsEDEP 'LAD 100 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.100.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F pladhod_101_good_hit_TOFvsEDEP 'LAD 101 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.101.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F pladhod_200_good_hit_TOFvsEDEP 'LAD 200 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.200.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F pladhod_REFBAR_good_hit_TOFvsEDEP 'LAD REFBAR Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] P.ladhod.REFBAR.GoodHitTimeAvg[I]-P.hod.1x.PosTdcRefTime:P.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
 
 #---------------------------------
 # Full LAD HODO Hits (not necessarily with a Track)
@@ -356,23 +363,30 @@ TH2F hladhod_101_good_hit_time_avg 'LAD 101 Good Hit Time Avg; PMT Number; Hit T
 TH2F hladhod_200_good_hit_time_avg 'LAD 200 Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.200.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500 
 TH2F hladhod_REFBAR_good_hit_time_avg 'LAD REFBAR Good Hit Time Avg; PMT Number; Hit Time Average' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I] 11 0.5 11.5 200 -3000 500  
 
+TH2F hladhod_000_good_hit_TavgvsEDEP 'LAD 000 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.000.GoodHitTimeAvg[I]:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+TH2F hladhod_001_good_hit_TavgvsEDEP 'LAD 001 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.001.GoodHitTimeAvg[I]:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+TH2F hladhod_100_good_hit_TavgvsEDEP 'LAD 100 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.100.GoodHitTimeAvg[I]:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+TH2F hladhod_101_good_hit_TavgvsEDEP 'LAD 101 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.101.GoodHitTimeAvg[I]:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+TH2F hladhod_200_good_hit_TavgvsEDEP 'LAD 200 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.200.GoodHitTimeAvg[I]:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+TH2F hladhod_REFBAR_good_hit_TavgvsEDEP 'LAD REFBAR Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I]:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -3000 0
+
 #---------------------------------
 # LAD HODO GOOD HIT TIME TOF
 #---------------------------------
 
-TH2F hladhod_000_good_hit_time_TOF 'LAD 000 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.000.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
-TH2F hladhod_001_good_hit_time_TOF 'LAD 001 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.001.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
-TH2F hladhod_100_good_hit_time_TOF 'LAD 100 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.100.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
-TH2F hladhod_101_good_hit_time_TOF 'LAD 101 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.101.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
-TH2F hladhod_200_good_hit_time_TOF 'LAD 200 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.200.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
-TH2F hladhod_REFBAR_good_hit_time_TOF 'LAD REFBAR Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500  
+#TH2F hladhod_000_good_hit_time_TOF 'LAD 000 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.000.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -5000 5000 
+#TH2F hladhod_001_good_hit_time_TOF 'LAD 001 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.001.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+#TH2F hladhod_100_good_hit_time_TOF 'LAD 100 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.100.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+#TH2F hladhod_101_good_hit_time_TOF 'LAD 101 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.101.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+#TH2F hladhod_200_good_hit_time_TOF 'LAD 200 Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.200.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500 
+#TH2F hladhod_REFBAR_good_hit_time_TOF 'LAD REFBAR Good Hit Time TOF; PMT Number; Hit TOF' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime 11 0.5 11.5 200 -500 500  
 
-TH2F hladhod_000_good_hit_TOFvsEDEP 'LAD 000 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.000.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
-TH2F hladhod_001_good_hit_TOFvsEDEP 'LAD 001 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.001.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
-TH2F hladhod_100_good_hit_TOFvsEDEP 'LAD 100 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.100.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
-TH2F hladhod_101_good_hit_TOFvsEDEP 'LAD 101 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.101.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
-TH2F hladhod_200_good_hit_TOFvsEDEP 'LAD 200 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.200.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
-TH2F hladhod_REFBAR_good_hit_TOFvsEDEP 'LAD REFBAR Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F hladhod_000_good_hit_TOFvsEDEP 'LAD 000 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.000.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F hladhod_001_good_hit_TOFvsEDEP 'LAD 001 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.001.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F hladhod_100_good_hit_TOFvsEDEP 'LAD 100 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.100.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F hladhod_101_good_hit_TOFvsEDEP 'LAD 101 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.101.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F hladhod_200_good_hit_TOFvsEDEP 'LAD 200 Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.200.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
+#TH2F hladhod_REFBAR_good_hit_TOFvsEDEP 'LAD REFBAR Good Hit TOF w/ EDEP; PMT Number; Hit TOF' [I+1] H.ladhod.REFBAR.GoodHitTimeAvg[I]-H.hod.1x.PosTdcRefTime:H.ladhod.goodhit_hit_edep[I] 11 0.5 11.5 200 -500 500
 
 #---------------------------------
 # Full LAD HODO Hits (not necessarily with a Track)

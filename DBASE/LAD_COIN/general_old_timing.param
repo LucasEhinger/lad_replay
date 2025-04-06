@@ -27,11 +27,11 @@ cminch=2.54
 #include "PARAM/HMS/CAL/hcal_geom.param"
 
 ; HMS default cut parameter files
-#include "PARAM/HMS/CER/hcer_cuts.param"
-#include "PARAM/HMS/DC/hdc_cuts.param"
-#include "PARAM/HMS/HODO/hhodo_cuts.param"
-#include "PARAM/HMS/AERO/haero_cuts.param"
-#include "PARAM/HMS/CAL/hcal_cuts.param"
+#include "PARAM/HMS/CER/hcer_cuts_old.param"
+#include "PARAM/HMS/DC/hdc_cuts_old.param"
+#include "PARAM/HMS/HODO/hhodo_cuts_old.param"
+#include "PARAM/HMS/AERO/haero_cuts_old.param"
+#include "PARAM/HMS/CAL/hcal_cuts_old.param"
 
 ; HMS default calibration parameter files
 #include "PARAM/HMS/CER/hcer_calib.param"
@@ -41,7 +41,7 @@ cminch=2.54
 #include "PARAM/HMS/HODO/hhodo_TWcalib.param"
 #include "PARAM/HMS/HODO/hhodo_Vpcalib.param"
 #include "PARAM/HMS/AERO/haero_calib.param"
-#include "PARAM/HMS/CAL/hcal_calib.param"
+#include "PARAM/HMS/CAL/hcal_calib_fa22.param"
 
 ; General SHMS parameter files
 ; Note: shmsflags.param includes spectrometer offsets and options.
@@ -61,12 +61,12 @@ cminch=2.54
 #include "PARAM/SHMS/CAL/pcal_geom.param"
 
 ; SHMS default cut parameter files
-#include "PARAM/SHMS/NGCER/pngcer_cuts.param"
-#include "PARAM/SHMS/DC/pdc_cuts.param"
-#include "PARAM/SHMS/HODO/phodo_cuts.param"
-#include "PARAM/SHMS/HGCER/phgcer_cuts.param"
-#include "PARAM/SHMS/AERO/paero_cuts.param"
-#include "PARAM/SHMS/CAL/pcal_cuts.param"
+#include "PARAM/SHMS/NGCER/pngcer_cuts_old.param"
+#include "PARAM/SHMS/DC/pdc_cuts.param" ; dc has not "old" param file
+#include "PARAM/SHMS/HODO/phodo_cuts_old.param"
+#include "PARAM/SHMS/HGCER/phgcer_cuts_old.param"
+#include "PARAM/SHMS/AERO/paero_cuts.param" ; dc has not "old" param file
+#include "PARAM/SHMS/CAL/pcal_cuts_old.param"
 
 ; SHMS default calibration parameter files
 #include "PARAM/SHMS/NGCER/pngcer_calib.param"
@@ -77,7 +77,7 @@ cminch=2.54
 #include "PARAM/SHMS/HODO/phodo_Vpcalib.param"
 #include "PARAM/SHMS/HGCER/phgcer_calib.param"
 #include "PARAM/SHMS/AERO/paero_calib.param"
-#include "PARAM/SHMS/CAL/pcal_calib.param"
+#include "PARAM/SHMS/CAL/pcal_calib_fa22.param"
 
 ; LAD Parameter files
 #include "PARAM/GEN/genflags.param"
