@@ -4182,6 +4182,8 @@ REFINDEX=3
         12,      5,      9,      0!    l5x09A+
         13,      5,     10,      0!    l5x10A+
         14,      5,     11,      0!    l5x11A+
+        7,       6,     1,       1!    l6x01A+ !Refbar 1
+        15,      6,     1,       0!    l6x01A+ !Refbar 1
 
 ! Caen 1190 module
 SLOT=31
@@ -4465,6 +4467,8 @@ REFINDEX=3
         12,      5,      9,      0!    l5x09A+
         13,      5,     10,      0!    l5x10A+
         14,      5,     11,      0!    l5x11A+
+        7,       6,     1,       1!    l6x01A+ !Refbar 1
+        15,      6,     1,       0!    l6x01A+ !Refbar 1
 
 ! Caen 1190 module
 SLOT=31
