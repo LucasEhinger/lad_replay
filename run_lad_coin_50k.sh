@@ -37,6 +37,23 @@ esac
 runNum=$1
 if ! [[ "$runNum" =~ ^[0-9]+$ ]]; then
   runNum=$lastRun
+else 
+  # Update the run_type based on the new runNum
+  lastRunFile=$(
+    ls ./raw/lad_Production_*"${runNum}"*.dat.* -R 2>/dev/null | sort -V | tail -1
+  )
+
+  case "$lastRunFile" in
+  *Production_noGEM*) run_type=1 ;;
+  *Production*) run_type=0 ;;
+  *LADwGEMwROC2*) run_type=2 ;;
+  *GEMonly*) run_type=3 ;;
+  *LADonly*) run_type=4 ;;
+  *SHMS_HMS*) run_type=5 ;;
+  *SHMS*) run_type=6 ;;
+  *HMS*) run_type=7 ;;
+  *) run_type=-1 ;; # Default case if no match is found
+  esac
 fi
 
 numEvents=$2
@@ -198,45 +215,43 @@ expert_configs=(
   mergedPDFs=()
   for i in "${!gui_tags[@]}"; do
     tag="${gui_tags[$i]}"
-    yes_or_no "Do you want to open plots for ${tag}?" &&
+    config="${gui_configs[$i]}"
+    expertConfig="${expert_configs[$i]}"
+    # Define output name including the tag.
+    outFile="${spec}_production_${runNum}_${tag}"
+    outExpertFile="summaryPlots_${runNum}_${expertConfig##*/}"
+    outExpertFile="${outExpertFile%.cfg}"
+
+    echo ""
+    echo "Processing GUI for configuration: ${tag}"
+    echo " -> CONFIG:  ${config}"
+    echo " -> EXPERT CONFIG: ${expertConfig}"
+    echo " -> RUN:     ${runNum}"
+    echo "-------------------------------------------------------------"
+
+    sleep 2
+    cd onlineGUI || exit 1
+    yes_or_no "Do you want to view plots for ${tag}?" &&
     {
-      config="${gui_configs[$i]}"
-      expertConfig="${expert_configs[$i]}"
-      # Define output name including the tag.
-      outFile="${spec}_production_${runNum}_${tag}"
-      outExpertFile="summaryPlots_${runNum}_${expertConfig##*/}"
-      outExpertFile="${outExpertFile%.cfg}"
-
-      echo ""
-      echo "Processing GUI for configuration: ${tag}"
-      echo " -> CONFIG:  ${config}"
-      echo " -> EXPERT CONFIG: ${expertConfig}"
-      echo " -> RUN:     ${runNum}"
-      echo "-------------------------------------------------------------"
-
-      sleep 2
-      cd onlineGUI || exit 1
-
       # Run the normal GUI command.
       panguin -f "${config}" -r "${runNum}"
-
-      # Run the expert GUI command (-P flag).
-      panguin -f "${expertConfig}" -r "${runNum}" -P
-
-      # Display current directory and output file info.
-      pwd
-      echo " -> outExpertFile: ${outExpertFile}"
-      echo "../HISTOGRAMS/${SPEC}/PDF/${outFile}.pdf"
-
-      # Move the resulting expert PDF to the appropriate directory with the tag in its name.
-      #monExpertPdfFile="../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf"
-      echo "Moving Expert PDF to ${monExpertPdfFile}"
-      monExpertPdfFile="$(readlink -f "../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf")"
-      mv "${outExpertFile}.pdf" ${monExpertPdfFile}
-
-      mergedPDFs+=("${monExpertPdfFile}")
-    cd .. || exit 1
     }
+    # Run the expert GUI command (-P flag).
+    panguin -f "${expertConfig}" -r "${runNum}" -P
+
+    # Display current directory and output file info.
+    pwd
+    echo " -> outExpertFile: ${outExpertFile}"
+    echo "../HISTOGRAMS/${SPEC}/PDF/${outFile}.pdf"
+
+    # Move the resulting expert PDF to the appropriate directory with the tag in its name.
+    #monExpertPdfFile="../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf"
+    echo "Moving Expert PDF to ${monExpertPdfFile}"
+    monExpertPdfFile="$(readlink -f "../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf")"
+    mv "${outExpertFile}.pdf" ${monExpertPdfFile}
+
+    mergedPDFs+=("${monExpertPdfFile}")
+    cd .. || exit 1
   done
   #merge the pdfs from difference specs
   echo "Merging PDF file from all specs ${mergedPDFs[@]}"

@@ -169,12 +169,12 @@ void lad_histos_expert(
     TString prefix_lower = prefix;
     prefix_lower.ToLower();
     // Add 1D histogram commands for each prefix
-    for (const TString &plane : {"000", "001", "100", "101", "200"}) {
+    for (const TString &plane : {"000", "001", "100", "101", "200", "REFBAR"}) {
       for (int bar = 0; bar < 11; ++bar) {
       TString eventType = (prefix_lower == "p") ? "1" : "2";
       hist1DCommands.push_back(
         {prefix_lower + "ladhod_" + plane + "_fullhit_time_" + TString::Format("%d", bar),
-         "SHMS-LAD " + plane + " Full Hit Time Paddle " + TString::Format("%d", bar + 1) + "; Time [ns]; Counts",
+         (prefix_lower == "p") ? "SHMS-LAD " : "HMS-LAD" + plane + " Full Hit Time Paddle " + TString::Format("%d", bar + 1) + "; Time [ns]; Counts",
          prefix + ".ladhod." + plane + ".HodoHitTime", 200, -3100, -800,
          "g.evtyp==" + eventType + "&&" + prefix + ".ladhod." + plane + ".HodoHitPaddleNum==" + TString::Format("%d", bar + 1)});
       }

@@ -40,6 +40,22 @@ esac
 runNum=$1
 if ! [[ "$runNum" =~ ^[0-9]+$ ]]; then
   runNum=$lastRun
+    
+else
+lastRunFile=$(
+    ls ./raw//lad_Production_*"${runNum}"*.dat.* -R 2>/dev/null | sort -V | tail -1
+  )
+  case "$lastRunFile" in
+    *Production_noGEM*) run_type=1 ;;
+    *Production*) run_type=0 ;;
+    *LADwGEMwROC2*) run_type=2 ;;
+    *GEMonly*) run_type=3 ;;
+    *LADonly*) run_type=4 ;;
+    *SHMS_HMS*) run_type=5 ;;
+    *SHMS*) run_type=6 ;;
+    *HMS*) run_type=7 ;;
+  *) run_type=-1 ;; # Default case if no match is found
+  esac
 fi
 
 numEvents=$2
@@ -109,11 +125,14 @@ replayReport="${reportFileDir}/REPLAY_REPORT/replayReport_${spec}_production_${r
 #   2. The normal GUI configuration file.
 #   3. The expert GUI configuration file.
 # gui_tags=("lad_coin" "lad_kin" "shms" "hms")
-gui_tags=("lad_timing_expert" "lad_coin")
+# gui_tags=("lad_gem" "lad_timing_expert" "lad_coin")
+gui_tags=("lad_gem", "lad_coin")
+
 
 gui_configs=(
-  "CONFIG/LAD/PRODUCTION/lad_coin_timing_expert.cfg"
-  "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
+  "CONFIG/LAD/PRODUCTION/lad_gem.cfg"
+  # "CONFIG/LAD/PRODUCTION/lad_coin_timing_expert.cfg"
+  "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
   # "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
   # "CONFIG/HMS/PRODUCTION/hms_production.cfg"
 )
@@ -124,7 +143,8 @@ gui_configs=(
   #"CONFIG/HMS/PRODUCTION/hms_production_expert.cfg"
 #)
 expert_configs=(
-  "CONFIG/LAD/PRODUCTION/lad_coin_timing_expert.cfg"
+  "CONFIG/LAD/PRODUCTION/lad_gem.cfg"
+  # "CONFIG/LAD/PRODUCTION/lad_coin_timing_expert.cfg"
   "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
   # "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
   # "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
@@ -180,7 +200,7 @@ expert_configs=(
     # The macro "lad_histos.C" is executed with two arguments:
     # - The first argument (${latestRootFile}) specifies the latest ROOT file to process.
     # - The second argument (0) indicates that the histograms are generated for both HMS and SHMS LAD.
-    root -l -b -q "macros/LAD/lad_histos_expert.C(\"${latestRootFile}\",0,${numEvents})"
+    root -l -b -q "macros/LAD/lad_histos.C(\"${latestRootFile}\",0,${numEvents})"
     # Currently on generating for 1k events. Will have to come up with a faster way to make these histograms.
   }
 

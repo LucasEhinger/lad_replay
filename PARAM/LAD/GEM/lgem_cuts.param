@@ -2,7 +2,7 @@
 
 ; flags
 lgem_commonmode_flag = 2
-lgem_zerosuppress = 1 ; changed
+lgem_zerosuppress = 1 ; changed 
 lgem_zerosuppress_nsigma = 5.0
 lgem_onlinezerosuppress = 0
 lgem_pedsub_online = 1 ;changed
