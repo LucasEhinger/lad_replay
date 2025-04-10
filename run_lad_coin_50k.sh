@@ -193,7 +193,7 @@ expert_configs=(
     # The macro "lad_histos.C" is executed with two arguments:
     # - The first argument (${latestRootFile}) specifies the latest ROOT file to process.
     # - The second argument (0) indicates that the histograms are generated for both HMS and SHMS LAD.
-    root -l -b -q "macros/LAD/lad_histos.C(\"${latestRootFile}\",0,1000)"
+    root -l -b -q "macros/LAD/lad_histos.C(\"${latestRootFile}\",0,${numEvents})"
     # Currently on generating for 1k events. Will have to come up with a faster way to make these histograms.
   }
 

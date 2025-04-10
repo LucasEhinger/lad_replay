@@ -350,6 +350,14 @@ void lad_histos(
     // if (nEntries_Evt < 1)
     //   continue;
 
+        // Ensure NData values do not exceed their respective limits
+        for (auto &branchPair : nEntriesMap) {
+          if (branchPair.second > NDDATA_MAX) {
+            branchPair.second = NDDATA_MAX;
+            cout << "Warning: NData for " << branchPair.first << " exceeds maximum limit. Clamping to " << NDDATA_MAX
+                 << endl;
+          }
+        }
     // Loop over the 1D histogram commands
     for (const auto &cmd : hist1DCommands) {
       // Create the histogram if it doesn't exist
@@ -495,13 +503,20 @@ void lad_histos(
   }
 
   // Write and delete histograms
+  // Write and delete histograms
   for (auto &histPair : histograms1D) {
-    histPair.second->Write();
-    delete histPair.second;
+    if (histPair.second) {
+      histPair.second->Write();
+      delete histPair.second;
+    }
   }
+  histograms1D.clear();
+
   for (auto &histPair : histograms2D) {
-    histPair.second->Write();
-    delete histPair.second;
+    if (histPair.second) {
+      histPair.second->Write();
+      delete histPair.second;
+    }
   }
   // Close the file
   std::cout << "\nWriting histograms to file..." << std::endl;

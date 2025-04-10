@@ -5100,6 +5100,16 @@ ppcentral = 5.237
 ppartmass = 0.0005109
 hpartmass = 0.0005109
 
+22055-22097 ; Todo. This has to be fixed. Is not correct
+gpbeam = 6.451
+gtargmass_amu = 12.0107
+htheta_lab = -13.5
+ptheta_lab = 17.00
+hpcentral = 4.4
+ppcentral = 5.237
+ppartmass = 0.0005109
+hpartmass = 0.0005109
+
 22098-22098
 gpbeam = 6.451
 gtargmass_amu = 1.00794

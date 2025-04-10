@@ -126,7 +126,7 @@ replayReport="${reportFileDir}/REPLAY_REPORT/replayReport_${spec}_production_${r
 #   3. The expert GUI configuration file.
 # gui_tags=("lad_coin" "lad_kin" "shms" "hms")
 # gui_tags=("lad_gem" "lad_timing_expert" "lad_coin")
-gui_tags=("lad_gem", "lad_coin")
+gui_tags=("lad_gem" "lad_coin")
 
 
 gui_configs=(
@@ -193,16 +193,15 @@ expert_configs=(
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
   echo ""
   # echo "Do you want to generate expert LAD detector (gem + hodoscope) plots?"
-  yes_or_no "Do you want to generate expert LAD detector (gem + hodoscope) plots?" &&
-  {
-    echo "Generating expert LAD detector plots."
-    # This script runs a ROOT macro to process the latest ROOT file and generate histograms.
-    # The macro "lad_histos.C" is executed with two arguments:
-    # - The first argument (${latestRootFile}) specifies the latest ROOT file to process.
-    # - The second argument (0) indicates that the histograms are generated for both HMS and SHMS LAD.
-    root -l -b -q "macros/LAD/lad_histos.C(\"${latestRootFile}\",0,${numEvents})"
-    # Currently on generating for 1k events. Will have to come up with a faster way to make these histograms.
-  }
+
+  echo "Generating expert LAD detector plots."
+  # This script runs a ROOT macro to process the latest ROOT file and generate histograms.
+  # The macro "lad_histos.C" is executed with two arguments:
+  # - The first argument (${latestRootFile}) specifies the latest ROOT file to process.
+  # - The second argument (0) indicates that the histograms are generated for both HMS and SHMS LAD.
+  root -l -b -q "macros/LAD/lad_histos.C(\"${latestRootFile}\",0,${numEvents})"
+  # Currently on generating for 1k events. Will have to come up with a faster way to make these histograms.
+
 
 
 
@@ -222,14 +221,17 @@ expert_configs=(
   mergedPDFs=()
   for i in "${!gui_tags[@]}"; do
     tag="${gui_tags[$i]}"
-    yes_or_no "Do you want to open plots for ${tag}?" &&
-    {
-      config="${gui_configs[$i]}"
+    config="${gui_configs[$i]}"
       expertConfig="${expert_configs[$i]}"
       # Define output name including the tag.
       outFile="${spec}_production_${runNum}_${tag}"
       outExpertFile="summaryPlots_${runNum}_${expertConfig##*/}"
       outExpertFile="${outExpertFile%.cfg}"
+      cd onlineGUI || exit 1
+
+    yes_or_no "Do you want to open plots for ${tag}?" &&
+    {
+      
 
       echo ""
       echo "Processing GUI for configuration: ${tag}"
@@ -239,28 +241,27 @@ expert_configs=(
       echo "-------------------------------------------------------------"
 
       sleep 2
-      cd onlineGUI || exit 1
 
       # Run the normal GUI command.
       panguin -f "${config}" -r "${runNum}"
 
-      # Run the expert GUI command (-P flag).
-      panguin -f "${expertConfig}" -r "${runNum}" -P
-
-      # Display current directory and output file info.
-      pwd
-      echo " -> outExpertFile: ${outExpertFile}"
-      echo "../HISTOGRAMS/${SPEC}/PDF/${outFile}.pdf"
-
-      # Move the resulting expert PDF to the appropriate directory with the tag in its name.
-      #monExpertPdfFile="../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf"
-      echo "Moving Expert PDF to ${monExpertPdfFile}"
-      monExpertPdfFile="$(readlink -f "../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf")"
-      mv "${outExpertFile}.pdf" ${monExpertPdfFile}
-
-      mergedPDFs+=("${monExpertPdfFile}")
-    cd .. || exit 1
     }
+  # Run the expert GUI command (-P flag).
+    panguin -f "${expertConfig}" -r "${runNum}" -P
+
+    # Display current directory and output file info.
+    pwd
+    echo " -> outExpertFile: ${outExpertFile}"
+    echo "../HISTOGRAMS/${SPEC}/PDF/${outFile}.pdf"
+
+    # Move the resulting expert PDF to the appropriate directory with the tag in its name.
+    #monExpertPdfFile="../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf"
+    echo "Moving Expert PDF to ${monExpertPdfFile}"
+    monExpertPdfFile="$(readlink -f "../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf")"
+    mv "${outExpertFile}.pdf" ${monExpertPdfFile}
+
+    mergedPDFs+=("${monExpertPdfFile}")
+    cd .. || exit 1
   done
   #merge the pdfs from difference specs
   echo "Merging PDF file from all specs ${mergedPDFs[@]}"
