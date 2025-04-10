@@ -138,8 +138,12 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   // gHcParms->Load("PARAM/SHMS/GEN/p_fadc_debug.param");
 
   // Load the Hall C detector map
+  // Load map depending on whether run is before or after SHMS DC swap
   gHcDetectorMap = new THcDetectorMap();
-  gHcDetectorMap->Load("MAPS/LAD_COIN/DETEC/coin_lad.map");
+  if (RunNumber<22157)
+    gHcDetectorMap->Load("MAPS/LAD_COIN/DETEC/coin_lad.map");
+  else
+     gHcDetectorMap->Load("MAPS/LAD_COIN/DETEC/coin_lad_5pass.map");
 
   // Add the dec data class for debugging
   // Podd::DecData *decData = new Podd::DecData("D", "Decoder Raw Data");
