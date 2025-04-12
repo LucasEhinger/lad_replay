@@ -1,49 +1,49 @@
 # histos
-TH1D H_h1_gem_Nlayers_hit 'HMS Number of layers with fired strips (X or Y)' H.gem.hit.nlayer 3 -0.5 2.5
-TH1D H_h1_gem_Nlayers_hitu 'HMS Number of layers with fired X strips' H.gem.hit.nlayeru 3 -0.5 2.5
-TH1D H_h1_gem_Nlayers_hitv 'HMS Number of layers with fired Y strips' H.gem.hit.nlayerv 3 -0.5 2.5
-TH1D H_h1_gem_Nlayers_hituv 'HMS Number of layers with 2D hits' H.gem.hit.nlayeruv 3 -0.5 2.5
+TH1D H_h1_gem_Nlayers_hit 'HMS Number of layers with fired strips (X or Y)' H.gem.hit.nlayer 3 -0.5 2.5 g.evtyp==2
+TH1D H_h1_gem_Nlayers_hitu 'HMS Number of layers with fired X strips' H.gem.hit.nlayeru 3 -0.5 2.5 g.evtyp==2
+TH1D H_h1_gem_Nlayers_hitv 'HMS Number of layers with fired Y strips' H.gem.hit.nlayerv 3 -0.5 2.5 g.evtyp==2
+TH1D H_h1_gem_Nlayers_hituv 'HMS Number of layers with 2D hits' H.gem.hit.nlayeruv 3 -0.5 2.5 g.evtyp==2
 
-TH2D H_h2_gem_NstripsU_layer 'HMS Number of X strips fired; layer; Number of strips fired' [I] H.gem.hit.nstripsu_layer[I] 2 -0.5 1.5 2001 -0.5 2000.5
-TH2D H_h2_gem_NstripsV_layer 'HMS Number of Y strips fired; layer; Number of strips fired' [I] H.gem.hit.nstripsv_layer[I] 2 -0.5 1.5 4001 -0.5 4000.5
-TH2D H_h2_gem_NclustU_layer 'HMS Number of X clusters; layer; Number of clusters' [I] H.gem.hit.nclustu_layer[I] 2 -0.5 1.5 40 0.5 40.5
-TH2D H_h2_gem_NclustV_layer 'HMS Number of Y clusters; layer; Number of clusters' [I] H.gem.hit.nclustv_layer[I] 2 -0.5 1.5 40 0.5 40.5
+TH2D H_h2_gem_NstripsU_layer 'HMS Number of X strips fired; layer; Number of strips fired' [I] H.gem.hit.nstripsu_layer[I] 2 -0.5 1.5 2001 -0.5 2000.5 g.evtyp==2
+TH2D H_h2_gem_NstripsV_layer 'HMS Number of Y strips fired; layer; Number of strips fired' [I] H.gem.hit.nstripsv_layer[I] 2 -0.5 1.5 4001 -0.5 4000.5 g.evtyp==2
+TH2D H_h2_gem_NclustU_layer 'HMS Number of X clusters; layer; Number of clusters' [I] H.gem.hit.nclustu_layer[I] 2 -0.5 1.5 41 -0.5 40.5 g.evtyp==2
+TH2D H_h2_gem_NclustV_layer 'HMS Number of Y clusters; layer; Number of clusters' [I] H.gem.hit.nclustv_layer[I] 2 -0.5 1.5 41 -0.5 40.5 g.evtyp==2
 
-TH1D H_h1_gem_NstripsU_layer_0 'HMS Number of X strips fired; layer; Number of strips fired' H.gem.hit.nstripsu_layer[0] 2001 -0.5 2000.5 
-TH1D H_h1_gem_NstripsU_layer_1 'HMS Number of X strips fired; layer; Number of strips fired' H.gem.hit.nstripsu_layer[1] 2001 -0.5 2000.5
-TH1D H_h1_gem_NstripsV_layer_0 'HMS Number of Y strips fired; layer; Number of strips fired' H.gem.hit.nstripsv_layer[0] 4001 -0.5 4000.5
-TH1D H_h1_gem_NstripsV_layer_1 'HMS Number of Y strips fired; layer; Number of strips fired' H.gem.hit.nstripsv_layer[1] 4001 -0.5 4000.5
-TH1D H_h1_gem_NclustU_layer_0 'HMS Number of X clusters; layer; Number of clusters' H.gem.hit.nclustu_layer[0] 40 0.5 40.5
-TH1D H_h1_gem_NclustU_layer_1 'HMS Number of X clusters; layer; Number of clusters' H.gem.hit.nclustu_layer[1] 40 0.5 40.5
-TH1D H_h1_gem_NclustV_layer_0 'HMS Number of Y clusters; layer; Number of clusters' H.gem.hit.nclustv_layer[0] 40 0.5 40.5
-TH1D H_h1_gem_NclustV_layer_1 'HMS Number of Y clusters; layer; Number of clusters' H.gem.hit.nclustv_layer[1] 40 0.5 40.5
+TH1D H_h1_gem_NstripsU_layer_0 'HMS Number of X strips fired; layer; Number of strips fired' H.gem.hit.nstripsu_layer[0] 2001 -0.5 2000.5 g.evtyp==2
+TH1D H_h1_gem_NstripsU_layer_1 'HMS Number of X strips fired; layer; Number of strips fired' H.gem.hit.nstripsu_layer[1] 2001 -0.5 2000.5 g.evtyp==2
+TH1D H_h1_gem_NstripsV_layer_0 'HMS Number of Y strips fired; layer; Number of strips fired' H.gem.hit.nstripsv_layer[0] 4001 -0.5 4000.5 g.evtyp==2
+TH1D H_h1_gem_NstripsV_layer_1 'HMS Number of Y strips fired; layer; Number of strips fired' H.gem.hit.nstripsv_layer[1] 4001 -0.5 4000.5 g.evtyp==2
+TH1D H_h1_gem_NclustU_layer_0 'HMS Number of X clusters; layer; Number of clusters' H.gem.hit.nclustu_layer[0] 41 -0.5 40.5 g.evtyp==2
+TH1D H_h1_gem_NclustU_layer_1 'HMS Number of X clusters; layer; Number of clusters' H.gem.hit.nclustu_layer[1] 41 -0.5 40.5 g.evtyp==2
+TH1D H_h1_gem_NclustV_layer_0 'HMS Number of Y clusters; layer; Number of clusters' H.gem.hit.nclustv_layer[0] 41 -0.5 40.5 g.evtyp==2
+TH1D H_h1_gem_NclustV_layer_1 'HMS Number of Y clusters; layer; Number of clusters' H.gem.hit.nclustv_layer[1] 41 -0.5 40.5 g.evtyp==2
 
 
-TH2D H_h2_gem_stripU_adc_0 'HMS Layer 0 Y Strip vs ADC Strip Sum; Strip; ADC Sum' H.gem.m0.strip.istrip[I] H.gem.m0.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 4000 H.gem.m0.strip.IsU[I] 
-TH2D H_h2_gem_stripV_adc_0 'HMS Layer 0 X Strip vs ADC Strip Sum; Strip; ADC Sum' H.gem.m0.strip.istrip[I] H.gem.m0.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 4000 H.gem.m0.strip.IsV[I] 
-TH2D H_h2_gem_stripU_adc_1 'HMS Layer 1 Y Strip vs ADC Strip Sum; Strip; ADC Sum' H.gem.m1.strip.istrip[I] H.gem.m1.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 4000 H.gem.m0.strip.IsU[I] 
-TH2D H_h2_gem_stripV_adc_1 'HMS Layer 1 X Strip vs ADC Strip Sum; Strip; ADC Sum' H.gem.m1.strip.istrip[I] H.gem.m1.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 4000 H.gem.m0.strip.IsV[I] 
+TH2D H_h2_gem_stripU_adc_0 'HMS Layer 0 Y Strip vs ADC Strip Sum; Strip; ADC Sum' H.gem.m0.strip.istrip[I] H.gem.m0.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 4000 H.gem.m0.strip.IsU[I]&&g.evtyp==2
+TH2D H_h2_gem_stripV_adc_0 'HMS Layer 0 X Strip vs ADC Strip Sum; Strip; ADC Sum' H.gem.m0.strip.istrip[I] H.gem.m0.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 4000 H.gem.m0.strip.IsV[I]&&g.evtyp==2
+TH2D H_h2_gem_stripU_adc_1 'HMS Layer 1 Y Strip vs ADC Strip Sum; Strip; ADC Sum' H.gem.m1.strip.istrip[I] H.gem.m1.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 4000 H.gem.m0.strip.IsU[I]&&g.evtyp==2 
+TH2D H_h2_gem_stripV_adc_1 'HMS Layer 1 X Strip vs ADC Strip Sum; Strip; ADC Sum' H.gem.m1.strip.istrip[I] H.gem.m1.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 4000 H.gem.m0.strip.IsV[I]&&g.evtyp==2
 
-TH2D H_h2_gem_stripU_adc_max_0 'HMS Layer 0 Y Strip vs ADC Strip Max; Strip; ADC Max' H.gem.m0.strip.istrip[I] H.gem.m0.strip.ADCmax[I] 1536 -0.5 1535.5 100 0 4000 H.gem.m0.strip.IsU[I] 
-TH2D H_h2_gem_stripV_adc_max_0 'HMS Layer 0 X Strip vs ADC Strip Max; Strip; ADC Max' H.gem.m0.strip.istrip[I] H.gem.m0.strip.ADCmax[I] 3072 -0.5 3071.5 100 0 4000 H.gem.m0.strip.IsV[I] 
-TH2D H_h2_gem_stripU_adc_max_1 'HMS Layer 1 Y Strip vs ADC Strip Max; Strip; ADC Max' H.gem.m1.strip.istrip[I] H.gem.m1.strip.ADCmax[I] 1536 -0.5 1535.5 100 0 4000 H.gem.m0.strip.IsU[I] 
-TH2D H_h2_gem_stripV_adc_max_1 'HMS Layer 1 X Strip vs ADC Strip Max; Strip; ADC Max' H.gem.m1.strip.istrip[I] H.gem.m1.strip.ADCmax[I] 3072 -0.5 3071.5 100 0 4000 H.gem.m0.strip.IsV[I]
+TH2D H_h2_gem_stripU_adc_max_0 'HMS Layer 0 Y Strip vs ADC Strip Max; Strip; ADC Max' H.gem.m0.strip.istrip[I] H.gem.m0.strip.ADCmax[I] 1536 -0.5 1535.5 100 0 4000 H.gem.m0.strip.IsU[I]&&g.evtyp==2
+TH2D H_h2_gem_stripV_adc_max_0 'HMS Layer 0 X Strip vs ADC Strip Max; Strip; ADC Max' H.gem.m0.strip.istrip[I] H.gem.m0.strip.ADCmax[I] 3072 -0.5 3071.5 100 0 4000 H.gem.m0.strip.IsV[I]&&g.evtyp==2
+TH2D H_h2_gem_stripU_adc_max_1 'HMS Layer 1 Y Strip vs ADC Strip Max; Strip; ADC Max' H.gem.m1.strip.istrip[I] H.gem.m1.strip.ADCmax[I] 1536 -0.5 1535.5 100 0 4000 H.gem.m0.strip.IsU[I]&&g.evtyp==2
+TH2D H_h2_gem_stripV_adc_max_1 'HMS Layer 1 X Strip vs ADC Strip Max; Strip; ADC Max' H.gem.m1.strip.istrip[I] H.gem.m1.strip.ADCmax[I] 3072 -0.5 3071.5 100 0 4000 H.gem.m0.strip.IsV[I]&&g.evtyp==2
 
 
 # tracks
-TH1D H_h1_gem_ntracks 'HMS Number of track candidates; N tracks found' H.gem.trk.ntracks 20 0.5 20.5 
-TH1D H_h1_gem_track_t 'HMS Time mean; Avg. time' H.gem.trk.t 100 0 100
-TH1D H_h1_gem_track_dt 'HMS Time difference; dt' H.gem.trk.dt 100 -10 10
-TH1D H_h1_gem_track_d0 'HMS Track DCA; DCA (cm)' H.gem.trk.d0 120 0 120
+TH1D H_h1_gem_ntracks 'HMS Number of track candidates; N tracks found' H.gem.trk.ntracks 1001 -0.5 1000.5 g.evtyp==2
+TH1D H_h1_gem_track_t 'HMS Time mean; Avg. time' H.gem.trk.t 150 0 150 g.evtyp==2
+TH1D H_h1_gem_track_dt 'HMS Time difference; dt' H.gem.trk.dt 100 -10 10 g.evtyp==2
+TH1D H_h1_gem_track_d0 'HMS Track DCA; DCA (cm)' H.gem.trk.d0 120 0 120 g.evtyp==2
 
 # Strip hitmap
-TH1D H_h1_gem_stripsfiredU_m0 'HMS Layer 0 X Strip hit map' H.gem.m0.strip.istrip[I] 1536 -0.5 1535.5 H.gem.m0.strip.IsU[I]
-TH1D H_h1_gem_stripsfiredV_m0 'HMS Layer 0 Y Strip hit map' H.gem.m0.strip.istrip[I] 3072 -0.5 3071.5 H.gem.m0.strip.IsV[I]
-TH1D H_h1_gem_stripsfiredU_m1 'HMS Layer 1 X Strip hit map' H.gem.m1.strip.istrip[I] 1536 -0.5 1535.5 H.gem.m1.strip.IsU[I]
-TH1D H_h1_gem_stripsfiredV_m1 'HMS Layer 1 Y Strip hit map' H.gem.m1.strip.istrip[I] 3072 -0.5 3071.5 H.gem.m1.strip.IsV[I]
+TH1D H_h1_gem_stripsfiredU_m0 'HMS Layer 0 X Strip hit map' H.gem.m0.strip.istrip[I] 1536 -0.5 1535.5 H.gem.m0.strip.IsU[I]&&g.evtyp==2
+TH1D H_h1_gem_stripsfiredV_m0 'HMS Layer 0 Y Strip hit map' H.gem.m0.strip.istrip[I] 3072 -0.5 3071.5 H.gem.m0.strip.IsV[I]&&g.evtyp==2
+TH1D H_h1_gem_stripsfiredU_m1 'HMS Layer 1 X Strip hit map' H.gem.m1.strip.istrip[I] 1536 -0.5 1535.5 H.gem.m1.strip.IsU[I]&&g.evtyp==2
+TH1D H_h1_gem_stripsfiredV_m1 'HMS Layer 1 Y Strip hit map' H.gem.m1.strip.istrip[I] 3072 -0.5 3071.5 H.gem.m1.strip.IsV[I]&&g.evtyp==2
 
-TH1D H_h1_gem_nhits_0 'HMS Number of hits Layer 0; Number of hits Layer 0' P.gem.m0.n2Dhits 50 0.5 50.5
-TH1D H_h1_gem_nhits_1 'HMS Number of hits Layer 1; Number of hits Layer 1' P.gem.m1.n2Dhits 50 0.5 50.5
+TH1D H_h1_gem_nhits_0 'HMS Number of hits Layer 0; Number of hits Layer 0' P.gem.m0.n2Dhits 1001 -0.5 1000.5 g.evtyp==2
+TH1D H_h1_gem_nhits_1 'HMS Number of hits Layer 1; Number of hits Layer 1' P.gem.m1.n2Dhits 1001 -0.5 1000.5 g.evtyp==2
 
 # cluster plots (these cuts aren't working due. Currently being called in macros/gem_histos.C)
 #TH1D H_h1_gem_clustWidthU_0 'HMS X cluster size Layer 0; cluster size' H.gem.clust.nstrip[I] 10 0.5 10.5 H.gem.clust.axis[I]<1&&H.gem.clust.layer[I]<1
@@ -89,50 +89,50 @@ TH1D H_h1_gem_nhits_1 'HMS Number of hits Layer 1; Number of hits Layer 1' P.gem
 ##########
 
 # histos
-TH1D P_h1_gem_Nlayers_hit 'SHMS Number of layers with fired strips (X or Y)' P.gem.hit.nlayer 3 -0.5 2.5
-TH1D P_h1_gem_Nlayers_hitu 'SHMS Number of layers with fired X strips' P.gem.hit.nlayeru 3 -0.5 2.5
-TH1D P_h1_gem_Nlayers_hitv 'SHMS Number of layers with fired Y strips' P.gem.hit.nlayerv 3 -0.5 2.5
-TH1D P_h1_gem_Nlayers_hituv 'SHMS Number of layers with 2D hits' P.gem.hit.nlayeruv 3 -0.5 2.5
+TH1D P_h1_gem_Nlayers_hit 'SHMS Number of layers with fired strips (X or Y)' P.gem.hit.nlayer 3 -0.5 2.5 g.evtyp==1
+TH1D P_h1_gem_Nlayers_hitu 'SHMS Number of layers with fired X strips' P.gem.hit.nlayeru 3 -0.5 2.5 g.evtyp==1
+TH1D P_h1_gem_Nlayers_hitv 'SHMS Number of layers with fired Y strips' P.gem.hit.nlayerv 3 -0.5 2.5 g.evtyp==1
+TH1D P_h1_gem_Nlayers_hituv 'SHMS Number of layers with 2D hits' P.gem.hit.nlayeruv 3 -0.5 2.5 g.evtyp==1
 
-TH2D P_h2_gem_NstripsU_layer 'SHMS Number of X strips fired; layer; Number of strips fired' [I] P.gem.hit.nstripsu_layer[I] 2 -0.5 1.5 2001 -0.5 2000.5
-TH2D P_h2_gem_NstripsV_layer 'SHMS Number of Y strips fired; layer; Number of strips fired' [I] P.gem.hit.nstripsv_layer[I] 2 -0.5 1.5 4001 -0.5 4000.5
-TH2D P_h2_gem_NclustU_layer 'SHMS Number of X clusters; layer; Number of clusters' [I] P.gem.hit.nclustu_layer[I] 2 -0.5 1.5 40 0.5 40.5
-TH2D P_h2_gem_NclustV_layer 'SHMS Number of Y clusters; layer; Number of clusters' [I] P.gem.hit.nclustv_layer[I] 2 -0.5 1.5 40 0.5 40.5
+TH2D P_h2_gem_NstripsU_layer 'SHMS Number of X strips fired; layer; Number of strips fired' [I] P.gem.hit.nstripsu_layer[I] 2 -0.5 1.5 2001 -0.5 2000.5 g.evtyp==1
+TH2D P_h2_gem_NstripsV_layer 'SHMS Number of Y strips fired; layer; Number of strips fired' [I] P.gem.hit.nstripsv_layer[I] 2 -0.5 1.5 4001 -0.5 4000.5 g.evtyp==1
+TH2D P_h2_gem_NclustU_layer 'SHMS Number of X clusters; layer; Number of clusters' [I] P.gem.hit.nclustu_layer[I] 2 -0.5 1.5 41 -0.5 40.5 g.evtyp==1
+TH2D P_h2_gem_NclustV_layer 'SHMS Number of Y clusters; layer; Number of clusters' [I] P.gem.hit.nclustv_layer[I] 2 -0.5 1.5 41 -0.5 40.5 g.evtyp==1
 
-TH1D P_h1_gem_NstripsU_layer_0 'SHMS Number of X strips fired; layer; Number of strips fired' P.gem.hit.nstripsu_layer[0] 2001 -0.5 2000.5 
-TH1D P_h1_gem_NstripsU_layer_1 'SHMS Number of X strips fired; layer; Number of strips fired' P.gem.hit.nstripsu_layer[1] 2001 -0.5 2000.5
-TH1D P_h1_gem_NstripsV_layer_0 'SHMS Number of Y strips fired; layer; Number of strips fired' P.gem.hit.nstripsv_layer[0] 4001 -0.5 4000.5
-TH1D P_h1_gem_NstripsV_layer_1 'SHMS Number of Y strips fired; layer; Number of strips fired' P.gem.hit.nstripsv_layer[1] 4001 -0.5 4000.5
-TH1D P_h1_gem_NclustU_layer_0 'SHMS Number of X clusters; layer; Number of clusters' P.gem.hit.nclustu_layer[0] 40  0.5 40.5
-TH1D P_h1_gem_NclustU_layer_1 'SHMS Number of X clusters; layer; Number of clusters' P.gem.hit.nclustu_layer[1] 40  0.5 40.5
-TH1D P_h1_gem_NclustV_layer_0 'SHMS Number of Y clusters; layer; Number of clusters' P.gem.hit.nclustv_layer[0] 40  0.5 40.5
-TH1D P_h1_gem_NclustV_layer_1 'SHMS Number of Y clusters; layer; Number of clusters' P.gem.hit.nclustv_layer[1] 40  0.5 40.5
+TH1D P_h1_gem_NstripsU_layer_0 'SHMS Number of X strips fired; layer; Number of strips fired' P.gem.hit.nstripsu_layer[0] 2001 -0.5 2000.5 g.evtyp==1
+TH1D P_h1_gem_NstripsU_layer_1 'SHMS Number of X strips fired; layer; Number of strips fired' P.gem.hit.nstripsu_layer[1] 2001 -0.5 2000.5 g.evtyp==1
+TH1D P_h1_gem_NstripsV_layer_0 'SHMS Number of Y strips fired; layer; Number of strips fired' P.gem.hit.nstripsv_layer[0] 4001 -0.5 4000.5 g.evtyp==1
+TH1D P_h1_gem_NstripsV_layer_1 'SHMS Number of Y strips fired; layer; Number of strips fired' P.gem.hit.nstripsv_layer[1] 4001 -0.5 4000.5 g.evtyp==1
+TH1D P_h1_gem_NclustU_layer_0 'SHMS Number of X clusters; layer; Number of clusters' P.gem.hit.nclustu_layer[0] 41  -0.5 40.5 g.evtyp==1
+TH1D P_h1_gem_NclustU_layer_1 'SHMS Number of X clusters; layer; Number of clusters' P.gem.hit.nclustu_layer[1] 41  -0.5 40.5 g.evtyp==1
+TH1D P_h1_gem_NclustV_layer_0 'SHMS Number of Y clusters; layer; Number of clusters' P.gem.hit.nclustv_layer[0] 41  -0.5 40.5 g.evtyp==1
+TH1D P_h1_gem_NclustV_layer_1 'SHMS Number of Y clusters; layer; Number of clusters' P.gem.hit.nclustv_layer[1] 41  -0.5 40.5 g.evtyp==1
 
 
-TH2D P_h2_gem_stripU_adc_0 'SHMS Layer 0 Y Strip vs ADC Strip Sum; Strip; ADC Sum' P.gem.m0.strip.istrip[I] P.gem.m0.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 4000 P.gem.m0.strip.IsU[I] 
-TH2D P_h2_gem_stripV_adc_0 'SHMS Layer 0 X Strip vs ADC Strip Sum; Strip; ADC Sum' P.gem.m0.strip.istrip[I] P.gem.m0.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 4000 P.gem.m0.strip.IsV[I] 
-TH2D P_h2_gem_stripU_adc_1 'SHMS Layer 1 Y Strip vs ADC Strip Sum; Strip; ADC Sum' P.gem.m1.strip.istrip[I] P.gem.m1.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 4000 P.gem.m0.strip.IsU[I] 
-TH2D P_h2_gem_stripV_adc_1 'SHMS Layer 1 X Strip vs ADC Strip Sum; Strip; ADC Sum' P.gem.m1.strip.istrip[I] P.gem.m1.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 4000 P.gem.m0.strip.IsV[I] 
+TH2D P_h2_gem_stripU_adc_0 'SHMS Layer 0 Y Strip vs ADC Strip Sum; Strip; ADC Sum' P.gem.m0.strip.istrip[I] P.gem.m0.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 4000 P.gem.m0.strip.IsU[I]&&g.evtyp==1
+TH2D P_h2_gem_stripV_adc_0 'SHMS Layer 0 X Strip vs ADC Strip Sum; Strip; ADC Sum' P.gem.m0.strip.istrip[I] P.gem.m0.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 4000 P.gem.m0.strip.IsV[I]&&g.evtyp==1
+TH2D P_h2_gem_stripU_adc_1 'SHMS Layer 1 Y Strip vs ADC Strip Sum; Strip; ADC Sum' P.gem.m1.strip.istrip[I] P.gem.m1.strip.ADCsum[I] 1536 -0.5 1535.5 100 0 4000 P.gem.m0.strip.IsU[I]&&g.evtyp==1
+TH2D P_h2_gem_stripV_adc_1 'SHMS Layer 1 X Strip vs ADC Strip Sum; Strip; ADC Sum' P.gem.m1.strip.istrip[I] P.gem.m1.strip.ADCsum[I] 3072 -0.5 3071.5 100 0 4000 P.gem.m0.strip.IsV[I]&&g.evtyp==1
 
-TH2D P_h2_gem_stripU_adc_max_0 'SHMS Layer 0 Y Strip vs ADC Strip Max; Strip; ADC Max' P.gem.m0.strip.istrip[I] P.gem.m0.strip.ADCmax[I] 1536 -0.5 1535.5 100 0 4000 P.gem.m0.strip.IsU[I] 
-TH2D P_h2_gem_stripV_adc_max_0 'SHMS Layer 0 X Strip vs ADC Strip Max; Strip; ADC Max' P.gem.m0.strip.istrip[I] P.gem.m0.strip.ADCmax[I] 3072 -0.5 3071.5 100 0 4000 P.gem.m0.strip.IsV[I] 
-TH2D P_h2_gem_stripU_adc_max_1 'SHMS Layer 1 Y Strip vs ADC Strip Max; Strip; ADC Max' P.gem.m1.strip.istrip[I] P.gem.m1.strip.ADCmax[I] 1536 -0.5 1535.5 100 0 4000 P.gem.m0.strip.IsU[I] 
-TH2D P_h2_gem_stripV_adc_max_1 'SHMS Layer 1 X Strip vs ADC Strip Max; Strip; ADC Max' P.gem.m1.strip.istrip[I] P.gem.m1.strip.ADCmax[I] 3072 -0.5 3071.5 100 0 4000 P.gem.m0.strip.IsV[I]
+TH2D P_h2_gem_stripU_adc_max_0 'SHMS Layer 0 Y Strip vs ADC Strip Max; Strip; ADC Max' P.gem.m0.strip.istrip[I] P.gem.m0.strip.ADCmax[I] 1536 -0.5 1535.5 100 0 4000 P.gem.m0.strip.IsU[I]&&g.evtyp==1
+TH2D P_h2_gem_stripV_adc_max_0 'SHMS Layer 0 X Strip vs ADC Strip Max; Strip; ADC Max' P.gem.m0.strip.istrip[I] P.gem.m0.strip.ADCmax[I] 3072 -0.5 3071.5 100 0 4000 P.gem.m0.strip.IsV[I]&&g.evtyp==1
+TH2D P_h2_gem_stripU_adc_max_1 'SHMS Layer 1 Y Strip vs ADC Strip Max; Strip; ADC Max' P.gem.m1.strip.istrip[I] P.gem.m1.strip.ADCmax[I] 1536 -0.5 1535.5 100 0 4000 P.gem.m0.strip.IsU[I]&&g.evtyp==1
+TH2D P_h2_gem_stripV_adc_max_1 'SHMS Layer 1 X Strip vs ADC Strip Max; Strip; ADC Max' P.gem.m1.strip.istrip[I] P.gem.m1.strip.ADCmax[I] 3072 -0.5 3071.5 100 0 4000 P.gem.m0.strip.IsV[I]&&g.evtyp==1
 
-TH1D P_h1_gem_nhits_0 'SHMS Number of hits Layer 0; Number of hits Layer 0' P.gem.m0.n2Dhits 50 0.5 50.5
-TH1D P_h1_gem_nhits_1 'SHMS Number of hits Layer 1; Number of hits Layer 1' P.gem.m1.n2Dhits 50 0.5 50.5
+TH1D P_h1_gem_nhits_0 'SHMS Number of 2D hits Layer 0; Number of hits Layer 0' P.gem.m0.n2Dhits 1001 -0.5 1000.5 g.evtyp==1
+TH1D P_h1_gem_nhits_1 'SHMS Number of 2D hits Layer 1; Number of hits Layer 1' P.gem.m1.n2Dhits 1001 -0.5 1000.5 g.evtyp==1
 
 # tracks
-TH1D P_h1_gem_ntracks 'SHMS Number of track candidates; N tracks found' P.gem.trk.ntracks 20 0.5 20.5 
-TH1D P_h1_gem_track_t 'SHMS Time mean; Avg. time' P.gem.trk.t 100 0 100
-TH1D P_h1_gem_track_dt 'SHMS Time difference; dt' P.gem.trk.dt 100 -10 10
-TH1D P_h1_gem_track_d0 'SHMS Track DCA; DCA (cm)' P.gem.trk.d0 120 0 120
+TH1D P_h1_gem_ntracks 'SHMS Number of track candidates; N tracks found' P.gem.trk.ntracks 1001 -0.5 1000.5 g.evtyp==1
+TH1D P_h1_gem_track_t 'SHMS Time mean; Avg. time' P.gem.trk.t 150 0 150 g.evtyp==1
+TH1D P_h1_gem_track_dt 'SHMS Time difference; dt' P.gem.trk.dt 100 -10 10 g.evtyp==1
+TH1D P_h1_gem_track_d0 'SHMS Track DCA; DCA (cm)' P.gem.trk.d0 120 0 120 g.evtyp==1
 
 # Strip hitmap
-TH1D P_h1_gem_stripsfiredU_m0 'SHMS Layer 0 X Strip hit map' P.gem.m0.strip.istrip[I] 1536 -0.5 1535.5 P.gem.m0.strip.IsU[I]
-TH1D P_h1_gem_stripsfiredV_m0 'SHMS Layer 0 Y Strip hit map' P.gem.m0.strip.istrip[I] 3072 -0.5 3071.5 P.gem.m0.strip.IsV[I]
-TH1D P_h1_gem_stripsfiredU_m1 'SHMS Layer 1 X Strip hit map' P.gem.m1.strip.istrip[I] 1536 -0.5 1535.5 P.gem.m1.strip.IsU[I]
-TH1D P_h1_gem_stripsfiredV_m1 'SHMS Layer 1 Y Strip hit map' P.gem.m1.strip.istrip[I] 3072 -0.5 3071.5 P.gem.m1.strip.IsV[I]
+TH1D P_h1_gem_stripsfiredU_m0 'SHMS Layer 0 X Strip hit map' P.gem.m0.strip.istrip[I] 1536 -0.5 1535.5 P.gem.m0.strip.IsU[I]&&g.evtyp==1
+TH1D P_h1_gem_stripsfiredV_m0 'SHMS Layer 0 Y Strip hit map' P.gem.m0.strip.istrip[I] 3072 -0.5 3071.5 P.gem.m0.strip.IsV[I]&&g.evtyp==1
+TH1D P_h1_gem_stripsfiredU_m1 'SHMS Layer 1 X Strip hit map' P.gem.m1.strip.istrip[I] 1536 -0.5 1535.5 P.gem.m1.strip.IsU[I]&&g.evtyp==1
+TH1D P_h1_gem_stripsfiredV_m1 'SHMS Layer 1 Y Strip hit map' P.gem.m1.strip.istrip[I] 3072 -0.5 3071.5 P.gem.m1.strip.IsV[I]&&g.evtyp==1
 
 # cluster plots (these cuts aren't working due. Currently being called in macros/gem_histos.C)
 #TH1D P_h1_gem_clustWidthU_0 'SHMS X cluster size Layer 0; cluster size' P.gem.clust.nstrip[I] 10 0.5 10.5 P.gem.clust.axis[I]<1&&P.gem.clust.layer[I]<1

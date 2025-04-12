@@ -122,12 +122,14 @@ replayReport="${reportFileDir}/REPLAY_REPORT/replayReport_${spec}_production_${r
 #   1. A tag for output naming.
 #   2. The normal GUI configuration file.
 #   3. The expert GUI configuration file.
-gui_tags=("lad_coin" "lad_kin" "shms" "hms")
+# gui_tags=("lad_coin" "lad_kin" "shms" "hms")
+gui_tags=("lad_gem" "lad_coin" "shms" "hms")
 # gui_tags=("shms" "hms")
 
 gui_configs=(
+  "CONFIG/LAD/PRODUCTION/lad_gem.cfg"
   "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
-  "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
+  # "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
   "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
   "CONFIG/HMS/PRODUCTION/hms_production.cfg"
 )
@@ -138,8 +140,9 @@ gui_configs=(
   #"CONFIG/HMS/PRODUCTION/hms_production_expert.cfg"
 #)
 expert_configs=(
+  "CONFIG/LAD/PRODUCTION/lad_gem.cfg"
   "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
-  "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
+  # "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
   "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
   "CONFIG/HMS/PRODUCTION/hms_production.cfg"
 )
@@ -186,16 +189,16 @@ expert_configs=(
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
   echo ""
   # echo "Do you want to generate expert LAD detector (gem + hodoscope) plots?"
-  yes_or_no "Do you want to generate expert LAD detector (gem + hodoscope) plots?" &&
-  {
+  # yes_or_no "Do you want to generate expert LAD detector (gem + hodoscope) plots?" &&
+  # {
     echo "Generating expert LAD detector plots."
     # This script runs a ROOT macro to process the latest ROOT file and generate histograms.
     # The macro "lad_histos.C" is executed with two arguments:
     # - The first argument (${latestRootFile}) specifies the latest ROOT file to process.
     # - The second argument (0) indicates that the histograms are generated for both HMS and SHMS LAD.
-    root -l -b -q "macros/LAD/lad_histos.C(\"${latestRootFile}\",0,${numEvents})"
+    root -l -b -q "macros/LAD/lad_histos_MT.C(\"${latestRootFile}\",0,${numEvents})" 
     # Currently on generating for 1k events. Will have to come up with a faster way to make these histograms.
-  }
+  # }
 
 
 
@@ -285,13 +288,16 @@ expert_configs=(
   ###########################################################
   # function used to prompt user for questions
   # post pdfs in hclog
-  yes_or_no "Upload these plots to logbook HCLOG? " &&
+   yes_or_no "Upload these plots to logbook HCLOG? " && {
+    read -p "Enter a text body for the log entry (or leave blank): " logCaption
     /site/ace/certified/apps/bin/logentry \
       -cert /home/cdaq/.elogcert \
       -t "${numEventsk}k replay plots for run ${runNum}" \
       -e cdaq \
       -l HCLOG \
-      -a ${latestMonPdfFile}
+      -a ${latestMonPdfFile} \
+      --caption "${logCaption}"
+  }
 
   #    /home/cdaq/bin/hclog \
   #    --logbook "HCLOG" \

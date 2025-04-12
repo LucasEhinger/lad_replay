@@ -22,7 +22,7 @@
 
 const int NDDATA_MAX       = 100000; // Maximum number of data points to read. GEM's need at least 10k. 100k might be overkill
 const int NMAX_THREADS     = 200;   // Maximum number of threads
-const int NEVTS_PER_THREAD = 1000;  // Number of events per thread
+const int NEVTS_PER_THREAD = 500;  // Number of events per thread
 struct Histo1DCommand {
   TString name;       // Histogram name
   TString title;      // Histogram title
@@ -407,7 +407,7 @@ void processEventsRange(TString inputFileName, TString treeName, Long64_t start,
         }
       }
     }
-    if (start == 0 && i % 100 == 0) {
+    if (start == 0 && i % 10 == 0) {
       double progress = ((double)(i - start) / (end - start)) * 100.0;
       std::cout << "\rThread progress: " << std::fixed << std::setprecision(1) << progress << "%" << std::flush;
     }
@@ -486,10 +486,10 @@ void lad_histos_MT(
           3000, prefix + ".gem.clust.axis<1&&" + prefix + ".gem.clust.layer>0"},
          {prefix + "_h1_gem_clustADCSumV_1", "Y cluster ADC sum Layer 1; ADC sum", prefix + ".gem.clust.adc", 1500, 0,
           3000, prefix + ".gem.clust.axis>0&&" + prefix + ".gem.clust.layer>0"},
-         {prefix + "_h1_gem_nhits_0", "Number of hits; Number of hits", prefix + ".gem.sp.nhits", 50, -0.5, 49.5,
-          prefix + ".gem.sp.layer<1"},
-         {prefix + "_h1_gem_nhits_1", "Number of hits; Number of hits", prefix + ".gem.sp.nhits", 50, -0.5, 49.5,
-          prefix + ".gem.sp.layer>0"},
+        //  {prefix + "_h1_gem_nhits_0", "Number of hits Layer 0; Number of hits", prefix + ".gem.sp.nhits", 50, -0.5, 49.5,
+        //   prefix + ".gem.sp.layer<1"},
+        //  {prefix + "_h1_gem_nhits_1", "Number of hits Layer 1; Number of hits", prefix + ".gem.sp.nhits", 50, -0.5, 49.5,
+        //   prefix + ".gem.sp.layer>0"},
          {prefix + "_h1_gem_time_0", "Time Mean; Time Mean", prefix + ".gem.sp.time", 100, 0, 120,
           prefix + ".gem.sp.layer<1"},
          {prefix + "_h1_gem_time_1", "Time Mean; Time Mean", prefix + ".gem.sp.time", 100, 0, 120,
