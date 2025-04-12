@@ -10,18 +10,20 @@ SPEC="LAD_COIN"
 #     ls raw/"${spec}"_all_*.dat raw/../raw.copiedtotape/"${spec}"_all_*.dat -R 2>/dev/null | perl -ne 'if(/0*(\d+)/) {print "$1\n"}' | sort -n | tail -1 \
 # )
 
+runNum=$1
+if ! [[ "$runNum" =~ ^[0-9]+$ ]]; then
+  runNum=$(find ./raw/ -type f -name "*.dat.*" \
+  | grep -Eo '[0-9]{5}\.dat\.' \
+  | grep -Eo '[0-9]{5}' \
+  | sort -n | tail -1)
+fi
+
 #Currently not pointing to cache. Can change later if necessary 
 # /cache/hallc/c-lad/raw/lad_Production_*.dat.* (or just ./cache soft link)
-lastRunFile=$(
-  ls ./raw/lad_Production_*.dat.* -R 2>/dev/null | sort -V | tail -1
-)
-# lastRunFile=$(
-#   ls /volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic/lad_Production_*.dat.* -R 2>/dev/null | sort -V | tail -1
-# )
+# Find the most recent run number
 
-lastRun=$(
-  echo "$lastRunFile" | perl -ne 'if(/0*(\d+)/) {print "$1\n"}'
-)
+lastRunFile=$(find ./raw/ -type f -name "*${runNum}.dat.0")
+
 
 #/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic/
 # Determine the run_type based on the lastRun value
@@ -36,11 +38,8 @@ case "$lastRunFile" in
   *HMS*) run_type=7 ;;
   *) run_type=-1 ;; # Default case if no match is found
 esac
+
 # Which run to analyze.
-runNum=$1
-if ! [[ "$runNum" =~ ^[0-9]+$ ]]; then
-  runNum=$lastRun
-fi
 
 numEvents=$2
 
