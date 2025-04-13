@@ -109,22 +109,17 @@ replayReport="${reportFileDir}/REPLAY_REPORT/replayReport_${spec}_production_${r
 #   2. The normal GUI configuration file.
 #   3. The expert GUI configuration file.
 # gui_tags=("lad_coin" "lad_kin" "shms" "hms")
-# gui_tags=("lad_gem" "lad_coin" "shms" "hms")
-gui_tags=("shms" "hms")
+gui_tags=("lad_gem" "lad_coin" "shms" "hms")
+# gui_tags=("shms" "hms")
 
 gui_configs=(
-  # "CONFIG/LAD/PRODUCTION/lad_gem.cfg"
-  # "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
+  "CONFIG/LAD/PRODUCTION/lad_gem.cfg"
+  "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
   # "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
   "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
   "CONFIG/HMS/PRODUCTION/hms_production.cfg"
 )
-#expert_configs=(
-  # "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
-  # "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
-  #"CONFIG/SHMS/PRODUCTION/shms_production_expert.cfg"
-  #"CONFIG/HMS/PRODUCTION/hms_production_expert.cfg"
-#)
+
 expert_configs=(
   "CONFIG/LAD/PRODUCTION/lad_gem.cfg"
   "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
@@ -198,10 +193,10 @@ expert_configs=(
   echo " -> RUN:     ${runNum}"
   echo "-------------------------------------------------------------"
 
-  cd onlineGUI
-  panguin -f "CONFIG/LAD/PRODUCTION/lad_gem.cfg" -r "${runNum}" -P
-  panguin -f "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg" -r "${runNum}" -P
-  cd .. || exit 1
+  # cd onlineGUI
+  # panguin -f "CONFIG/LAD/PRODUCTION/lad_gem.cfg" -r "${runNum}" -P
+  # panguin -f "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg" -r "${runNum}" -P
+  # cd .. || exit 1
   
   sleep 1
   # Loop over each GUI configuration.
@@ -225,11 +220,13 @@ expert_configs=(
 
     sleep 2
     cd onlineGUI || exit 1
-    yes_or_no "Do you want to view plots for ${tag}?" &&
-    {
+    if [[ "${tag}" == "hms" || "${tag}" == "shms" ]]; then
+      yes_or_no "Do you want to view plots for ${tag}?" &&
+      {
       # Run the normal GUI command.
       panguin -f "${config}" -r "${runNum}"
-    }
+      }
+    fi
     # Run the expert GUI command (-P flag).
     panguin -f "${expertConfig}" -r "${runNum}" -P
 
@@ -281,13 +278,16 @@ expert_configs=(
   # post pdfs in hclog
    yes_or_no "Upload these plots to logbook HCLOG? " && {
     read -p "Enter a text body for the log entry (or leave blank): " logCaption
+    echo "$logCaption" > caption.txt
     /site/ace/certified/apps/bin/logentry \
       -cert /home/cdaq/.elogcert \
       -t "${numEventsk}k replay plots for run ${runNum}" \
       -e cdaq \
       -l HCLOG \
       -a ${latestMonPdfFile} \
-      --caption "${logCaption}"
+      -b "caption.txt"
+
+      rm -rf "caption.txt"
   }
 
   #    /home/cdaq/bin/hclog \
