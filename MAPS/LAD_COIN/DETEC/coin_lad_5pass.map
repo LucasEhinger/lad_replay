@@ -136,11 +136,11 @@ ROC=9
 
 SLOT=31
 ! Custom logic TDC inputs from LAD crate
- 112,       2,     60,     1  ! ltrig1
- 113,       2,     61,     1  ! ltrig2
- 114,       2,     62,     1  ! photodiode
- 116,       2,     63,     1  ! shmsTrig
- 117,       2,     64,     1  ! hmsTrig
+ 112,       2,     58,     1  ! ltrig1LAD
+ 113,       2,     59,     1  ! ltrig2LAD
+ 114,       2,     60,     1  ! photodiodeLAD
+ 116,       2,     61,     1  ! shmsTrigLAD
+ 117,       2,     62,     1  ! hmsTrigLAD
 
 ! SHMS Trig:
 ! Plane = 1 >> ADC Only
@@ -268,11 +268,11 @@ ROC=9
 
 SLOT=31
 ! Custom logic TDC inputs from LAD crate
- 112,       2,     60,     1  ! ltrig1
- 113,       2,     61,     1  ! ltrig2
- 114,       2,     62,     1  ! photodiode
- 116,       2,     63,     1  ! shmsTrig
- 117,       2,     64,     1  ! hmsTrig
+ 112,       2,     59,     1  ! ltrig1LAD
+ 113,       2,     60,     1  ! ltrig2LAD
+ 114,       2,     61,     1  ! photodiodeLAD
+ 116,       2,     62,     1  ! shmsTrigLAD
+ 117,       2,     63,     1  ! hmsTrigLAD
 
 
 DETECTOR=11  ! HMS 12 gev chambers

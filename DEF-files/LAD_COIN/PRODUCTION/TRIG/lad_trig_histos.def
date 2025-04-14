@@ -1,0 +1,35 @@
+############################
+#   TRIGGER TIME
+############################
+TH1F p_ltrig1LAD  'p_ltrig1LAD; T_LAD (ns); Counts'  T.shms.ltrig1LAD_tdcTimeRaw*0.09766 1000 2500 3500
+TH1F p_ltrig2LAD  'p_ltrig2LAD; T_LAD (ns); Counts'  T.shms.ltrig2LAD_tdcTimeRaw*0.09766 1000 2500 3500
+TH1F p_photodiodeLAD  'p_photodiodeLAD; T_LAD (ns); Counts'  T.shms.photodiodeLAD_tdcTimeRaw*0.09766 1000 2500 3500
+TH1F p_shmsTrigLAD  'p_shmsTrigLAD; T_LAD (ns); Counts'  T.shms.shmsTrigLAD_tdcTimeRaw*0.09766 1000 2500 3500 g.evtyp==1
+TH1F p_hmsTrigLAD  'p_hmsTrigLAD; T_LAD (ns); Counts'  T.shms.hmsTrigLAD_tdcTimeRaw*0.09766 1000 2500 3500 g.evtyp==2
+
+############################
+#   TRIGGER TIME Difference
+############################
+TH1F p_shmsTrigLAD_diff_ELREAL  'p_shmsTrigLAD_diff_ELREAL; T_LAD - T_SHMS (ns); Counts'  T.shms.shmsTrigLAD_tdcTimeRaw*0.09766-T.shms.pEL_REAL_tdcTimeRaw*0.09766 100 2100 2200 g.evtyp==1&&T.shms.pEL_REAL_tdcMultiplicity>0
+TH1F p_hmsTrigLAD_diff_ELREAL  'p_hmsTrigLAD_diff_ELREAL; T_LAD - T_HMS (ns); Counts'  T.hms.hmsTrigLAD_tdcTimeRaw*0.09766-T.hms.hEL_REAL_tdcTimeRaw*0.09766 100 -150 -50 g.evtyp==2&&T.hms.hEL_REAL_tdcMultiplicity>0
+
+TH1F p_shmsTrigLAD_diff_ELCLEAN  'p_shmsTrigLAD_diff_ELCLEAN; T_LAD - T_SHMS (ns); Counts'  T.shms.shmsTrigLAD_tdcTimeRaw*0.09766-T.shms.pEL_CLEAN_tdcTimeRaw*0.09766 100 -150 -50 g.evtyp==1&&T.shms.pEL_CLEAN_tdcMultiplicity>0
+TH1F p_hmsTrigLAD_diff_ELCLEAN  'p_hmsTrigLAD_diff_ELCLEAN; T_LAD - T_HMS (ns); Counts'  T.hms.hmsTrigLAD_tdcTimeRaw*0.09766-T.hms.hEL_CLEAN_tdcTimeRaw*0.09766 100 -150 -50 g.evtyp==2&&T.hms.hEL_CLEAN_tdcMultiplicity>0
+
+TH1F p_shmsTrigLAD_diff_T1  'p_shmsTrigLAD_diff_T1; T_LAD - T_SHMS (ns); Counts'  T.shms.shmsTrigLAD_tdcTimeRaw*0.09766-T.shms.pT2_tdcTimeRaw*0.09766 100 -130 -30 g.evtyp==1&&T.shms.pT1_tdcMultiplicity>0
+TH1F p_hmsTrigLAD_diff_T1  'p_hmsTrigLAD_diff_T1; T_LAD - T_HMS (ns); Counts'  T.hms.hmsTrigLAD_tdcTimeRaw*0.09766-T.hms.hT1_tdcTimeRaw*0.09766 100 -130 -30 g.evtyp==2&&T.hms.hT1_tdcMultiplicity>0
+
+############################
+#   TRIGGER Multiplicity
+############################
+TH1F p_ltrig1LAD_mult  'p_ltrig1LAD_mult; Multiplicity; Counts'  T.shms.ltrig1LAD_tdcMultiplicity 6 -0.5 5.5
+TH1F p_ltrig2LAD_mult  'p_ltrig2LAD_mult; Multiplicity; Counts'  T.shms.ltrig2LAD_tdcMultiplicity 6 -0.5 5.5
+TH1F p_photodiodeLAD_mult  'p_photodiodeLAD_mult; Multiplicity; Counts'  T.shms.photodiodeLAD_tdcMultiplicity 6 -0.5 5.5
+TH1F p_shmsTrigLAD_mult  'p_shmsTrigLAD_mult; Multiplicity; Counts'  T.shms.shmsTrigLAD_tdcMultiplicity 6 -0.5 5.5 g.evtyp==1
+TH1F p_hmsTrigLAD_mult  'p_hmsTrigLAD_mult; Multiplicity; Counts'  T.shms.hmsTrigLAD_tdcMultiplicity 6 -0.5 5.5 g.evtyp==2
+
+############################
+#   TRIGGER AfterPulse Time Difference (These histograms don't work, might need to write macro)
+############################
+# TH1F p_shmsTrigLAD_afterpulse_diff  'p_shmsTrigLAD_afterpulse_diff'  T.shms.shmsTrigLAD_vecTdcTimeRaw[1]*0.09766-T.shms.shmsTrigLAD_vecTdcTimeRaw[0]*0.09766 500 50 100 g.evtyp==1
+# TH1F p_hmsTrigLAD_afterpulse_diff  'p_hmsTrigLAD_afterpulse_diff'  T.shms.hmsTrigLAD_vecTdcTimeRaw[1]*0.09766-T.shms.hmsTrigLAD_vecTdcTimeRaw[0]*0.09766 500 50 100 g.evtyp==2
