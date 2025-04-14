@@ -16,8 +16,8 @@ cminch=2.54
 #include "PARAM/HMS/GEN/hdebug.param"
 #include "PARAM/HMS/GEN/hmsflags.param"
 #include "PARAM/HMS/GEN/htracking.param"
-;#include "PARAM/HMS/GEN/h_reftime_cut.param"
-#include "PARAM/HMS/GEN/h_no_reference_times.param"
+#include "PARAM/HMS/GEN/h_reftime_cut.param"
+;#include "PARAM/HMS/GEN/h_no_reference_times.param"
 
 ; HMS default geometry parameter files 
 #include "PARAM/HMS/CER/hcer_geom.param"
@@ -49,8 +49,8 @@ cminch=2.54
 #include "PARAM/SHMS/GEN/pdebug.param"
 #include "PARAM/SHMS/GEN/shmsflags.param"
 #include "PARAM/SHMS/GEN/ptracking.param"
-;#include "PARAM/SHMS/GEN/p_reftime_cut.param"
-#include "PARAM/SHMS/GEN/p_no_reference_times.param"
+#include "PARAM/SHMS/GEN/p_reftime_cut.param"
+;#include "PARAM/SHMS/GEN/p_no_reference_times.param"
 
 ; SHMS default geometry parameter files
 #include "PARAM/SHMS/NGCER/pngcer_geom.param"
