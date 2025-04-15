@@ -20,21 +20,21 @@
 
 ; determined for LAD 2025
 ; cut variable = pDCREF(min)
- pdc_tdcrefcut=-19500.
+ pdc_tdcrefcut=-19823.
 ; cut variable = pT1
- phodo_tdcrefcut=-8500. ; could probably be 9500
+ phodo_tdcrefcut=-8777. ; could probably be 9500
 ; cut variable = pFADC_TREF_ROC2
- phodo_adcrefcut=-4100.
- pngcer_adcrefcut=-4100.
- phgcer_adcrefcut=-4100.
- paero_adcrefcut=-4100.
- pcal_adcrefcut=-4100.
+ phodo_adcrefcut=-4412.
+ pngcer_adcrefcut=-4412.
+ phgcer_adcrefcut=-4412.
+ paero_adcrefcut=-4412.
+ pcal_adcrefcut=-4412.
 
 ; determined for fall 2019 startup
 ; cut variable = pDCREF(min)
-pdc_tdcrefcut=-15200.
+;pdc_tdcrefcut=-15200.
 ; cut variable = pT1
-phodo_tdcrefcut=-4300.
+;phodo_tdcrefcut=-4300.
 ; cut variable = pFADC_TREF_ROC2
 ;phodo_adcrefcut=-4500.
 ;pngcer_adcrefcut=-4500.
