@@ -45,8 +45,9 @@ end epics
 
 
 #include "DEF-files/LAD_COIN/PRODUCTION/HODO/ladhod_histos.def"
+##include "DEF-files/LAD_COIN/PRODUCTION/HODO/ladhod_histos_expert_timing.def"
 #include "DEF-files/LAD_COIN/PRODUCTION/GEM/gem_histos.def"
-
+#include "DEF-files/LAD_COIN/PRODUCTION/TRIG/lad_trig_histos.def"
 
 #include "DEF-files/HMS/PRODUCTION/TRIG/htrig_histos.def"
 #include "DEF-files/HMS/PRODUCTION/CAL/hcal_histos.def"
