@@ -112,7 +112,7 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
     c_pdc_refs[(int) i/2]->cd(i%2+1);
     c_pdc_refs[(int) i/2]->cd(i%2+1)->SetLogy();
 
-    double ref_time = get_hist_range(pdc_time_raw_ref[i], 9);
+    double ref_time = get_hist_range(pdc_time_raw_ref[i], 5);
     if(ref_time < min_pdc){
       min_pdc = ref_time;
       cout << "REF TIME pdc: " <<  ref_time << endl;
@@ -131,7 +131,6 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
 
     highest_multiplicity=pdc_tdc_mult_ref[i]->GetMaximumBin();
     highest_multiplicity=pdc_tdc_mult_ref[i]->GetXaxis()->GetBinCenter(highest_multiplicity);
-    if(highest_multiplicity==0) highest_multiplicity = 1;
     if(highest_multiplicity==1) {
       pdc_time_raw_ref_mult1[i]->SetLineColor(kRed);
       pdc_time_raw_ref_mult1[i]->Draw("SAME");
@@ -164,7 +163,7 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
     c6_pT->cd(i%2+1);
     c6_pT->cd(i%2+1)->SetLogy();
 
-    double ref_time = get_hist_range(pT_time_raw_ref[i], 9);
+    double ref_time = get_hist_range(pT_time_raw_ref[i], 5);
     cout << "REF TIME pT" << i+1 << ": " <<  ref_time << endl;
     pT_time_raw_ref[i]->Draw();
 
@@ -218,7 +217,7 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
 
   
 
-  double ref_time = get_hist_range(pFADC_TREF_ROC2_raw_adc,9);
+  double ref_time = get_hist_range(pFADC_TREF_ROC2_raw_adc,5);
   cout << "REF TIME PFADC: " <<  ref_time << endl;
   pFADC_TREF_ROC2_raw_adc->Draw();
 
@@ -248,6 +247,7 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
 
   highest_multiplicity=pFADC_TREF_ROC2_adc_mult->GetMaximumBin();
   highest_multiplicity=pFADC_TREF_ROC2_adc_mult->GetXaxis()->GetBinCenter(highest_multiplicity);
+  if(highest_multiplicity == 0) highest_multiplicity = 1;
   if(highest_multiplicity==1) {
     pFADC_TREF_ROC2_mult1->SetLineColor(kRed);
     pFADC_TREF_ROC2_mult1->Draw("SAME");
@@ -449,7 +449,7 @@ void run_hms_reference_time_setup(TString infile, int RunNumber, TString outfile
     c6_hT->cd(i%2+1);
     c6_hT->cd(i%2+1)->SetLogy();
 
-    double ref_time = get_hist_range(hT_time_raw_ref[i],15);
+    double ref_time = get_hist_range(hT_time_raw_ref[i],10);
     cout << "REF TIME hT" << i+1 << ": " <<  ref_time << endl;
 
     hT_time_raw_ref[i]->Draw();
@@ -505,7 +505,7 @@ void run_hms_reference_time_setup(TString infile, int RunNumber, TString outfile
   c7_hFADC_ROC1->cd(1)->SetLogy();
   hFADC_TREF_ROC1_raw_adc->Draw();
 
-  double ref_time = get_hist_range(hFADC_TREF_ROC1_raw_adc,20);
+  double ref_time = get_hist_range(hFADC_TREF_ROC1_raw_adc,10);
   cout << "REF TIME HFADC: " <<  ref_time << endl;
 
   int ymax = hFADC_TREF_ROC1_raw_adc->GetBinContent(hFADC_TREF_ROC1_raw_adc->GetMaximumBin());
@@ -581,7 +581,7 @@ double get_hist_range(TH1F *h, int minEntries){
   double first_bin = h->GetXaxis()->GetBinLowEdge(h->FindFirstBinAbove(minEntries,1,2,h->GetNbinsX()));
   double last_bin = h->GetXaxis()->GetBinLowEdge(h->FindLastBinAbove(minEntries,1,2,h->GetNbinsX()));
     
-  h->GetXaxis()->SetRangeUser(.94*first_bin, 1.05*last_bin);
+  h->GetXaxis()->SetRangeUser(.9*first_bin, 1.1*last_bin);
   
-  return first_bin;
+  return (first_bin-50);
 }
