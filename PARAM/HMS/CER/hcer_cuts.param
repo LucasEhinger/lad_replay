@@ -1,5 +1,7 @@
 ; HMS Cherenkov Cuts parameter files
 
+; hcer_debug_adc=1 ; output raw waveform
+
 ; Track matching reduced chi2 cut values
 hcer_red_chi2_min = 0.0
 hcer_red_chi2_max = 25.0
@@ -24,5 +26,7 @@ hcer_adc_tdc_offset= 0.
 
 ; fall 2019 startup
 ; cut variable is H.cer.goodAdcTdcDiffTime
-hcer_adcTimeWindowMin =   85.,  85.
-hcer_adcTimeWindowMax =  125., 125.
+;hcer_adcTimeWindowMin =   85.,  85.
+;hcer_adcTimeWindowMax =  125., 125.
+hcer_adcTimeWindowMin = -100000., -100000.
+hcer_adcTimeWindowMax = 100000., 100000.

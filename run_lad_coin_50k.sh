@@ -150,7 +150,7 @@ expert_configs=(
   # Link the ROOT file to latest for online monitoring
   #Need to match ${rootFile} to the output name format of the coin_replay
   #ln -fs ${rootFile} ${latestRootFile} #
-  ln -fs "../../CALIB/${SPEC}_${runNum}_${numEvents}.root" ${latestRootFile}
+  ln -fs "../../LAD_COIN/PRODUCTION/${SPEC}_${runNum}_${numEvents}.root" ${latestRootFile}
   #ln -fs "../../LADC_COIN/PRODUCTION/${SPEC}_production_hall_${runNum}_${numEvents}.root" ${latestRootFile}
   #ln -fs "../../LADC_COIN/CALIBRATION/${SPEC}_calibration_hall_${runNum}_${numEvents}.root" ${latestRootFile}
   sleep 2

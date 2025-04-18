@@ -47,7 +47,7 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   const char *ROOTFileNamePattern;
   TString ROOTFileName;
   pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic");
-  ROOTFileNamePattern = "ROOTfiles/CALIB/LAD_COIN_%d_%d.root";
+  ROOTFileNamePattern = "ROOTfiles/LAD_COIN/PRODUCTION//LAD_COIN_%d_%d.root";
   //ROOTFileNamePattern = "ROOTfiles/LAD_COIN/PRODUCTION/LAD_COIN_production_hall_%d_%d.root";
   //ROOTFileNamePattern = "ROOTfiles/LAD_COIN/CALIBRATION/LAD_COIN_calibration_hall_%d_%d.root";
   switch (run_type) {
