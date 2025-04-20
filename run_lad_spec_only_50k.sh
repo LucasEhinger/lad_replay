@@ -43,6 +43,7 @@ esac
 # Which run to analyze.
 
 numEvents=$2
+#run_type=$3
 
 if [ -z "$numEvents" ]; then
   numEvents=50000
