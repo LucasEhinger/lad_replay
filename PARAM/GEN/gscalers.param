@@ -1,7 +1,19 @@
-gNumBCMs=6
-gBCM_Gain   = 5713,   5528,   5020,   9279,   2102.,   6343.
-gBCM_Offset = 253400, 250900, 325000, 762.6, 317.9, 852.4
-gBCM_Names  = "BCM1 BCM2 Unser BCM4A BCM4B BCM4C"
-gBCM_Current_threshold = 5.0
+;Analysis done on 9/20/2022 by CC
+;Final high current BCM scan from PionLT run
+;BCM Scan in coin run 16898 performed on 9/8/2022 13:26
+;Analyzed by a modified version of Gabriel's BCM calibration script
+;script saved under UTIL_XEM
+;Script parameters used:
+;zeroThr=1.e-6,matchThr=0.1,spikeThr=0.05,plateauThr=0.02
+;plateauSpan=50.,plateauTrim=4.,UnserGain=0.0002492
+;L175 modified: if(...=0.05) --> if(...=0.025) to get lowest current plateau
+
+;Calibration based on 0, 1, 10 uA beam delivery, still need BCM calibration 4/7/2025
+gNumBCMs    = 6
+gBCM_Names  = " BCM1      BCM2      Unser	BCM4A    BCM4B   BCM4C"
+gBCM_Gain   =   1E8, 1E8, 4000,  81800.06, 68200.26, 162000
+gBCM_Offset = 4120.0, 252100.0, 327953, 4445.02, 1782.0, 2358.5
+
+gBCM_Current_threshold = 0.1
 ; index = 0 to gNumBCMs-1
 gBCM_Current_threshold_index = 3

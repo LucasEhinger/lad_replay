@@ -43,6 +43,7 @@ esac
 # Which run to analyze.
 
 numEvents=$2
+#run_type=$3
 
 if [ -z "$numEvents" ]; then
   numEvents=50000
@@ -80,14 +81,14 @@ openReportMon="emacs ${reportMonOutDir}/${reportMonFile}"
 # Name of the replay ROOT file
 replayFile="noLAD_coin_replay_production_${runNum}"
 rootFile="${replayFile}_${numEvents}.root"
-latestRootFile="${rootFileDir}/${replayFile}_latest.root"
+latestRootFile="${rootFileDir}/${replayFile}_latest_spec_only.root"
 
 # Names of the monitoring file
 monRootFile="${spec}_production_${runNum}.root"
 monPdfFile="${spec}_production_${runNum}.pdf"
 #monExpertPdfFile="${spec}_production_expert_${runNum}.pdf"
-latestMonRootFile="${monRootDir}/${spec}_production_latest.root"
-latestMonPdfFile="${monPdfDir}/${spec}_production_latest.pdf"
+latestMonRootFile="${monRootDir}/${spec}_production_latest_spec_only.root"
+latestMonPdfFile="${monPdfDir}/${spec}_production_latest_spec_only.pdf"
 
 # Where to put logx
 reportFile="${reportFileDir}/replay_${spec}_production_${runNum}_${numEvents}.report"
@@ -116,8 +117,8 @@ gui_configs=(
 )
 expert_configs=(
 
-  "CONFIG/SHMS/PRODUCTION/shms_noLAD_noLAD_production.cfg"
-  "CONFIG/HMS/PRODUCTION/hms_noLAD_noLAD_production.cfg"
+  "CONFIG/SHMS/PRODUCTION/shms_noLAD_production_expert.cfg"
+  "CONFIG/HMS/PRODUCTION/hms_noLAD_production_expert.cfg"
 )
 #############################################
 
@@ -142,7 +143,7 @@ expert_configs=(
   # Link the ROOT file to latest for online monitoring
   #Need to match ${rootFile} to the output name format of the coin_replay
   #ln -fs ${rootFile} ${latestRootFile} #
-  ln -fs "../../CALIB/SPEC_ONLY_${runNum}_${numEvents}.root" ${latestRootFile}
+  ln -fs "../../LAD_COIN/PRODUCTION/SPEC_ONLY_${runNum}_${numEvents}.root" ${latestRootFile}
   #ln -fs "../../LADC_COIN/PRODUCTION/${SPEC}_production_hall_${runNum}_${numEvents}.root" ${latestRootFile}
   #ln -fs "../../LADC_COIN/CALIBRATION/${SPEC}_calibration_hall_${runNum}_${numEvents}.root" ${latestRootFile}
   sleep 2
@@ -264,13 +265,16 @@ expert_configs=(
   # post pdfs in hclog
    yes_or_no "Upload these plots to logbook HCLOG? " && {
     read -p "Enter a text body for the log entry (or leave blank): " logCaption
+    echo "$logCaption" > caption.txt
     /site/ace/certified/apps/bin/logentry \
       -cert /home/cdaq/.elogcert \
       -t "${numEventsk}k replay plots (HMS & SHMS only) for run ${runNum}" \
       -e cdaq \
       -l HCLOG \
       -a ${latestMonPdfFile} \
-      --caption "${logCaption}"
+      -b "caption.txt"
+
+      rm -rf "caption.txt"
   }
 
   #    /home/cdaq/bin/hclog \

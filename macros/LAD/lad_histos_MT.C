@@ -20,7 +20,7 @@
 #include <thread> // Include thread for std::thread::hardware_concurrency
 #include <vector>
 
-const int NDDATA_MAX       = 1000000; // Maximum number of data points to read. GEM's need at least >10k (10k throws errors for some events). 100k might be overkill, but throws now errors.
+const int NDDATA_MAX       = 20000; // Maximum number of data points to read. GEM's need at least >10k (10k throws errors for some events). 100k might be overkill, but throws now errors.
 const int NMAX_THREADS     = 200;   // Maximum number of threads
 const int NEVTS_PER_THREAD = 500;  // Number of events per thread
 struct Histo1DCommand {

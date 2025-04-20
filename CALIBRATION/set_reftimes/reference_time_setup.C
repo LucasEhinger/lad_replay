@@ -2,6 +2,8 @@
 #include "TH1D.h"
 #include <iostream>
 
+double get_hist_range(TH1F *h, int minEntries);
+
 void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfile="move_me.root", TString spec="shms") {
   gROOT->SetBatch(kTRUE);    //do not display plots
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
@@ -10,6 +12,7 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
     gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
     gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
     gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
+
     // Load parameters for SHMS trigger configuration
     gHcParms->Load("PARAM/TRIG/tshms.param");
   } else if (spec.CompareTo("coin",TString::kIgnoreCase)==0) {
@@ -98,6 +101,7 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
   vector<TH1F*> pdc_time_raw_ref_mult2;
   vector<TH1F*> pdc_time_raw_ref_mult3;
   int highest_multiplicity;
+  int min_pdc = 1e7;
   for(int i=0; i < n_pdc_refs; i++) {
     pdc_time_raw_ref.push_back((TH1F*) f1->Get(Form("pdc_time_raw_ref%d",i+1)));
     pdc_tdc_mult_ref.push_back((TH1F*) f1->Get(Form("pdc_tdc_mult_ref%d",i+1)));
@@ -107,14 +111,23 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
 
     c_pdc_refs[(int) i/2]->cd(i%2+1);
     c_pdc_refs[(int) i/2]->cd(i%2+1)->SetLogy();
-    pdc_time_raw_ref[i]->Draw();
+
+    double ref_time = get_hist_range(pdc_time_raw_ref[i], 5);
+    if(ref_time < min_pdc){
+      min_pdc = ref_time;
+      cout << "REF TIME pdc: " <<  ref_time << endl;
+    }
+    if(i == 0) cout << "CURRENT PDC REFCUT: " << fdc_tdcrefcut[0] << endl;
 
     int ymax = pdc_time_raw_ref[i]->GetBinContent(pdc_time_raw_ref[i]->GetMaximumBin());
-    cout << ymax << " " << fdc_tdcrefcut[0] << endl;
+    pdc_time_raw_ref[i]->Draw();
+
+   // cout << ymax << " " << fdc_tdcrefcut[0] << endl;
     TLine* cutLine = new TLine(-1*fdc_tdcrefcut[0],0,-1*fdc_tdcrefcut[0],ymax);
     cutLine->SetLineColor(kOrange);
     cutLine->Draw();
     c_pdc_refs[(int) i/2]->cd(i%2+1)->Update();
+    
 
     highest_multiplicity=pdc_tdc_mult_ref[i]->GetMaximumBin();
     highest_multiplicity=pdc_tdc_mult_ref[i]->GetXaxis()->GetBinCenter(highest_multiplicity);
@@ -149,19 +162,21 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
 
     c6_pT->cd(i%2+1);
     c6_pT->cd(i%2+1)->SetLogy();
+
+    double ref_time = get_hist_range(pT_time_raw_ref[i], 5);
+    cout << "REF TIME pT" << i+1 << ": " <<  ref_time << endl;
     pT_time_raw_ref[i]->Draw();
 
+    int ymax = pT_time_raw_ref[i]->GetBinContent(pT_time_raw_ref[i]->GetMaximumBin());
     if(i==0) {
-      int ymax = pT_time_raw_ref[i]->GetBinContent(pT_time_raw_ref[i]->GetMaximumBin());
-      cout << ymax << " " << fhodo_tdcrefcut[0] << endl;
+      cout << "CURRENT REF TIME pT1: " << fhodo_tdcrefcut[0] << endl;
       TLine* cutLineHODO = new TLine(-1*fhodo_tdcrefcut[0],0,-1*fhodo_tdcrefcut[0],ymax);
       cutLineHODO->SetLineColor(kOrange);
       cutLineHODO->Draw();
       c6_pT->cd(i%2+1)->Update();
     }
     if(i==1) {
-      int ymax = pT_time_raw_ref[i]->GetBinContent(pT_time_raw_ref[i]->GetMaximumBin());
-      cout << ymax << " " << fshms_tdcrefcut[0] << endl;
+      cout << "CURRENT REF TIME pT2: " << fshms_tdcrefcut[0] << endl;
       TLine* cutLineHODO = new TLine(-1*fshms_tdcrefcut[0],0,-1*fshms_tdcrefcut[0],ymax);
       cutLineHODO->SetLineColor(kOrange);
       cutLineHODO->Draw();
@@ -199,14 +214,20 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
 
   c7_pFADC_ROC2->cd(1);
   c7_pFADC_ROC2->cd(1)->SetLogy();
+
+  
+
+  double ref_time = get_hist_range(pFADC_TREF_ROC2_raw_adc,5);
+  cout << "REF TIME PFADC: " <<  ref_time << endl;
   pFADC_TREF_ROC2_raw_adc->Draw();
 
   int ymax = pFADC_TREF_ROC2_raw_adc->GetBinContent(pFADC_TREF_ROC2_raw_adc->GetMaximumBin());
-  cout << ymax << " " << faero_adcrefcut[0] << endl;
-  cout << ymax << " " << fhodo_adcrefcut[0] << endl;
-  cout << ymax << " " << fcal_adcrefcut[0] << endl;
-  cout << ymax << " " << fngcer_adcrefcut[0] << endl;
-  cout << ymax << " " << fhgcer_adcrefcut[0] << endl;
+
+  cout << "CURRENT pFADC REF: " << faero_adcrefcut[0] << endl;
+  cout << "CURRENT pFADC REF: " << fhodo_adcrefcut[0] << endl;
+  cout << "CURRENT pFADC REF: " << fcal_adcrefcut[0] << endl;
+  cout << "CURRENT pFADC REF: " << fngcer_adcrefcut[0] << endl;
+  cout << "CURRENT pFADC REF: " << fhgcer_adcrefcut[0] << endl;
   TLine* cutLineAERO = new TLine(-1*faero_adcrefcut[0],0,-1*faero_adcrefcut[0],ymax);
   TLine* cutLineHODO = new TLine(-1*fhodo_adcrefcut[0],0,-1*fhodo_adcrefcut[0],ymax);
   TLine* cutLineCAL = new TLine(-1*fcal_adcrefcut[0],0,-1*fcal_adcrefcut[0],ymax);
@@ -226,6 +247,7 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
 
   highest_multiplicity=pFADC_TREF_ROC2_adc_mult->GetMaximumBin();
   highest_multiplicity=pFADC_TREF_ROC2_adc_mult->GetXaxis()->GetBinCenter(highest_multiplicity);
+  if(highest_multiplicity == 0) highest_multiplicity = 1;
   if(highest_multiplicity==1) {
     pFADC_TREF_ROC2_mult1->SetLineColor(kRed);
     pFADC_TREF_ROC2_mult1->Draw("SAME");
@@ -249,8 +271,18 @@ void run_shms_reference_time_setup(TString infile, int RunNumber, TString outfil
   c5_pdcref->Write();
   c6_pT->Write();
   c7_pFADC_ROC2->Write();
-  f2->Write();
+    f2->Write();
   f2->Close();
+
+  TString pdfFile = "CALIBRATION/set_reftimes/shms_reftimes.pdf";
+  c1_pdcref->Print(pdfFile+"(","pdf");
+  c2_pdcref->Print(pdfFile,"pdf");
+  c3_pdcref->Print(pdfFile,"pdf");
+  c4_pdcref->Print(pdfFile,"pdf");
+  c5_pdcref->Print(pdfFile,"pdf");
+  c6_pT->Print(pdfFile,"pdf");
+  c7_pFADC_ROC2->Print(pdfFile+")","pdf");
+
   //f1->Close();
     
   return;
@@ -354,6 +386,8 @@ void run_hms_reference_time_setup(TString infile, int RunNumber, TString outfile
   vector<TH1F*> hdc_time_raw_ref_mult3;
   int highest_multiplicity;
   bool histoFound=true;
+
+  int min_hdc = 1e7;
   for(int i=0; i < n_hdc_refs; i++) {
     histoFound = f1->Get(Form("hdc_time_raw_ref%d",i+1));
     if(!histoFound&&i==4) {cout <<"No DCREF5 in sp18 running\n";continue;}
@@ -365,10 +399,17 @@ void run_hms_reference_time_setup(TString infile, int RunNumber, TString outfile
 
     c_hdc_refs[(int) i/2]->cd(i%2+1);
     c_hdc_refs[(int) i/2]->cd(i%2+1)->SetLogy();
+
+    double ref_time = get_hist_range(hdc_time_raw_ref[i],9);
+    if(ref_time < min_hdc){
+      min_hdc = ref_time;
+      cout << "REF TIME hdc: " <<  ref_time << endl;
+    }
+    if(i == 0) cout << "CURRENT HDC REFCUT: " << fdc_tdcrefcut[0] << endl;
+
     hdc_time_raw_ref[i]->Draw();
 
     int ymax = hdc_time_raw_ref[i]->GetBinContent(hdc_time_raw_ref[i]->GetMaximumBin());
-    cout << ymax << " " << fdc_tdcrefcut[0] << endl;
     TLine* cutLine = new TLine(-1*fdc_tdcrefcut[0],0,-1*fdc_tdcrefcut[0],ymax);
     cutLine->SetLineColor(kOrange);
     cutLine->Draw();
@@ -407,18 +448,23 @@ void run_hms_reference_time_setup(TString infile, int RunNumber, TString outfile
 
     c6_hT->cd(i%2+1);
     c6_hT->cd(i%2+1)->SetLogy();
+
+    double ref_time = get_hist_range(hT_time_raw_ref[i],10);
+    cout << "REF TIME hT" << i+1 << ": " <<  ref_time << endl;
+
     hT_time_raw_ref[i]->Draw();
+
+    int ymax = hT_time_raw_ref[i]->GetBinContent(hT_time_raw_ref[i]->GetMaximumBin());
+
     if(i==0) {
-      int ymax = hT_time_raw_ref[i]->GetBinContent(hT_time_raw_ref[i]->GetMaximumBin());
-      cout << ymax << " " << fhms_tdcrefcut[0] << endl;
+      cout << "CURRENT REF TIME hT1: " << fhms_tdcrefcut[0] << endl;
       TLine* cutLine = new TLine(-1*fhms_tdcrefcut[0],0,-1*fhms_tdcrefcut[0],ymax);
       cutLine->SetLineColor(kOrange);
       cutLine->Draw();
       c6_hT->cd(i%2+1)->Update();
     }
     if(i==1) {
-      int ymax = hT_time_raw_ref[i]->GetBinContent(hT_time_raw_ref[i]->GetMaximumBin());
-      cout << ymax << " " << fhodo_tdcrefcut[0] << endl;
+      cout << "CURRENT REF TIME hT2: " << fhodo_tdcrefcut[0] << endl;
       TLine* cutLine = new TLine(-1*fhodo_tdcrefcut[0],0,-1*fhodo_tdcrefcut[0],ymax);
       cutLine->SetLineColor(kOrange);
       cutLine->Draw();
@@ -459,10 +505,14 @@ void run_hms_reference_time_setup(TString infile, int RunNumber, TString outfile
   c7_hFADC_ROC1->cd(1)->SetLogy();
   hFADC_TREF_ROC1_raw_adc->Draw();
 
+  double ref_time = get_hist_range(hFADC_TREF_ROC1_raw_adc,10);
+  cout << "REF TIME HFADC: " <<  ref_time << endl;
+
   int ymax = hFADC_TREF_ROC1_raw_adc->GetBinContent(hFADC_TREF_ROC1_raw_adc->GetMaximumBin());
-  cout << ymax << " " << fhodo_adcrefcut[0] << endl;
-  cout << ymax << " " << fcal_adcrefcut[0] << endl;
-  cout << ymax << " " << fcer_adcrefcut[0] << endl;
+
+  cout << "CURRENT hFADC REF: " << fhodo_adcrefcut[0] << endl;
+  cout << "CURRENT hFADC REF: " << fcal_adcrefcut[0] << endl;
+  cout << "CURRENT hFADC REF: " << fcer_adcrefcut[0] << endl;
   TLine* cutLineHODO = new TLine(-1*fhodo_adcrefcut[0],0,-1*fhodo_adcrefcut[0],ymax);
   TLine* cutLineCAL = new TLine(-1*fcal_adcrefcut[0],0,-1*fcal_adcrefcut[0],ymax);
   TLine* cutLineCER = new TLine(-1*fcer_adcrefcut[0],0,-1*fcer_adcrefcut[0],ymax);
@@ -502,6 +552,16 @@ void run_hms_reference_time_setup(TString infile, int RunNumber, TString outfile
   c7_hFADC_ROC1->Write();
   f2->Write();
   f2->Close();
+
+  TString pdfFile = "CALIBRATION/set_reftimes/hms_reftimes.pdf";
+  c1_hdcref->Print(pdfFile+"(","pdf");
+  c2_hdcref->Print(pdfFile,"pdf");
+  if(histoFound) {
+    c3_hdcref->Print(pdfFile,"pdf");
+  }
+  c6_hT->Print(pdfFile,"pdf");
+  c7_hFADC_ROC1->Print(pdfFile+")","pdf");
+
   //f1->Close();
     
   return;
@@ -512,4 +572,16 @@ void run_coin_reference_time_setup(TString infile, int RunNumber, TString outfil
   run_shms_reference_time_setup(infile, RunNumber, outfile,"coin");
   run_hms_reference_time_setup(  infile, RunNumber, outfile,"coin");
   return;
+}
+
+double get_hist_range(TH1F *h, int minEntries){
+  
+  h->GetXaxis()->SetRange(h->GetBinLowEdge(2),h->GetBinLowEdge(h->GetNbinsX() - 1));
+
+  double first_bin = h->GetXaxis()->GetBinLowEdge(h->FindFirstBinAbove(minEntries,1,2,h->GetNbinsX()));
+  double last_bin = h->GetXaxis()->GetBinLowEdge(h->FindLastBinAbove(minEntries,1,2,h->GetNbinsX()));
+    
+  h->GetXaxis()->SetRangeUser(.9*first_bin, 1.1*last_bin);
+  
+  return (first_bin-50);
 }

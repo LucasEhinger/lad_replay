@@ -10,6 +10,7 @@ SPEC="LAD_COIN"
 #     ls raw/"${spec}"_all_*.dat raw/../raw.copiedtotape/"${spec}"_all_*.dat -R 2>/dev/null | perl -ne 'if(/0*(\d+)/) {print "$1\n"}' | sort -n | tail -1 \
 # )
 
+
 runNum=$1
 if ! [[ "$runNum" =~ ^[0-9]+$ ]]; then
   runNum=$(find ./raw/ -type f -name "*.dat.*" \
@@ -22,7 +23,9 @@ fi
 # /cache/hallc/c-lad/raw/lad_Production_*.dat.* (or just ./cache soft link)
 # Find the most recent run number
 
-lastRunFile=$(find ./raw/ -type f -name "*${runNum}.dat.0")
+# Define an array of directories to search
+directories=(./raw/) #  ./cache/ currently causing problems
+lastRunFile=$(find "${directories[@]}" -type f -name "*${runNum}.dat.0")
 
 
 #/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic/
@@ -108,26 +111,23 @@ replayReport="${reportFileDir}/REPLAY_REPORT/replayReport_${spec}_production_${r
 #   2. The normal GUI configuration file.
 #   3. The expert GUI configuration file.
 # gui_tags=("lad_coin" "lad_kin" "shms" "hms")
-gui_tags=("lad_timing_expert" "lad_coin")
+gui_tags=("lad_gem" "lad_coin" "shms" "hms")
+# gui_tags=("shms" "hms")
 
 gui_configs=(
-  "CONFIG/LAD/PRODUCTION/lad_coin_timing_expert.cfg"
-  "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
-  # "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
-  # "CONFIG/HMS/PRODUCTION/hms_production.cfg"
-)
-#expert_configs=(
-  # "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
-  # "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
-  #"CONFIG/SHMS/PRODUCTION/shms_production_expert.cfg"
-  #"CONFIG/HMS/PRODUCTION/hms_production_expert.cfg"
-#)
-expert_configs=(
-  "CONFIG/LAD/PRODUCTION/lad_coin_timing_expert.cfg"
+  "CONFIG/LAD/PRODUCTION/lad_gem.cfg"
   "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
   # "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
-  # "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
-  # "CONFIG/HMS/PRODUCTION/hms_production.cfg"
+  "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
+  "CONFIG/HMS/PRODUCTION/hms_production.cfg"
+)
+
+expert_configs=(
+  "CONFIG/LAD/PRODUCTION/lad_gem.cfg"
+  "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg"
+  # "CONFIG/LAD/PRODUCTION/lad_coin_kin.cfg"
+  "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
+  "CONFIG/HMS/PRODUCTION/hms_production.cfg"
 )
 #############################################
 
@@ -172,16 +172,16 @@ expert_configs=(
   echo ":=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:=:="
   echo ""
   # echo "Do you want to generate expert LAD detector (gem + hodoscope) plots?"
-  yes_or_no "Do you want to generate expert LAD detector (gem + hodoscope) plots?" &&
-  {
+  # yes_or_no "Do you want to generate expert LAD detector (gem + hodoscope) plots?" &&
+  # {
     echo "Generating expert LAD detector plots."
     # This script runs a ROOT macro to process the latest ROOT file and generate histograms.
     # The macro "lad_histos.C" is executed with two arguments:
     # - The first argument (${latestRootFile}) specifies the latest ROOT file to process.
     # - The second argument (0) indicates that the histograms are generated for both HMS and SHMS LAD.
-    root -l -b -q "macros/LAD/lad_histos_expert.C(\"${latestRootFile}\",0,${numEvents})"
+    root -l -b -q "macros/LAD/lad_histos_MT.C(\"${latestRootFile}\",0,${numEvents})" 
     # Currently on generating for 1k events. Will have to come up with a faster way to make these histograms.
-  }
+  # }
 
 
 
@@ -194,52 +194,50 @@ expert_configs=(
   echo " -> Using multiple configuration files"
   echo " -> RUN:     ${runNum}"
   echo "-------------------------------------------------------------"
-
-  sleep 2
+  
+  sleep 1
   # Loop over each GUI configuration.
   # Initialize an empty array to hold the PDF filenames.
   mergedPDFs=()
   for i in "${!gui_tags[@]}"; do
     tag="${gui_tags[$i]}"
-    yes_or_no "Do you want to open plots for ${tag}?" &&
+    config="${gui_configs[$i]}"
+    expertConfig="${expert_configs[$i]}"
+    # Define output name including the tag.
+    outFile="${spec}_production_${runNum}_${tag}"
+    outExpertFile="summaryPlots_${runNum}_${expertConfig##*/}"
+    outExpertFile="${outExpertFile%.cfg}"
+
+    echo ""
+    echo "Processing GUI for configuration: ${tag}"
+    echo " -> CONFIG:  ${config}"
+    echo " -> EXPERT CONFIG: ${expertConfig}"
+    echo " -> RUN:     ${runNum}"
+    echo "-------------------------------------------------------------"
+
+    sleep 2
+    cd onlineGUI || exit 1
+    yes_or_no "Do you want to view plots for ${tag}?" &&
     {
-      config="${gui_configs[$i]}"
-      expertConfig="${expert_configs[$i]}"
-      # Define output name including the tag.
-      outFile="${spec}_production_${runNum}_${tag}"
-      outExpertFile="summaryPlots_${runNum}_${expertConfig##*/}"
-      outExpertFile="${outExpertFile%.cfg}"
-
-      echo ""
-      echo "Processing GUI for configuration: ${tag}"
-      echo " -> CONFIG:  ${config}"
-      echo " -> EXPERT CONFIG: ${expertConfig}"
-      echo " -> RUN:     ${runNum}"
-      echo "-------------------------------------------------------------"
-
-      sleep 2
-      cd onlineGUI || exit 1
-
       # Run the normal GUI command.
       panguin -f "${config}" -r "${runNum}"
-
-      # Run the expert GUI command (-P flag).
-      panguin -f "${expertConfig}" -r "${runNum}" -P
-
-      # Display current directory and output file info.
-      pwd
-      echo " -> outExpertFile: ${outExpertFile}"
-      echo "../HISTOGRAMS/${SPEC}/PDF/${outFile}.pdf"
-
-      # Move the resulting expert PDF to the appropriate directory with the tag in its name.
-      #monExpertPdfFile="../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf"
-      echo "Moving Expert PDF to ${monExpertPdfFile}"
-      monExpertPdfFile="$(readlink -f "../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf")"
-      mv "${outExpertFile}.pdf" ${monExpertPdfFile}
-
-      mergedPDFs+=("${monExpertPdfFile}")
-    cd .. || exit 1
     }
+    # Run the expert GUI command (-P flag).
+    panguin -f "${expertConfig}" -r "${runNum}" -P
+
+    # Display current directory and output file info.
+    pwd
+    echo " -> outExpertFile: ${outExpertFile}"
+    echo "../HISTOGRAMS/${SPEC}/PDF/${outFile}.pdf"
+
+    # Move the resulting expert PDF to the appropriate directory with the tag in its name.
+    #monExpertPdfFile="../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf"
+    echo "Moving Expert PDF to ${monExpertPdfFile}"
+    monExpertPdfFile="$(readlink -f "../HISTOGRAMS/${SPEC}/PDF/${outFile}_expert.pdf")"
+    mv "${outExpertFile}.pdf" ${monExpertPdfFile}
+
+    mergedPDFs+=("${monExpertPdfFile}")
+    cd .. || exit 1
   done
   #merge the pdfs from difference specs
   echo "Merging PDF file from all specs ${mergedPDFs[@]}"
@@ -273,13 +271,19 @@ expert_configs=(
   ###########################################################
   # function used to prompt user for questions
   # post pdfs in hclog
-  yes_or_no "Upload these plots to logbook HCLOG? " &&
+   yes_or_no "Upload these plots to logbook HCLOG? " && {
+    read -p "Enter a text body for the log entry (or leave blank): " logCaption
+    echo "$logCaption" > caption.txt
     /site/ace/certified/apps/bin/logentry \
       -cert /home/cdaq/.elogcert \
       -t "${numEventsk}k replay plots for run ${runNum}" \
       -e cdaq \
       -l HCLOG \
-      -a ${latestMonPdfFile}
+      -a ${latestMonPdfFile} \
+      -b "caption.txt"
+
+      rm -rf "caption.txt"
+  }
 
   #    /home/cdaq/bin/hclog \
   #    --logbook "HCLOG" \
