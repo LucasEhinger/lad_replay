@@ -513,8 +513,8 @@ void timeWalkHistos(Int_t runNum) { // SPEC_flg ---> "hms"  or "coin"
                       // Implement cuts
                       // if (edtmCut) continue;
                       for (Int_t itdchit = 0; itdchit < numTdcHits; itdchit++) {
-                        if (itdchit != iadchit)
-                          continue; //TODO: fixme. Remove these two lines. This is a temporary fix relevant only to simulation.
+                        // if (itdchit != iadchit)
+                        //   continue; //TODO: fixme. Remove these two lines. This is a temporary fix relevant only to simulation.
                         // Obtain variables
                         tdcPaddleNum   = UInt_t(tdcPaddle[iplane][iside][jsignal][itdchit]);
                         tdcTimeRaw     = hodoTdcTimeRaw[iplane][iside][jsignal][itdchit] * tdcChanToTime;
