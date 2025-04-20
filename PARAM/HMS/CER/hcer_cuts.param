@@ -26,7 +26,7 @@ hcer_adc_tdc_offset= 0.
 
 ; fall 2019 startup
 ; cut variable is H.cer.goodAdcTdcDiffTime
-;hcer_adcTimeWindowMin =   85.,  85.
-;hcer_adcTimeWindowMax =  125., 125.
-hcer_adcTimeWindowMin = -100000., -100000.
-hcer_adcTimeWindowMax = 100000., 100000.
+hcer_adcTimeWindowMin =   0.,  0.
+hcer_adcTimeWindowMax =  300., 300.
+;hcer_adcTimeWindowMin = -100000., -100000.
+;hcer_adcTimeWindowMax = 100000., 100000.

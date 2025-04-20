@@ -1,0 +1,4 @@
+;Points to cuts defined for LAD, but with wide open
+;Reference Time Cuts
+;LAD default cut parameter files
+#include "PARAM/LAD/HODO/lhodo_cuts_no_timing_windows.param"

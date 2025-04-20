@@ -20,13 +20,14 @@ lgem_m0_apvmap = 1
 lgem_m1_apvmap = 1
 
 ; Positions, all units in cm
-lgem_m0_position = 0, 0, 76.571; Position from survey
-lgem_m1_position = 0, 0, 96.571
+lgem_m0_position = 0, 0, 77.571; Position from survey
+lgem_m1_position = 1.5, 0, 95.571
+;lgem_m1_position = 1.5, 0, 95.571
 ;lgem_m0_position = 0, 0, 100.0
 ;lgem_m1_position = 0, 0, 120.0
 
 lgem_angle = 127; deg
-lgem_d0_cut = 2000.0; cm
+lgem_d0_cut = 20000.0; cm
 
 
 ; strip angles
