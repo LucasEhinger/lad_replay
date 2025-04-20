@@ -1,1 +1,2 @@
-#include "DEF-files/COIN/TIMING/TRIG/ctrig_histos_no_reference_times.def"
+#include "DEF-files/HMS/TIMING/TRIG/htrig_histos_no_reference_times.def"
+#include "DEF-files/SHMS/TIMING/TRIG/htrig_histos_no_reference_times.def"

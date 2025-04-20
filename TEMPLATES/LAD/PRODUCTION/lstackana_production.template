@@ -204,7 +204,7 @@ HMS_pTRIG5 Pre-scaled Pre-triggers :  {(H.pTRIG5.scalerCut/gHC_ti_ps_factors[4])
 HMS_pTRIG6 Pre-scaled Pre-triggers :  {(H.pTRIG6.scalerCut/gHC_ti_ps_factors[5]):%.0f}   [ {((H.pTRIG6.scalerCut/gHC_ti_ps_factors[5])/H.1MHz.scalerTimeCut)/1000.:%.3f} kHz ]
 
 =:=:=:=:
-= EDTM
+= EDTM (Not currently used)
 =:=:=:=:
 
 SHMS EDTM Triggers           : {P.EDTM.scalerCut}
