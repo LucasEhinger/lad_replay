@@ -85,8 +85,11 @@ cminch=2.54
 #include "PARAM/GEN/gdebug.param"
 
 #include "PARAM/LAD/HODO/lhodo_geom.param"
-#include "PARAM/LAD/HODO/lhodo_cuts.param"
+;#include "PARAM/LAD/HODO/lhodo_cuts.param"
+#include "PARAM/LAD/HODO/lhodo_cuts_no_timing_windows.param"
 #include "PARAM/LAD/HODO/lhodo_calib.param"
+#include "PARAM/LAD/HODO/ladhodo_Vpcalib.param"
+#include "PARAM/LAD/HODO/lhodo_TWcalib_186.param"
 
 ; LAD GEM Parameter files
 #include "PARAM/LAD/GEM/lgem_geom.param"

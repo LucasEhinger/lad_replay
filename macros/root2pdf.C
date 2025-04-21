@@ -5,8 +5,17 @@
 #include <TKey.h>
 #include <TString.h>
 #include <iostream>
+#include <functional>
 
-void root2pdf(const char* rootFileName, const char* pdfFileName, int n = 2, int m = 2) {
+void root2pdf(const char* rootFileName, const char* pdfFileName = "", int n = 2, int m = 2) {
+  // If pdfFileName is empty, derive it from rootFileName
+  TString pdfFile(pdfFileName);
+  if (pdfFile.IsNull()) {
+    pdfFile = TString(rootFileName);
+    pdfFile.ReplaceAll(".root", ".pdf");
+    pdfFileName = pdfFile.Data();
+  }
+
   // Open the ROOT file
   TFile* file = TFile::Open(rootFileName);
   if (!file || file->IsZombie()) {

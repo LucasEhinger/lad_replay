@@ -27,6 +27,8 @@ fi
 directories=(./raw/) #  ./cache/ currently causing problems
 lastRunFile=$(find "${directories[@]}" -type f -name "*${runNum}.dat.0")
 
+# Use find to search in all directories
+lastRunFile=$(find "${directories[@]}" -type f -name "*${runNum}.dat.0")
 
 #/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic/
 # Determine the run_type based on the lastRun value
@@ -222,11 +224,20 @@ expert_configs=(
 
     sleep 2
     cd onlineGUI || exit 1
+
+    if [[ "${tag}" == "hms" || "${tag}" == "shms" ]]; then
+      yes_or_no "Do you want to view plots for ${tag}?" &&
+      {
     if [[ "${tag}" == "hms" || "${tag}" == "shms" ]]; then
       yes_or_no "Do you want to view plots for ${tag}?" &&
       {
       # Run the normal GUI command.
       panguin -f "${config}" -r "${runNum}"
+      }
+    else
+      # Run the normal GUI command without asking.
+      panguin -f "${config}" -r "${runNum}"
+    fi
       }
     fi
     # Run the expert GUI command (-P flag).
