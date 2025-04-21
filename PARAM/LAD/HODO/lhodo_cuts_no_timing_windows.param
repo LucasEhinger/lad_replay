@@ -48,7 +48,7 @@ lladhodo_slop     =    2.,  2.,  2.,  2., 2., 2.
 ;   to move the tdc to between 0 and 4000 channels.
 ;lladhodo_tdc_offset = 1580, 1580, 1580, 1580, 1580
 
-lladhodo_tdc_offset = 1580, 1580, 1580, 1580, 1580
+lladhodo_tdc_offset = 1580, 1580, 1580, 1580, 1580, 1580
 hladhodo_tdc_offset = 31700, 31700, 31700, 31700, 31700, 31700
 pladhodo_tdc_offset = 31200, 31200, 31200, 31200, 31200, 31200
 
