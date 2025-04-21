@@ -1,6 +1,7 @@
 #include "MultiFileRun.h"
 #include "LADFilteredStreamBuf.h"
 #include <iostream>
+#include "THcLADKine.h" // Include the header for THcLADKine
 
 // #include "../../LAD/LAD_link_defs.h" //Leave this line commented. Used for debugging purposes only.
 
@@ -210,6 +211,9 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   THcHodoEff *peff = new THcHodoEff("phodeff", "SHMS hodo efficiency", "P.hod");
   gHaPhysics->Add(peff);
 
+  THcLADKine *ladkin_p = new THcLADKine("P.ladkin", "LAD Kinematics", "P", "P.kin", "P.react");
+  gHaPhysics->Add(ladkin_p);
+
   // Add event handler for scaler events
   THcScalerEvtHandler *pscaler = new THcScalerEvtHandler("P", "Hall C scaler event type 1");
   pscaler->AddEvtType(1);
@@ -270,6 +274,9 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   // Calculate the hodoscope efficiencies
   THcHodoEff *heff = new THcHodoEff("hhodeff", "HMS hodo efficiency", "H.hod");
   gHaPhysics->Add(heff);
+
+  THcLADKine *ladkin_h = new THcLADKine("H.ladkin", "LAD Kinematics", "H", "H.kin", "H.react");
+  gHaPhysics->Add(ladkin_h);
 
   // Add event handler for prestart event 125.
   THcConfigEvtHandler *ev125 = new THcConfigEvtHandler("HC", "Config Event type 125");
