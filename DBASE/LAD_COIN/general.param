@@ -54,7 +54,7 @@ cminch=2.54
 
 ; SHMS default geometry parameter files
 #include "PARAM/SHMS/NGCER/pngcer_geom.param"
-#include "PARAM/SHMS/DC/pdc_geom.param"
+#include "PARAM/SHMS/DC/pdc_geom_fa22.param"
 #include "PARAM/SHMS/HODO/phodo_geom.param"
 #include "PARAM/SHMS/HGCER/phgcer_geom.param"
 #include "PARAM/SHMS/AERO/paero_geom.param"
@@ -62,7 +62,7 @@ cminch=2.54
 
 ; SHMS default cut parameter files
 #include "PARAM/SHMS/NGCER/pngcer_cuts.param"
-#include "PARAM/SHMS/DC/pdc_cuts.param"
+#include "PARAM/SHMS/DC/pdc_cuts_fa22.param"
 #include "PARAM/SHMS/HODO/phodo_cuts.param"
 #include "PARAM/SHMS/HGCER/phgcer_cuts.param"
 #include "PARAM/SHMS/AERO/paero_cuts.param"
@@ -70,14 +70,15 @@ cminch=2.54
 
 ; SHMS default calibration parameter files
 #include "PARAM/SHMS/NGCER/pngcer_calib_fa22.param"
-#include "PARAM/SHMS/DC/pdc_calib.param";need to change
+#include "PARAM/SHMS/DC/pdc_calib_fa22.param";need to change
+;#include "PARAM/SHMS/DC/pdc_tzero_per_wire_fa22.param";need to chang
 #include "PARAM/SHMS/DC/pdc_tzero_per_wire.param";need to chang
 #include "PARAM/SHMS/HODO/phodo_calib_fa22.param"
 #include "PARAM/SHMS/HODO/phodo_TWcalib_fa22.param"
 #include "PARAM/SHMS/HODO/phodo_Vpcalib_fa22.param"
 #include "PARAM/SHMS/HGCER/phgcer_calib_fa22.param"
 #include "PARAM/SHMS/AERO/paero_calib_fa22.param"
-#include "PARAM/SHMS/CAL/pcal_calib_fa22.param"
+#include "PARAM/SHMS/CAL/pcal_calib_sp25_4p4.param"
 
 ; LAD Parameter files
 #include "PARAM/GEN/genflags.param"
