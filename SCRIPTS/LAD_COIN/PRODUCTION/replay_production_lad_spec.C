@@ -38,7 +38,7 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   }
   vector<string> pathList;
   pathList.push_back(".");
-  pathList.push_back("./raw");
+  pathList.push_back("./raw/");
   pathList.push_back("./raw/../raw.copiedtotape");
   pathList.push_back("./cache");
   pathList.push_back("/cache/hallc/c-lad/raw/");
@@ -53,25 +53,25 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
     fname_prefix = "lad_Production";
     break;
   case 1:
-    RunFileNamePattern = "lad_Production_noGEM";
+    fname_prefix = "lad_Production_noGEM";
     break;
   case 2:
-    RunFileNamePattern = "lad_LADwGEMwROC2";
+    fname_prefix = "lad_LADwGEMwROC2";
     break;
   case 3:
-    RunFileNamePattern = "lad_GEMonly";
+    fname_prefix = "lad_GEMonly";
     break;
   case 4:
-    RunFileNamePattern = "lad_LADonly";
+    fname_prefix = "lad_LADonly";
     break;
   case 5:
-    RunFileNamePattern = "lad_SHMS_HMS";
+    fname_prefix = "lad_SHMS_HMS";
     break;
   case 6:
-    RunFileNamePattern = "lad_SHMS";
+  fname_prefix = "lad_SHMS";
     break;
   case 7:
-    RunFileNamePattern = "lad_HMS";
+    fname_prefix = "lad_HMS";
     break;
   default:
     cout << "Invalid run type: " << run_type << ". Please enter a valid run type." << endl;
