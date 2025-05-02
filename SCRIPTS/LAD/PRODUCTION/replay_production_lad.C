@@ -1,7 +1,7 @@
 // replays both the LAD hodoscope and GEM detectors (not standard spectrometers)
 #include "../../LAD/LAD_link_defs.h" // Leave this line commented. Used for debugging purposes only.
 #include "LADFilteredStreamBuf.h"
-void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
+void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0, int run_type = 0) {
 
   // Get RunNumber and MaxEvent if not provided.
   if (RunNumber == 0) {
@@ -19,13 +19,46 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
     }
   }
 
-  // Create file name patterns.
-  // const char *RunFileNamePattern = "lad_esb_%01d.evio.0";
-  // const char *RunFileNamePattern = "ladvme1_%03d.dat.0";
-  const char *RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
-  // const char *RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
-  // const char *RunFileNamePattern = "lad_LADonly_%02d.dat.0";
-  // const char *RunFileNamePattern = "lad_GEMonly_%02d.dat.0";
+  // Set the run type based on the run number
+  const char *RunFileNamePattern;
+  const char *ROOTFileNamePattern;
+  TString ROOTFileName;
+  ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_wGEM_cosmic_hall_%d_%d.root";
+
+  switch (run_type) {
+  case 0:
+    RunFileNamePattern = "lad_Production_%02d.dat.0";
+    break;
+  case 1:
+    RunFileNamePattern = "lad_Production_noGEM_%02d.dat.0";
+    break;
+  case 2:
+    RunFileNamePattern = "lad_LADwGEMwROC2_%02d.dat.0";
+    break;
+  case 3:
+    RunFileNamePattern = "lad_GEMonly_%02d.dat.0";
+    break;
+  case 4:
+    RunFileNamePattern = "lad_LADonly_%02d.dat.0";
+    break;
+  case 5:
+    RunFileNamePattern = "lad_SHMS_HMS_%02d.dat.0";
+    break;
+  case 6:
+    RunFileNamePattern = "lad_SHMS_%02d.dat.0";
+    break;
+  case 7:
+    RunFileNamePattern = "lad_HMS_%02d.dat.0";
+    break;
+  case 8:
+    RunFileNamePattern = "lad_LADwROC2_%02d.dat.0";
+    break;
+  default:
+    cout << "Invalid run type: " << run_type << ". Please enter a valid run type." << endl;
+    return;
+    break;
+  }
+  ROOTFileName = Form(ROOTFileNamePattern, RunNumber, MaxEvent);
 
   vector<TString> pathList;
   pathList.push_back(".");
@@ -33,7 +66,7 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   pathList.push_back("/cache/hallc/c-lad/raw/");
   pathList.push_back("/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic");
 
-  const char *ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_wGEM_cosmic_hall_%d_%d.root";
+  // const char *ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_wGEM_cosmic_hall_%d_%d.root";
   // const char *ROOTFileNamePattern = "ROOTfiles/COSMICS/LAD_wREF_cosmic_hall_%d_%d.root";
 
   // Load Global parameters
@@ -43,6 +76,7 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
+  gHcParms->Load("PARAM/TRIG/tshms.param");
 
   // Load fadc debug parameters
   // gHcParms->Load("PARAM/HMS/GEN/h_fadc_debug.param");
@@ -52,7 +86,13 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   // Load the Hall C detector map
   gHcDetectorMap = new THcDetectorMap();
-  gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo.map");
+  // gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo.map");
+  gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo_laser.map");
+
+  THaApparatus *TRG = new THcTrigApp("T", "TRG");
+  gHaApps->Add(TRG);
+  THcTrigDet *shms = new THcTrigDet("shms", "SHMS Trigger Information");
+  TRG->AddDetector(shms);
 
   // Add LAD detector
   THcLADSpectrometer *LAD = new THcLADSpectrometer("L", "LAD");
@@ -108,7 +148,6 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   run->Print();
 
   // Define the analysis parameters
-  TString ROOTFileName = Form(ROOTFileNamePattern, RunNumber, MaxEvent);
   analyzer->SetCountMode(2); // 0 = counter is # of physics triggers
                              // 1 = counter is # of all decode reads
                              // 2 = counter is event number
@@ -134,6 +173,7 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   LADFilteredStreamBuf ladbuf(std::clog);
   ladbuf.includeRootErrorMessages(true); // Include ROOT error messages
   ladbuf.addFilterString("Module L.react does not exist");
+  // ladbuf.addFilterString("crate 6");
 
   // Start the actual analysis
   analyzer->Process(run);
