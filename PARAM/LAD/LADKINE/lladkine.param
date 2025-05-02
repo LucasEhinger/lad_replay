@@ -1,6 +1,6 @@
 ;Param file for LADKine 
 
-lnfixed_z = 3  ; =0 doesn't fix the z position
+lnfixed_z = 0  ; =0 doesn't fix the z position
 lfixed_z_pos = -10.0 , 0.0 , 10.0 ;
 
 ld0_cut_wVertex = 200 ; cm

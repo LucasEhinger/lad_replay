@@ -23,7 +23,15 @@ fi
 # /cache/hallc/c-lad/raw/lad_Production_*.dat.* (or just ./cache soft link)
 # Find the most recent run number
 
-lastRunFile=$(find ./raw/ -type f -name "*${runNum}.dat.0")
+# Define an array of directories to search
+directories=(./raw/ ./cache/) #  ./cache/ currently causing problems
+
+for dir in "${directories[@]}"; do
+  lastRunFile=$(ls "${dir}"/*"${runNum}.dat.0" 2>/dev/null | head -n 1)
+  if [[ -n $lastRunFile ]]; then
+    break
+  fi
+done
 
 
 #/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic/

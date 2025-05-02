@@ -24,8 +24,15 @@ fi
 # Find the most recent run number
 
 # Define an array of directories to search
-directories=(./raw/) #  ./cache/ currently causing problems
-lastRunFile=$(find "${directories[@]}" -type f -name "*${runNum}.dat.0")
+# Define an array of directories to search
+directories=(./raw/ ./cache/) #  ./cache/ currently causing problems
+
+for dir in "${directories[@]}"; do
+  lastRunFile=$(ls "${dir}"/*"${runNum}.dat.0" 2>/dev/null | head -n 1)
+  if [[ -n $lastRunFile ]]; then
+    break
+  fi
+done
 
 
 #/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic/
