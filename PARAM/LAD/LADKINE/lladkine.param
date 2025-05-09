@@ -1,6 +1,6 @@
 ;Param file for LADKine 
 
-lnfixed_z = 3  ; =0 doesn't fix the z position
+lnfixed_z = 0  ; =0 doesn't fix the z position
 lfixed_z_pos = -10.0 , 0.0 , 10.0 ;
 
 ld0_cut_wVertex = 200 ; cm
@@ -9,4 +9,4 @@ ld0_cut_noVertex = 200 ; cm
 lmax_dTrans_hitMatch = 100 ; cm
 lmax_dLong_hitMatch = 100 ; cm
 
-lglobal_time_offset = 666 ;ns This isn't being used yet
+lglobal_time_offset = -1670 ;ns This isn't being used yet

@@ -10,38 +10,43 @@ SPEC="LAD_COIN"
 #     ls raw/"${spec}"_all_*.dat raw/../raw.copiedtotape/"${spec}"_all_*.dat -R 2>/dev/null | perl -ne 'if(/0*(\d+)/) {print "$1\n"}' | sort -n | tail -1 \
 # )
 
-
 runNum=$1
 if ! [[ "$runNum" =~ ^[0-9]+$ ]]; then
-  runNum=$(find ./raw/ -type f -name "*.dat.*" \
-  | grep -Eo '[0-9]{5}\.dat\.' \
-  | grep -Eo '[0-9]{5}' \
-  | sort -n | tail -1)
+  runNum=$(find ./raw/ -type f -name "*.dat.*" |
+    grep -Eo '[0-9]{5}\.dat\.' |
+    grep -Eo '[0-9]{5}' |
+    sort -n | tail -1)
 fi
 
-#Currently not pointing to cache. Can change later if necessary 
+#Currently not pointing to cache. Can change later if necessary
 # /cache/hallc/c-lad/raw/lad_Production_*.dat.* (or just ./cache soft link)
 # Find the most recent run number
 
 # Define an array of directories to search
-directories=(./raw/) #  ./cache/ currently causing problems
-lastRunFile=$(find "${directories[@]}" -type f -name "*${runNum}.dat.0")
+directories=(./raw/ ./cache/) #  ./cache/ currently causing problems
+# lastRunFile=$(find "${directories[@]}" -type f -name "*${runNum}.dat.0")
 
 # Use find to search in all directories
-lastRunFile=$(find "${directories[@]}" -type f -name "*${runNum}.dat.0")
+# lastRunFile=$(find "${directories[@]}" -type f -name "*${runNum}.dat.0")
+for dir in "${directories[@]}"; do
+  lastRunFile=$(ls "${dir}"/*"${runNum}.dat.0" 2>/dev/null | head -n 1)
+  if [[ -n $lastRunFile ]]; then
+    break
+  fi
+done
 
 #/volatile/hallc/c-lad/ehingerl/raw_data/LAD_cosmic/
 # Determine the run_type based on the lastRun value
 case "$lastRunFile" in
-  *Production_noGEM*) run_type=1 ;;
-  *Production*) run_type=0 ;;
-  *LADwGEMwROC2*) run_type=2 ;;
-  *GEMonly*) run_type=3 ;;
-  *LADonly*) run_type=4 ;;
-  *SHMS_HMS*) run_type=5 ;;
-  *SHMS*) run_type=6 ;;
-  *HMS*) run_type=7 ;;
-  *) run_type=-1 ;; # Default case if no match is found
+*Production_noGEM*) run_type=1 ;;
+*Production*) run_type=0 ;;
+*LADwGEMwROC2*) run_type=2 ;;
+*GEMonly*) run_type=3 ;;
+*LADonly*) run_type=4 ;;
+*SHMS_HMS*) run_type=5 ;;
+*SHMS*) run_type=6 ;;
+*HMS*) run_type=7 ;;
+*) run_type=-1 ;; # Default case if no match is found
 esac
 
 # Which run to analyze.
@@ -83,7 +88,7 @@ openReportMon="emacs ${reportMonOutDir}/${reportMonFile}"
 
 # Name of the replay ROOT file
 replayFile="${spec}_replay_production_${runNum}"
-rootFile="${replayFile}_${numEvents}.root"
+rootFile="${replayFile}_0_0_${numEvents}.root"
 latestRootFile="${rootFileDir}/${replayFile}_latest.root"
 
 # Names of the monitoring file
@@ -154,7 +159,7 @@ expert_configs=(
   # Link the ROOT file to latest for online monitoring
   #Need to match ${rootFile} to the output name format of the coin_replay
   #ln -fs ${rootFile} ${latestRootFile} #
-  ln -fs "../../LAD_COIN/PRODUCTION/${SPEC}_${runNum}_${numEvents}.root" ${latestRootFile}
+  ln -fs "../../LAD_COIN/PRODUCTION/${SPEC}_${runNum}_0_0_${numEvents}.root" ${latestRootFile}
   #ln -fs "../../LADC_COIN/PRODUCTION/${SPEC}_production_hall_${runNum}_${numEvents}.root" ${latestRootFile}
   #ln -fs "../../LADC_COIN/CALIBRATION/${SPEC}_calibration_hall_${runNum}_${numEvents}.root" ${latestRootFile}
   sleep 2
@@ -176,16 +181,14 @@ expert_configs=(
   # echo "Do you want to generate expert LAD detector (gem + hodoscope) plots?"
   # yes_or_no "Do you want to generate expert LAD detector (gem + hodoscope) plots?" &&
   # {
-    echo "Generating expert LAD detector plots."
-    # This script runs a ROOT macro to process the latest ROOT file and generate histograms.
-    # The macro "lad_histos.C" is executed with two arguments:
-    # - The first argument (${latestRootFile}) specifies the latest ROOT file to process.
-    # - The second argument (0) indicates that the histograms are generated for both HMS and SHMS LAD.
-    root -l -b -q "macros/LAD/lad_histos_MT.C(\"${latestRootFile}\",0,${numEvents})" 
-    # Currently on generating for 1k events. Will have to come up with a faster way to make these histograms.
+  echo "Generating expert LAD detector plots."
+  # This script runs a ROOT macro to process the latest ROOT file and generate histograms.
+  # The macro "lad_histos.C" is executed with two arguments:
+  # - The first argument (${latestRootFile}) specifies the latest ROOT file to process.
+  # - The second argument (0) indicates that the histograms are generated for both HMS and SHMS LAD.
+  root -l -b -q "macros/LAD/lad_histos_MT.C(\"${latestRootFile}\",0,${numEvents})"
+  # Currently on generating for 1k events. Will have to come up with a faster way to make these histograms.
   # }
-
-
 
   echo ""
   echo ""
@@ -201,7 +204,7 @@ expert_configs=(
   # panguin -f "CONFIG/LAD/PRODUCTION/lad_gem.cfg" -r "${runNum}" -P
   # panguin -f "CONFIG/LAD/PRODUCTION/lad_coin_production.cfg" -r "${runNum}" -P
   # cd .. || exit 1
-  
+
   sleep 1
   # Loop over each GUI configuration.
   # Initialize an empty array to hold the PDF filenames.
@@ -227,20 +230,13 @@ expert_configs=(
 
     if [[ "${tag}" == "hms" || "${tag}" == "shms" ]]; then
       yes_or_no "Do you want to view plots for ${tag}?" &&
-      {
-    if [[ "${tag}" == "hms" || "${tag}" == "shms" ]]; then
-      yes_or_no "Do you want to view plots for ${tag}?" &&
-      {
-      # Run the normal GUI command.
-      panguin -f "${config}" -r "${runNum}"
-      }
-    else
-      # Run the normal GUI command without asking.
-      panguin -f "${config}" -r "${runNum}"
+        {
+          # Run the normal GUI command.
+          panguin -f "${config}" -r "${runNum}"
+        }
     fi
-      }
-    fi
-    # Run the expert GUI command (-P flag).
+
+    # Run the expert GUI command (-P flag), no matter what.
     panguin -f "${expertConfig}" -r "${runNum}" -P
 
     # Display current directory and output file info.
@@ -289,9 +285,9 @@ expert_configs=(
   ###########################################################
   # function used to prompt user for questions
   # post pdfs in hclog
-   yes_or_no "Upload these plots to logbook HCLOG? " && {
+  yes_or_no "Upload these plots to logbook HCLOG? " && {
     read -p "Enter a text body for the log entry (or leave blank): " logCaption
-    echo "$logCaption" > caption.txt
+    echo "$logCaption" >caption.txt
     /site/ace/certified/apps/bin/logentry \
       -cert /home/cdaq/.elogcert \
       -t "${numEventsk}k replay plots for run ${runNum}" \
@@ -300,7 +296,7 @@ expert_configs=(
       -a ${latestMonPdfFile} \
       -b "caption.txt"
 
-      rm -rf "caption.txt"
+    rm -rf "caption.txt"
   }
 
   #    /home/cdaq/bin/hclog \
@@ -371,7 +367,7 @@ expert_configs=(
   echo "-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|"
   echo ""
   echo "Useful links:"
-  echo " -> ROOT file: ${rootFileDir}/${rootFile}"
+  echo " -> ROOT file: ROOTfiles/LAD_COIN/PRODUCTION/${SPEC}_${runNum}_0_0_${numEvents}.root"
   echo " -> Histogram (ROOT) file: ${monRootDir}/${monRootFile}"
   echo " -> Histogram (PDF) file: ${monPdfDir}/${monPdfFile}"
   echo " -> Raw EVIO file: ${lastRunFile}"

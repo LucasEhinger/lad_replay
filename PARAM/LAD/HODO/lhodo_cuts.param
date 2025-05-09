@@ -19,6 +19,7 @@ lladhodo_adc_mode=1
 ;Tolerance between hodo hit position and track position
 lladhodo_track_tolerance_long = 40000 ;cm
 lladhodo_track_tolerance_trans = 500 ;cm
+lladhodo_TDC_match_window = 50 ;ns
 
 ; lstart_time_center  center of allowed time window (ns)
 lladstart_time_center = 32.
@@ -28,7 +29,7 @@ lladstart_time_slop = 100.
 ; lscin_tdc_min min/max L.hod.GoodTop(Btm)TdcTimeUnCorr
 ; note that the params below are factor of 10 higher than
 ; what is present in the respective leaf
-lladhodo_tdc_min = 17500
+lladhodo_tdc_min = 16500
 lladhodo_tdc_max = 20500
 
 ; lladhodo_tdc_to_time   scin tdc time per channel
