@@ -3,10 +3,12 @@
 lnfixed_z = 0  ; =0 doesn't fix the z position
 lfixed_z_pos = -10.0 , 0.0 , 10.0 ;
 
-ld0_cut_wVertex = 200 ; cm
-ld0_cut_noVertex = 200 ; cm
+ld0_cut_wVertex = 50 ; cm
+ld0_cut_noVertex = 50 ; cm
 
-lmax_dTrans_hitMatch = 100 ; cm
-lmax_dLong_hitMatch = 100 ; cm
+lmax_dTrk_horiz_hitMatch = 100 ; cm
+lmax_dTrk_vert_hitMatch = 100 ; cm
 
 lglobal_time_offset = -1670 ;ns This isn't being used yet
+
+ltrk_dt_cut = 10
