@@ -4,8 +4,8 @@
 lgem_chanmap_file = "MAPS/LAD/DETEC/GEM/lgem_chan.map" ; 
 ;If using sim (is_mc=1), chanmap must be "MAPS/LAD/DETEC/GEM/lgem_chan_mc.map"
 
-lgem_pedfile = "PARAM/LAD/GEM/gem_ped_295.dat" ;
-lgem_cmfile = "PARAM/LAD/GEM/CommonModeRange_295.txt" ; 
+lgem_pedfile = "PARAM/LAD/GEM/gem_ped_22528.dat" ;
+lgem_cmfile = "PARAM/LAD/GEM/CommonModeRange_22528.txt" ; 
 
 lgem_num_modules = 2;
 lgem_num_layers = 2;
@@ -21,12 +21,15 @@ lgem_m1_apvmap = 1
 
 ; Positions, all units in cm
 lgem_m0_position = 0, 0, 77.571; Position from survey
+;lgem_m0_position = 2.81105, 0, 80.6864
+;lgem_m1_position = 0, 0, 95.571
+;lgem_m1_position = 3.50819 , 0, 99.9002
 lgem_m1_position = 1.5, 0, 95.571
-;lgem_m1_position = 1.5, 0, 95.571
 ;lgem_m0_position = 0, 0, 100.0
 ;lgem_m1_position = 0, 0, 120.0
 
 lgem_angle = 127; deg
+;lgem_angle = 127.941; deg
 lgem_d0_cut = 20000.0; cm
 
 

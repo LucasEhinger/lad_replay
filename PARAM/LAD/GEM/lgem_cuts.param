@@ -3,9 +3,9 @@
 ; flags
 lgem_commonmode_flag = 2
 lgem_zerosuppress = 1 ; changed 
-lgem_zerosuppress_nsigma = 5.0
+lgem_zerosuppress_nsigma = 10.0
 lgem_onlinezerosuppress = 0
-lgem_pedsub_online = 1 ;changed
+lgem_pedsub_online = 1 ;changed (I believe online is at the MPD's)
 lgem_max2Dhits = 10000000 ;changed
 
 ; place holder for flags, parameters
@@ -33,7 +33,7 @@ lgem_threshold_sample = 100.0
 lgem_threshold_stripsum = 400.
 lgem_threshold_clustersum = 800.
 
-lgem_min_strip_per_clust = 2
+lgem_min_strip_per_clust = 2 ; (was 2)
 lgem_max_strip_per_clust = -1
 lgem_min_time_samp = 0
 lgem_max_time_samp= 6
