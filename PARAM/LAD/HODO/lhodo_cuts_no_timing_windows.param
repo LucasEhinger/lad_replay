@@ -17,8 +17,9 @@ lladhodo_OutputSampWaveform=1
 lladhodo_adc_mode=1
 
 ;Tolerance between hodo hit position and track position
-lladhodo_track_tolerance_long = 40000 ;cm
-lladhodo_track_tolerance_trans = 500 ;cm
+lladhodo_track_tolerance_vert = 40000 ;cm
+lladhodo_track_tolerance_horiz = 500 ;cm
+lladhodo_TDC_match_window = 5000000 ;ns
 
 ; lstart_time_center  center of allowed time window (ns)
 lladstart_time_center = 32.
