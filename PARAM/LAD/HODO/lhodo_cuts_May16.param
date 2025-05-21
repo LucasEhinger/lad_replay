@@ -54,8 +54,8 @@ hladhodo_tdc_offset = 31700, 31700, 31700, 31700, 31700, 31700
 pladhodo_tdc_offset = 31700, 31700, 31700, 31700, 31700, 31700
 
 lladhodo_adc_tdc_offset = 1880, 1880, 1880, 1880, 1880, 1880
-pladhodo_adc_tdc_offset = 1950, 1950, 1950, 1950, 1950, 1950
-hladhodo_adc_tdc_offset = 1880, 1880, 1880, 1880, 1880, 1880
+pladhodo_adc_tdc_offset = 1850, 1850, 1850, 1850, 1850, 1850
+hladhodo_adc_tdc_offset = 1797, 1797, 1797, 1797, 1797, 1797
 
 ;Offset changed with HCANA update (April 2021)
 ;lladhodo_adc_tdc_offset = 171., 171., 171., 171., 171., 171.
