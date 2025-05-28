@@ -137,6 +137,9 @@ void replay_production_no_lad(int RunNumber = 0, int MaxEvent = 0, int run_type 
   // Load fadc debug parameters
   // gHcParms->Load("PARAM/SHMS/GEN/p_fadc_debug.param");
 
+  if (RunNumber > 22589)
+    gHcParms->Load("PARAM/LAD/HODO/lhodo_cuts_May16.param");
+
   // Load the Hall C detector map
   // Load map depending on whether run is before or after SHMS DC swap
   gHcDetectorMap = new THcDetectorMap();

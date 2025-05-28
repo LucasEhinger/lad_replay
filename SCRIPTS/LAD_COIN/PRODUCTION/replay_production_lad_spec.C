@@ -3,7 +3,7 @@
 #include "THcLADKine.h" // Include the header for THcLADKine
 #include <iostream>
 
-#include "../../LAD/LAD_link_defs.h" //Leave this line commented. Used for debugging purposes only.
+// #include "../../LAD/LAD_link_defs.h" //Leave this line commented. Used for debugging purposes only.
 
 void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_type = 1, int FirstEvent = 1,
                                 int MaxSegment = 0, int FirstSegment = 0) {
@@ -104,14 +104,17 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   // Load fadc debug parameters
   // gHcParms->Load("PARAM/SHMS/GEN/p_fadc_debug.param");
 
+  if (RunNumber > 22589)
+    gHcParms->Load("PARAM/LAD/HODO/lhodo_cuts_May16.param");
   // Load the Hall C detector map
   // Load map depending on whether run is before or after SHMS DC swap
   gHcDetectorMap = new THcDetectorMap();
   if (RunNumber < 22157)
     gHcDetectorMap->Load("MAPS/LAD_COIN/DETEC/coin_lad.map");
-  else
+  else if (RunNumber < 22590)
     gHcDetectorMap->Load("MAPS/LAD_COIN/DETEC/coin_lad_5pass.map");
-
+  else 
+    gHcDetectorMap->Load("MAPS/LAD_COIN/DETEC/coin_lad_5pass_May14.map");
   // Add the dec data class for debugging
   // Podd::DecData *decData = new Podd::DecData("D", "Decoder Raw Data");
   // gHaApps->Add(decData);

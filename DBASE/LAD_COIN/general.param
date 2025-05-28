@@ -87,6 +87,7 @@ cminch=2.54
 #include "PARAM/LAD/HODO/lhodo_geom.param"
 #include "PARAM/LAD/HODO/lhodo_cuts.param"
 ;#include "PARAM/LAD/HODO/lhodo_cuts_no_timing_windows.param"
+;#include "PARAM/LAD/HODO/lhodo_cuts_May16.param"
 #include "PARAM/LAD/HODO/lhodo_calib.param"
 #include "PARAM/LAD/HODO/ladhodo_Vpcalib.param"
 #include "PARAM/LAD/HODO/lhodo_TWcalib_186.param"
