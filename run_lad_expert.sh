@@ -58,6 +58,7 @@ if [ -z "$numEvents" ]; then
 fi
 
 numEventsk=$((numEvents / 1000))
+
 # Which scripts to run.
 script="SCRIPTS/${SPEC}/PRODUCTION/replay_production_lad_spec.C"
 #config="CONFIG/${SPEC}/PRODUCTION/${spec}_production.cfg"
@@ -281,9 +282,15 @@ expert_configs=(
    yes_or_no "Upload these plots to logbook HCLOG? " && {
     read -p "Enter a text body for the log entry (or leave blank): " logCaption
     echo "$logCaption" > caption.txt
+   if [ "$numEvents" -eq -1 ]; then
+      title="Full replay plots for run ${runNum}"
+    else
+      title="${numEventsk}k replay plots for run ${runNum}"
+    fi
+
     /site/ace/certified/apps/bin/logentry \
       -cert /home/cdaq/.elogcert \
-      -t "${numEventsk}k replay plots for run ${runNum}" \
+      -t "$title" \
       -e cdaq \
       -l HCLOG \
       -a ${latestMonPdfFile} \
