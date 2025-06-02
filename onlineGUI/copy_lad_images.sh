@@ -85,10 +85,10 @@ LAD_SHMS_Hodoscope_TDC_Occ_Mult
 LAD_SHMS_Hodoscope_Pedestals
 LAD_SHMS_Hodoscope_Pedestal_Monitoring
 LAD_SHMS_Hodoscope_PMT_Time
-LAD_1D_Hodoscope_Time_Page_1
-LAD_1D_Hodoscope_Time_Page_2
-LAD_Hodoscope_ADC_Page_1
-LAD_1D_Hodoscope_ADC_Page_2
+LAD_1D_Hodoscope_Time_PageOne
+LAD_1D_Hodoscope_Time_PageTwo
+LAD_Hodoscope_ADC_PageOne
+LAD_1D_Hodoscope_ADC_PageTwo
 LAD_Full_Hit_Multiplicity
 LAD_Full_Hit_Occupancy
 "
@@ -99,8 +99,8 @@ GEM_HMS_Strip_and_cluster_multiplicities
 GEM_HMS_Strip_Max_Sum
 GEM_HMS_Raw_occupancies_by_layer
 GEM_HMS_Cluster_counts
-GEM_HMS_Clustering_Results_Page_1
-GEM_HMS_Clustering_Results_Page_2
+GEM_HMS_Clustering_Results_PageOne
+GEM_HMS_Clustering_Results_PageTwo
 GEM_HMS_Max_Cluster
 GEM_HMS_Cluster_Sum
 GEM_HMS_Hit_Multiplicity
@@ -112,8 +112,8 @@ GEM_SHMS_Strip_and_cluster_multiplicities
 GEM_SHMS_Strip_Max_Sum
 GEM_SHMS_Raw_occupancies_by_layer
 GEM_SHMS_Cluster_counts
-GEM_SHMS_Clustering_Results_Page_1
-GEM_SHMS_Clustering_Results_Page_2
+GEM_SHMS_Clustering_Results_PageOne
+GEM_SHMS_Clustering_Results_PageTwo
 GEM_SHMS_Max_Cluster
 GEM_SHMS_Cluster_Sum_Clust
 GEM_SHMS_Hit_Multiplicity
@@ -130,6 +130,8 @@ for dir in "${!plots_by_dir[@]}"; do
   if [ ! -d "$output_dir" ]; then
     echo "Creating $output_dir"
     mkdir -p "$output_dir"
+    # The output_dir has g+ws permission so hydra can clean dir.
+    chmod 2775 "$output_dir"
   fi
 
   echo "Copying plots from $input_dir to $output_dir"
