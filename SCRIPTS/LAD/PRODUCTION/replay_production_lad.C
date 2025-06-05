@@ -1,6 +1,44 @@
 // replays both the LAD hodoscope and GEM detectors (not standard spectrometers)
 #include "../../LAD/LAD_link_defs.h" // Leave this line commented. Used for debugging purposes only.
 #include "LADFilteredStreamBuf.h"
+
+void load_GEM_CM_PED(int runNumber) {
+  std::vector<int> ped_cm_runs;
+  int ped_cm_runs_count = 0;
+
+  // Open the file
+  std::ifstream infile("PARAM/LAD/GEM/lgem_cm_ped_runs.param");
+  if (infile) {
+    std::string content((std::istreambuf_iterator<char>(infile)), std::istreambuf_iterator<char>());
+    std::stringstream ss(content);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+      std::stringstream token_ss(token);
+      int value;
+      if (token_ss >> value) {
+        ped_cm_runs.push_back(value);
+      }
+    }
+    ped_cm_runs_count = ped_cm_runs.size();
+  } else {
+    std::cerr << "Error: Could not open PARAM/LAD/GEM/lgem_cm_ped_runs.param" << std::endl;
+    ped_cm_runs_count = 0;
+  }
+  std::sort(ped_cm_runs.begin(), ped_cm_runs.end());
+
+  int ped_cm_file_num = ped_cm_runs[ped_cm_runs_count - 1]; // Default to the last run number in the list
+  for (int i = ped_cm_runs_count - 1; i > 0; --i) {
+    if (ped_cm_runs[i] < runNumber) {
+      ped_cm_file_num = ped_cm_runs[i];
+      break;
+    }
+  }
+
+  gHcParms->AddString("lgem_pedfile", Form("PARAM/LAD/GEM/PED/gem_ped_%d.dat", ped_cm_file_num));
+  gHcParms->AddString("lgem_cmfile", Form("PARAM/LAD/GEM/CM/CommonModeRange_%d.txt", ped_cm_file_num));
+  return;
+}
+
 void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0, int run_type = 0) {
 
   // Get RunNumber and MaxEvent if not provided.
@@ -78,6 +116,8 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0, int run_type
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
   gHcParms->Load("PARAM/TRIG/tshms.param");
 
+  // Load correct GEM common mode and pedestal files
+  load_GEM_CM_PED(RunNumber);
   // Load fadc debug parameters
   // gHcParms->Load("PARAM/HMS/GEN/h_fadc_debug.param");
 

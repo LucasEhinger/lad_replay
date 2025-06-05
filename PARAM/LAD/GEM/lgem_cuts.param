@@ -1,15 +1,15 @@
 ; LAD GEM flags and parameters
 
 ; flags
-lgem_commonmode_flag = 2
-lgem_zerosuppress = 1 ; changed 
+lgem_commonmode_flag = 2; 0: cm_sorting, 1: cm_danning, 2: cm_histo
+lgem_zerosuppress = 1 ; 1: do zero supress ofline
 lgem_zerosuppress_nsigma = 10.0
-lgem_onlinezerosuppress = 0
-lgem_pedsub_online = 1 ;changed (I believe online is at the MPD's)
+lgem_onlinezerosuppress = 0 ; 1: zero supress is being done online
+lgem_pedsub_online = 1 ; Ped Subtraction is being one at the MPD's
 lgem_max2Dhits = 10000000 ;changed
 
 ; place holder for flags, parameters
-lgem_pededstal_mode = 0
+lgem_pededstal_mode = 0 ; Not sure what this does
 ;lgem_do_neg_signal_study = 0
 ;lgem_commonmode_online_flag = 3
 lgem_commonmode_nstriphi = 20
