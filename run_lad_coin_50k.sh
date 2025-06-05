@@ -137,6 +137,14 @@ expert_configs=(
   "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
   "CONFIG/HMS/PRODUCTION/hms_production.cfg"
 )
+
+hydra_configs=(
+  "CONFIG/LAD/PRODUCTION/lad_gem_hydra.cfg"
+  "CONFIG/LAD/PRODUCTION/lad_coin_production_hydra.cfg"
+  # "CONFIG/LAD/PRODUCTION/lad_coin_kin_hydra.cfg"
+  "CONFIG/SHMS/PRODUCTION/shms_production.cfg"
+  "CONFIG/HMS/PRODUCTION/hms_production.cfg"
+)
 #############################################
 
 # Start analysis and monitoring plots.
@@ -379,7 +387,7 @@ expert_configs=(
 
   echo "[INFO] Starting parallel panguin jobs for run ${runNum}..."
   cd onlineGUI || { echo "[FATAL] Failed to cd into onlineGUI"; exit 1; }
-  for config in "${gui_configs[@]}"; do
+  for config in "${hydra_configs[@]}"; do
       cfg_name=$(basename "$config" .cfg)
       log_file="${log_dir}/panguin_${cfg_name}_${runNum}.log"
       logs+=("$log_file")
@@ -399,9 +407,9 @@ expert_configs=(
       statuses+=($status)
       
       if [ $status -ne 0 ]; then
-	  echo "[ERROR] Job for ${gui_configs[$i]} failed. See ${logs[$i]}"
+	  echo "[ERROR] Job for ${hydra_configs[$i]} failed. See ${logs[$i]}"
       else
-	  echo "[SUCCESS] Job for ${gui_configs[$i]} completed."
+	  echo "[SUCCESS] Job for ${hydra_configs[$i]} completed."
       fi
   done
   
