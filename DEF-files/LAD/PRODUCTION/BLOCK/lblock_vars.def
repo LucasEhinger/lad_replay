@@ -3,6 +3,7 @@
 #********************
 
 block T.*
+block g.*
 block L.ladhod.*
 
 

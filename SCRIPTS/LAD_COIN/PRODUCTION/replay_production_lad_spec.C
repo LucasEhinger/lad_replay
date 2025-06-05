@@ -1,9 +1,51 @@
 #include "LADFilteredStreamBuf.h"
 #include "MultiFileRun.h"
 #include "THcLADKine.h" // Include the header for THcLADKine
+#include <fstream>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
 
 // #include "../../LAD/LAD_link_defs.h" //Leave this line commented. Used for debugging purposes only.
+
+// Returns 1 if runNumber has a GEM CM PED file, 0 otherwise
+void load_GEM_CM_PED(int runNumber) {
+  std::vector<int> ped_cm_runs;
+  int ped_cm_runs_count = 0;
+
+  // Open the file
+  std::ifstream infile("PARAM/LAD/GEM/lgem_cm_ped_runs.param");
+  if (infile) {
+    std::string content((std::istreambuf_iterator<char>(infile)), std::istreambuf_iterator<char>());
+    std::stringstream ss(content);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+      std::stringstream token_ss(token);
+      int value;
+      if (token_ss >> value) {
+        ped_cm_runs.push_back(value);
+      }
+    }
+    ped_cm_runs_count = ped_cm_runs.size();
+  } else {
+    std::cerr << "Error: Could not open PARAM/LAD/GEM/lgem_cm_ped_runs.param" << std::endl;
+    ped_cm_runs_count = 0;
+  }
+  std::sort(ped_cm_runs.begin(), ped_cm_runs.end());
+
+  int ped_cm_file_num = ped_cm_runs[ped_cm_runs_count - 1]; // Default to the last run number in the list
+  for (int i = ped_cm_runs_count - 1; i > 0; --i) {
+    if (ped_cm_runs[i] < runNumber) {
+      ped_cm_file_num = ped_cm_runs[i];
+      break;
+    }
+  }
+
+  gHcParms->AddString("lgem_pedfile", Form("PARAM/LAD/GEM/PED/gem_ped_%d.dat", ped_cm_file_num));
+  gHcParms->AddString("lgem_cmfile", Form("PARAM/LAD/GEM/CM/CommonModeRange_%d.txt", ped_cm_file_num));
+  return;
+}
 
 void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_type = 1, int FirstEvent = 1,
                                 int MaxSegment = 0, int FirstSegment = 0) {
@@ -68,7 +110,7 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
     fname_prefix = "lad_SHMS_HMS";
     break;
   case 6:
-  fname_prefix = "lad_SHMS";
+    fname_prefix = "lad_SHMS";
     break;
   case 7:
     fname_prefix = "lad_HMS";
@@ -113,8 +155,10 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
     gHcDetectorMap->Load("MAPS/LAD_COIN/DETEC/coin_lad.map");
   else if (RunNumber < 22590)
     gHcDetectorMap->Load("MAPS/LAD_COIN/DETEC/coin_lad_5pass.map");
-  else 
+  else
     gHcDetectorMap->Load("MAPS/LAD_COIN/DETEC/coin_lad_5pass_May14.map");
+
+  load_GEM_CM_PED(RunNumber);
   // Add the dec data class for debugging
   // Podd::DecData *decData = new Podd::DecData("D", "Decoder Raw Data");
   // gHaApps->Add(decData);
