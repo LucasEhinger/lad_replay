@@ -54,6 +54,9 @@ const string side_names[N_SIDES]   = {"Top", "Btm"};
 double proton_cut_time[2][N_PADDLES] = {{3.5, 3, 5.5, 3, 3, 5, 4, 3.5, 3.5, 2.5, 3},
                                         {3, 0, 4, 5, 5, 2, 4.5, 4.5, 4, 0, 4}};
 
+const double janky_diff_time_calib[2][N_PADDLES] = {{-0.25, 0.4, -1.6, 0.5, 0.7, -1.5, 0, 0.6, 0.3, 1, 0.7},
+                                                    {1.1, 0.2, -0.1, -0.4, -0.9, 2, -0.7, -0.2, 0.25, 2, -0.3}};
+
 TLegend *make_legend(TCanvas *c) {
   // Create and draw a new legend
   TLegend *legend = new TLegend(0.7, 0.6, 0.9, 0.9);
@@ -266,7 +269,8 @@ void process_chunk(int i_thread, int start, int end, std::vector<TString> &fileN
         hist_map["h_ADC_Int"][plane][bar]->Fill(fullhit_adc_avg[plane][i_top]);
         hist_map["h_ADC_Amp"][plane][bar]->Fill(fullhit_adc_amp_avg[plane][i_top]);
         hist_map["h_TDC_vs_ADC_Int"][plane][bar]->Fill(fullhit_time_avg[plane][i_top], fullhit_adc_avg[plane][i_top]);
-        hist_map["h_TDC_vs_ADC_Amp"][plane][bar]->Fill(fullhit_time_avg[plane][i_top], fullhit_adc_amp_avg[plane][i_top]);
+        hist_map["h_TDC_vs_ADC_Amp"][plane][bar]->Fill(fullhit_time_avg[plane][i_top],
+                                                       fullhit_adc_amp_avg[plane][i_top]);
 
         if (bar < 0 || bar >= N_PADDLES)
           continue; // Skip invalid bars
@@ -304,21 +308,25 @@ void process_chunk(int i_thread, int start, int end, std::vector<TString> &fileN
           if (matching_plane < plane) {
             tdc_diff = -tdc_diff; // Reverse sign for the second plane
           }
+          if (plane / 2 < 2)
+            tdc_diff += janky_diff_time_calib[plane / 2][bar];
           // Fill the histograms with the TDC difference
           hist_map["h_time_avg_punchthrough"][plane][bar]->Fill(hodo_hit_time[plane][bar]);
           hist_map["h_TDC_Diff_bar"][plane][bar]->Fill(tdc_diff);
           hist_map["h_TDC_Diff_vs_ADC_Int"][plane][bar]->Fill(tdc_diff, hodo_hit_edep[plane][bar]);
           hist_map["h_TDC_Diff_vs_ADC_Amp"][plane][bar]->Fill(tdc_diff, hodo_hit_adc_amp[plane][bar]);
           // Fill the Front vs Back ADC Integral and Amplitude histograms
-          hist_map["h_Front_Back_ADC_Int"][plane][bar]->Fill(hodo_hit_edep[plane][bar], hodo_hit_edep[matching_plane][bar]);
-          hist_map["h_Front_Back_ADC_Amp"][plane][bar]->Fill(hodo_hit_adc_amp[plane][bar], hodo_hit_adc_amp[matching_plane][bar]);
+          hist_map["h_Front_Back_ADC_Int"][plane][bar]->Fill(hodo_hit_edep[plane][bar],
+                                                             hodo_hit_edep[matching_plane][bar]);
+          hist_map["h_Front_Back_ADC_Amp"][plane][bar]->Fill(hodo_hit_adc_amp[plane][bar],
+                                                             hodo_hit_adc_amp[matching_plane][bar]);
           hist_map["h_HitYPos"][plane][bar]->Fill(hodo_hit_ypos[plane][bar]);
 
           if (tdc_diff > proton_cut_time[plane / 2][bar]) {
             hist_map["h_time_avg_protons"][plane][bar]->Fill(hodo_hit_time[plane][bar]);
             // hist_map["h_TDC_Diff_vs_ADC_Int_protons"][plane][bar]->Fill(tdc_diff, hodo_hit_edep[plane][bar]);
             // hist_map["h_TDC_Diff_vs_ADC_Amp_protons"][plane][bar]->Fill(tdc_diff, hodo_hit_adc_amp[plane][bar]);
-          } 
+          }
         }
       }
     }
@@ -345,11 +353,11 @@ int lad_edep_plots() {
       // "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/LAD_COIN/PRODUCTION/bad_timing/LAD_COIN_22610_0_6_-1.root",
       // "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/LAD_COIN/PRODUCTION/bad_timing/LAD_COIN_22611_0_6_-1.root",
       // "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/LAD_COIN/PRODUCTION/bad_timing/LAD_COIN_22613_0_6_-1.root",
-      "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/LAD_COIN/PRODUCTION/LAD_COIN_22615_0_6_-1.root",
-    };
+      "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/LAD_COIN/PRODUCTION/bad_timing/LAD_COIN_22615_0_6_-1.root",
+  };
   // "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/LAD_COIN/PRODUCTION/LAD_COIN_22616_0_21_-1.root"};
   // "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/LAD_COIN/PRODUCTION/LAD_COIN_22382_0_21_-1_1.root"};
-  TString outputFileName = Form("lad_edep_plots_22615_new_%c.root", spec_prefix);
+  TString outputFileName = Form("lad_edep_plots_22615_new_timing_%c.root", spec_prefix);
 
   // Create a TChain to combine the trees from multiple files
   TChain *chain = new TChain("T");
@@ -377,7 +385,7 @@ int lad_edep_plots() {
   // Number of threads to use
   int numThreads = std::thread::hardware_concurrency();
   numThreads     = 100;
-  int chunkSize = nEntries / numThreads;
+  int chunkSize  = nEntries / numThreads;
 
   // Adjust the number of threads if the chunk size is too small
   if (chunkSize < MINT_EVTS_PER_THREAD) {
@@ -392,95 +400,99 @@ int lad_edep_plots() {
       for (int bar = 0; bar < N_PADDLES; ++bar) {
         hist_map_vec[thread]["h_time_avg"][plane][bar] =
             new TH1D(Form("h_TDC_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("TDC Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), time_params.NBINS, time_params.MIN,
-               time_params.MAX);
+                     Form("TDC Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), time_params.NBINS,
+                     time_params.MIN, time_params.MAX);
         hist_map_vec[thread]["h_time_avg"][plane][bar]->GetXaxis()->SetTitle("Time (ns)");
         hist_map_vec[thread]["h_time_avg"][plane][bar]->GetYaxis()->SetTitle("Counts");
 
         hist_map_vec[thread]["h_time_avg_punchthrough"][plane][bar] =
             new TH1D(Form("h_TDC_punchthrough_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("TDC Punchthrough Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), time_params.NBINS,
-               time_params.MIN, time_params.MAX);
+                     Form("TDC Punchthrough Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     time_params.NBINS, time_params.MIN, time_params.MAX);
         hist_map_vec[thread]["h_time_avg_punchthrough"][plane][bar]->GetXaxis()->SetTitle("Time (ns)");
         hist_map_vec[thread]["h_time_avg_punchthrough"][plane][bar]->GetYaxis()->SetTitle("Counts");
 
         hist_map_vec[thread]["h_time_avg_protons"][plane][bar] =
             new TH1D(Form("h_TDC_protons_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("TDC Protons Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), time_params.NBINS,
-               time_params.MIN, time_params.MAX);
+                     Form("TDC Protons Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     time_params.NBINS, time_params.MIN, time_params.MAX);
         hist_map_vec[thread]["h_time_avg_protons"][plane][bar]->GetXaxis()->SetTitle("Time (ns)");
         hist_map_vec[thread]["h_time_avg_protons"][plane][bar]->GetYaxis()->SetTitle("Counts");
 
         hist_map_vec[thread]["h_TDC_Diff_bar"][plane][bar] =
             new TH1D(Form("h_TDC_Diff_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("TDC Diff Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), dt_params.NBINS, dt_params.MIN,
-               dt_params.MAX);
+                     Form("TDC Diff Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     dt_params.NBINS, dt_params.MIN, dt_params.MAX);
         hist_map_vec[thread]["h_TDC_Diff_bar"][plane][bar]->GetXaxis()->SetTitle("Time Difference (ns)");
         hist_map_vec[thread]["h_TDC_Diff_bar"][plane][bar]->GetYaxis()->SetTitle("Counts");
 
         hist_map_vec[thread]["h_ADC_Int"][plane][bar] =
             new TH1D(Form("h_ADC_Int_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("ADC Int Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), adc_int_params.NBINS,
-               adc_int_params.MIN, adc_int_params.MAX);
+                     Form("ADC Int Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     adc_int_params.NBINS, adc_int_params.MIN, adc_int_params.MAX);
         hist_map_vec[thread]["h_ADC_Int"][plane][bar]->GetXaxis()->SetTitle("ADC Integral (pC)");
         hist_map_vec[thread]["h_ADC_Int"][plane][bar]->GetYaxis()->SetTitle("Counts");
 
         hist_map_vec[thread]["h_ADC_Amp"][plane][bar] =
             new TH1D(Form("h_ADC_amp_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("ADC Amp Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), adc_amp_params.NBINS,
-               adc_amp_params.MIN, adc_amp_params.MAX);
+                     Form("ADC Amp Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     adc_amp_params.NBINS, adc_amp_params.MIN, adc_amp_params.MAX);
         hist_map_vec[thread]["h_ADC_Amp"][plane][bar]->GetXaxis()->SetTitle("ADC Amplitude (mV)");
         hist_map_vec[thread]["h_ADC_Amp"][plane][bar]->GetYaxis()->SetTitle("Counts");
 
         hist_map_vec[thread]["h_TDC_vs_ADC_Int"][plane][bar] =
             new TH2D(Form("h_TDC_vs_ADC_Int_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("TDC vs ADC Int Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), time_params.NBINS,
-               time_params.MIN, time_params.MAX, adc_int_params.NBINS, adc_int_params.MIN, adc_int_params.MAX);
+                     Form("TDC vs ADC Int Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     time_params.NBINS, time_params.MIN, time_params.MAX, adc_int_params.NBINS, adc_int_params.MIN,
+                     adc_int_params.MAX);
         hist_map_vec[thread]["h_TDC_vs_ADC_Int"][plane][bar]->GetXaxis()->SetTitle("Time (ns)");
         hist_map_vec[thread]["h_TDC_vs_ADC_Int"][plane][bar]->GetYaxis()->SetTitle("ADC Integral (pC)");
 
         hist_map_vec[thread]["h_TDC_vs_ADC_Amp"][plane][bar] =
             new TH2D(Form("h_TDC_vs_ADC_Amp_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("TDC vs ADC Amp Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), time_params.NBINS,
-               time_params.MIN, time_params.MAX, adc_amp_params.NBINS, adc_amp_params.MIN, adc_amp_params.MAX);
+                     Form("TDC vs ADC Amp Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     time_params.NBINS, time_params.MIN, time_params.MAX, adc_amp_params.NBINS, adc_amp_params.MIN,
+                     adc_amp_params.MAX);
         hist_map_vec[thread]["h_TDC_vs_ADC_Amp"][plane][bar]->GetXaxis()->SetTitle("Time (ns)");
         hist_map_vec[thread]["h_TDC_vs_ADC_Amp"][plane][bar]->GetYaxis()->SetTitle("ADC Amplitude (mV)");
 
         hist_map_vec[thread]["h_TDC_Diff_vs_ADC_Amp"][plane][bar] =
             new TH2D(Form("h_TDC_Diff_vs_ADC_amp_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("TDC Diff vs ADC Amp Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), dt_params.NBINS,
-               dt_params.MIN, dt_params.MAX, adc_amp_params.NBINS, adc_amp_params.MIN, adc_amp_params.MAX);
+                     Form("TDC Diff vs ADC Amp Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     dt_params.NBINS, dt_params.MIN, dt_params.MAX, adc_amp_params.NBINS, adc_amp_params.MIN,
+                     adc_amp_params.MAX);
         hist_map_vec[thread]["h_TDC_Diff_vs_ADC_Amp"][plane][bar]->GetXaxis()->SetTitle("Time Difference (ns)");
         hist_map_vec[thread]["h_TDC_Diff_vs_ADC_Amp"][plane][bar]->GetYaxis()->SetTitle("ADC Amplitude (mV)");
 
         hist_map_vec[thread]["h_TDC_Diff_vs_ADC_Int"][plane][bar] =
             new TH2D(Form("h_TDC_Diff_vs_ADC_Int_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("TDC Diff vs ADC Int Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), dt_params.NBINS,
-               dt_params.MIN, dt_params.MAX, adc_int_params.NBINS, adc_int_params.MIN, adc_int_params.MAX);
+                     Form("TDC Diff vs ADC Int Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     dt_params.NBINS, dt_params.MIN, dt_params.MAX, adc_int_params.NBINS, adc_int_params.MIN,
+                     adc_int_params.MAX);
         hist_map_vec[thread]["h_TDC_Diff_vs_ADC_Int"][plane][bar]->GetXaxis()->SetTitle("Time Difference (ns)");
         hist_map_vec[thread]["h_TDC_Diff_vs_ADC_Int"][plane][bar]->GetYaxis()->SetTitle("ADC Integral (pC)");
 
         // Histogram for Front vs Back ADC Integral
         hist_map_vec[thread]["h_Front_Back_ADC_Int"][plane][bar] =
             new TH2D(Form("h_Front_Back_ADC_Int_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("Front vs Back ADC Int Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
-               adc_int_params.NBINS, adc_int_params.MIN, adc_int_params.MAX,
-               adc_int_params.NBINS, adc_int_params.MIN, adc_int_params.MAX);
+                     Form("Front vs Back ADC Int Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     adc_int_params.NBINS, adc_int_params.MIN, adc_int_params.MAX, adc_int_params.NBINS,
+                     adc_int_params.MIN, adc_int_params.MAX);
         hist_map_vec[thread]["h_Front_Back_ADC_Int"][plane][bar]->GetXaxis()->SetTitle("Front ADC Integral (pC)");
         hist_map_vec[thread]["h_Front_Back_ADC_Int"][plane][bar]->GetYaxis()->SetTitle("Back ADC Integral (pC)");
 
         // Histogram for Front vs Back ADC Amplitude
         hist_map_vec[thread]["h_Front_Back_ADC_Amp"][plane][bar] =
             new TH2D(Form("h_Front_Back_ADC_Amp_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("Front vs Back ADC Amp Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
-               adc_amp_params.NBINS, adc_amp_params.MIN, adc_amp_params.MAX,
-               adc_amp_params.NBINS, adc_amp_params.MIN, adc_amp_params.MAX);
+                     Form("Front vs Back ADC Amp Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar),
+                     adc_amp_params.NBINS, adc_amp_params.MIN, adc_amp_params.MAX, adc_amp_params.NBINS,
+                     adc_amp_params.MIN, adc_amp_params.MAX);
         hist_map_vec[thread]["h_Front_Back_ADC_Amp"][plane][bar]->GetXaxis()->SetTitle("Front ADC Amplitude (mV)");
         hist_map_vec[thread]["h_Front_Back_ADC_Amp"][plane][bar]->GetYaxis()->SetTitle("Back ADC Amplitude (mV)");
 
-        hist_map_vec[thread]["h_HitYPos"][plane][bar] =
-            new TH1D(Form("h_HitYPos_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
-               Form("Hit Y Position Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), 100, -250, 250);
+        hist_map_vec[thread]["h_HitYPos"][plane][bar] = new TH1D(
+            Form("h_HitYPos_thread_%d_plane_%s_bar_%d", thread, plane_names[plane].c_str(), bar),
+            Form("Hit Y Position Thread %d Plane %s Bar %d", thread, plane_names[plane].c_str(), bar), 100, -250, 250);
         hist_map_vec[thread]["h_HitYPos"][plane][bar]->GetXaxis()->SetTitle("Y Position (cm)");
         hist_map_vec[thread]["h_HitYPos"][plane][bar]->GetYaxis()->SetTitle("Counts");
       }

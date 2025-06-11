@@ -35,11 +35,15 @@
 using namespace std;
 
 const static double TdcTimeTWCorr_MAX = 10000.0; // Was originally 100.
+const static int minADC_PulseAmp = 50; // Minimum ADC Pulse Amplitude to consider for Time Walk correction
 
 // void fitHodoCalib(TString filename, Int_t runNUM, Bool_t cosmic_flag = kFALSE) {
 void fitHodoCalib(Int_t runNUM) {
 
-  TString filename = Form("../../ROOTfiles/COSMICS/LAD_wREF_cosmic_hall_%d_-1.root", runNUM);
+  gROOT->SetBatch(kTRUE);
+  // TString filename = Form("../../ROOTfiles/COSMICS/LAD_wREF_cosmic_hall_%d_-1.root", runNUM);
+  TString filename = Form("../../ROOTfiles/COSMICS/LAD_wGEM_cosmic_hall_%d_-1.root", runNUM);
+
   gStyle->SetOptFit();
   // gROOT->SetBatch(kTRUE); // do not display plots
 
@@ -74,18 +78,15 @@ void fitHodoCalib(Int_t runNUM) {
       {387.5, 393.3, 399.0, 404.8, 410.5, 416.3, 422.0, 427.8, 433.6, 439.3, 445.1},
       {387.5, 393.3, 399.0, 404.8, 410.5, 416.3, 422.0, 427.8, 433.6, 439.3, 445.1}};
 
-  static const Int_t TDC_T_NBINS         = 100;
-  static const Double_t TDC_T_MIN        = -200.0;
-  static const Double_t TDC_T_MAX        = 200.0;
+  static const Int_t TDC_T_NBINS         = 1000;
+  static const Double_t TDC_T_MIN        = -60.0;
+  static const Double_t TDC_T_MAX        = 60.0;
   static const Int_t ADC_TDC_diff_NBINS  = 100;
   static const Double_t ADC_TDC_diff_MIN = -360.0;
   static const Double_t ADC_TDC_diff_MAX = -330.0;
-  static const Int_t DiffTime_NBINS      = 100;
-  static const Double_t DiffTime_MIN     = -60.0;
-  static const Double_t DiffTime_MAX     = 60.0;
-  static const Int_t SumTime_NBINS       = 100;
-  static const Double_t SumTime_MIN      = -500.0;
-  static const Double_t SumTime_MAX      = 000.0;
+  static const Int_t DiffTime_NBINS      = 1000;
+  static const Double_t DiffTime_MIN     = -40.0;
+  static const Double_t DiffTime_MAX     = 40.0;
   /******Define Leafs to be read from TTree******/
 
   //---Names---
@@ -246,6 +247,9 @@ void fitHodoCalib(Int_t runNUM) {
       // Loop over pmt
       for (Int_t ipmt = 0; ipmt < maxPMT[npl]; ipmt++) {
 
+        if (AdcPulseAmp[npl][0][ipmt] < minADC_PulseAmp || AdcPulseAmp[npl][1][ipmt] < minADC_PulseAmp) {
+          continue; // skip if ADC Pulse Amplitude is below threshold
+        }
         if (TdcTimeTWCorr[npl][0][ipmt] < TdcTimeTWCorr_MAX && TdcTimeTWCorr[npl][1][ipmt] < TdcTimeTWCorr_MAX) {
           // Fill Average TW Corr TDC Time
           h1Hist_TWAvg[npl][ipmt]->Fill((TdcTimeTWCorr[npl][0][ipmt] + TdcTimeTWCorr[npl][1][ipmt]) / 2.);
@@ -707,7 +711,7 @@ void fitHodoCalib(Int_t runNUM) {
     outPARAM << fixed << endl;
   }
   cout << "FINISHED Fitting Hodo Matrix . . . " << endl;
-  cout << "Parameter File Created: " << Form("../../PARAM/lad/HODO/ladhodo_Vpcalib_%d.param", runNUM) << endl;
+  cout << "Parameter File Created: " << Form("../../PARAM/LAD/HODO/ladhodo_Vpcalib_%d.param", runNUM) << endl;
 
   // Write Histograms to ROOT file
   // Create output root file where histograms will be stored

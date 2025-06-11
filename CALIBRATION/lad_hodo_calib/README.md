@@ -19,7 +19,7 @@ The two codes have different parameters and it is possible to switch between the
 
 2. Determine the time walk correction parameters
 
-     a. Start "root -l" and then  .x timeWalkHistos.C+("current_dir/to/ROOT_filename.root", Run_Number, "hms") ---> If doing coincidence, then "hms"->"coin"
+     a. Start "root -l" and then  .x timeWalkHistos.C+(Run_Number) ---> The file location is hard coded. Change this in the file
 
      b. This creats the file: timeWalkHistos.root
 
@@ -40,6 +40,8 @@ puts cuts on H.cal.etracknorm, H.hgcer.npeSum and H.hod.betanotrack to select el
 
      c.  It also creates the root file HodoCalibPlots_runnumber.root
 
+
+The two below aren't implemented
      d.  To analyze cosmic data :  .x  fitHodoCalib.C+("current_dir/to/ROOT_filename.root",Run_Number,kTRUE) 
 
      e. For cosmic data the speed of light is set to -30 cm/ns and the PID cut is just on P.hod.betanotrack with the default of betanotrack_low_cut = -1.2 and betanotrack_hi_cut = -.7
