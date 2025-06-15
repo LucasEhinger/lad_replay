@@ -298,8 +298,8 @@ void generatePlots(UInt_t iplane, UInt_t iside, UInt_t ipaddle) {
 void timeWalkHistos(Int_t runNum) { // SPEC_flg ---> "hms"  or "coin"
 
   // TODO: fixme. remove the hard coding here
-  // TString inputname = Form("../../ROOTfiles/hms_replay_production_5000_-1.root");
-  TString inputname = Form("../../ROOTfiles/COSMICS/LAD_wREF_cosmic_hall_186_-1.root");
+  TString inputname = Form("../../ROOTfiles/COSMICS/LAD_wGEM_cosmic_hall_22827_-1.root");
+  // TString inputname = Form("../../ROOTfiles/COSMICS/LAD_wREF_cosmic_hall_186_-1.root");
   string SPEC_flg   = "hms";
 
   // Global ROOT settings
@@ -322,7 +322,7 @@ void timeWalkHistos(Int_t runNum) { // SPEC_flg ---> "hms"  or "coin"
   // replayFile = new TFile(Form("ROOTfiles/hms_replay_production_all_%d_-1.root", runNum), "READ");
   // replayFile = new TFile(Form("ROOTfiles/hms_coin_replay_production_%d_-1.root", runNum), "READ");
 
-  outFile = new TFile("timeWalkHistos.root", "RECREATE");
+  outFile = new TFile(Form("timeWalkHistos_%d.root", runNum), "RECREATE");
   // Obtain the tree
   rawDataTree = dynamic_cast<TTree *>(replayFile->Get("T"));
   // Acquire the trigger apparatus data

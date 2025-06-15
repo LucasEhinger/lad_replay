@@ -19,10 +19,14 @@
 #include <string>
 #include <thread> // Include thread for std::thread::hardware_concurrency
 #include <vector>
+// #include <sys/resource.h> // Include for struct rlimit and related functions
 
-const int NDDATA_MAX       = 20000; // Maximum number of data points to read. GEM's need at least >10k (10k throws errors for some events). 100k might be overkill, but throws now errors.
-const int NMAX_THREADS     = 200;   // Maximum number of threads
-const int NEVTS_PER_THREAD = 500;  // Number of events per thread
+const int NDDATA_MAX = 20000; // Maximum number of data points to read. GEM's need at least >10k (10k throws errors for
+                              // some events). 100k might be overkill, but throws now errors.
+const int MAX_THREADS      = 20;               // Maximum number of threads
+const int NEVTS_PER_THREAD = 5000;             // Number of events per thread
+const int CACHE_SIZE       = 50 * 1024 * 1024; // 50 MB cache size
+
 struct Histo1DCommand {
   TString name;       // Histogram name
   TString title;      // Histogram title
@@ -52,6 +56,14 @@ struct CutInfo {
   std::string op;   // Operator (e.g., ==, !=, >, <, >=, <=)
   std::string var2; // Second variable or branch name or constant value
 };
+
+template <typename T> void add_branch(TTree *tree, const char *branch_name, T *branch_data) {
+  // Add a branch to the tree
+  tree->SetBranchAddress(branch_name, branch_data);
+  tree->AddBranchToCache(branch_name, kTRUE);
+  tree->SetBranchStatus(branch_name, 1); // Enable the branch
+  return;
+}
 
 bool getValues(const TString &var, std::vector<double> &values,
                const std::map<std::string, std::vector<Double_t>> &branchDataDouble,
@@ -140,10 +152,6 @@ void processCutExpression(const TString &cutExpression, const std::function<void
   }
 }
 
-// Mutex for thread-safe access to shared resources
-std::mutex histoMutex;
-std::mutex treeMutex;
-
 // Function to process a range of events in a thread
 void processEventsRange(TString inputFileName, TString treeName, Long64_t start, Long64_t end,
                         const std::vector<Histo1DCommand> &hist1DCommands,
@@ -162,7 +170,8 @@ void processEventsRange(TString inputFileName, TString treeName, Long64_t start,
     inputFile->Close();
     return;
   }
-
+  clonedTree->SetCacheSize(CACHE_SIZE);
+  clonedTree->SetBranchStatus("*", 0); // Disable all branches initially
   // Local branch data for this thread
   std::map<std::string, std::vector<Double_t>> branchDataDouble;
   std::map<std::string, std::vector<Int_t>> branchDataInt;
@@ -215,7 +224,7 @@ void processEventsRange(TString inputFileName, TString treeName, Long64_t start,
     TBranch *nEntriesBranch    = clonedTree->GetBranch(nEntriesBranchName.Data());
     if (nEntriesBranch) {
       nEntriesMap[branchPair.first] = 0; // Initialize nEntries for this branch
-      clonedTree->SetBranchAddress(nEntriesBranchName.Data(), &nEntriesMap[branchPair.first]);
+      add_branch(clonedTree, nEntriesBranchName.Data(), &nEntriesMap[branchPair.first]);
     } else {
       nEntriesMap[branchPair.first] = 1;
     }
@@ -226,7 +235,7 @@ void processEventsRange(TString inputFileName, TString treeName, Long64_t start,
     TBranch *nEntriesBranch    = clonedTree->GetBranch(nEntriesBranchName.Data());
     if (nEntriesBranch) {
       nEntriesMap[branchPair.first] = 0; // Initialize nEntries for this branch
-      clonedTree->SetBranchAddress(nEntriesBranchName.Data(), &nEntriesMap[branchPair.first]);
+      add_branch(clonedTree, nEntriesBranchName.Data(), &nEntriesMap[branchPair.first]);
     }
   }
 
@@ -237,10 +246,10 @@ void processEventsRange(TString inputFileName, TString treeName, Long64_t start,
   // };
   // Set up branch addresses (similar to the main function)
   for (auto &branchPair : branchDataDouble) {
-    clonedTree->SetBranchAddress(branchPair.first.c_str(), branchPair.second.data());
+    add_branch(clonedTree, branchPair.first.c_str(), branchPair.second.data());
   }
   for (auto &branchPair : branchDataInt) {
-    clonedTree->SetBranchAddress(branchPair.first.c_str(), branchPair.second.data());
+    add_branch(clonedTree, branchPair.first.c_str(), branchPair.second.data());
   }
 
   // Process events in the range
@@ -422,6 +431,12 @@ void lad_histos_MT(
     bool lad_only = true, int num_evts = -1) {
 
   auto start_time = std::chrono::high_resolution_clock::now();
+  // // Set no maximum limit on the stack size
+  // struct rlimit rl;
+  // if (getrlimit(RLIMIT_STACK, &rl) == 0) {
+  //   rl.rlim_cur = RLIM_INFINITY;
+  //   setrlimit(RLIMIT_STACK, &rl);
+  // }
   // Enable thread safety for ROOT
   ROOT::EnableThreadSafety();
   const char *treeName = "T";
@@ -486,10 +501,12 @@ void lad_histos_MT(
           3000, prefix + ".gem.clust.axis<1&&" + prefix + ".gem.clust.layer>0"},
          {prefix + "_h1_gem_clustADCSumV_1", "Y cluster ADC sum Layer 1; ADC sum", prefix + ".gem.clust.adc", 1500, 0,
           3000, prefix + ".gem.clust.axis>0&&" + prefix + ".gem.clust.layer>0"},
-        //  {prefix + "_h1_gem_nhits_0", "Number of hits Layer 0; Number of hits", prefix + ".gem.sp.nhits", 50, -0.5, 49.5,
-        //   prefix + ".gem.sp.layer<1"},
-        //  {prefix + "_h1_gem_nhits_1", "Number of hits Layer 1; Number of hits", prefix + ".gem.sp.nhits", 50, -0.5, 49.5,
-        //   prefix + ".gem.sp.layer>0"},
+         //  {prefix + "_h1_gem_nhits_0", "Number of hits Layer 0; Number of hits", prefix + ".gem.sp.nhits", 50,
+         //  -0.5, 49.5,
+         //   prefix + ".gem.sp.layer<1"},
+         //  {prefix + "_h1_gem_nhits_1", "Number of hits Layer 1; Number of hits", prefix + ".gem.sp.nhits", 50,
+         //  -0.5, 49.5,
+         //   prefix + ".gem.sp.layer>0"},
          {prefix + "_h1_gem_time_0", "Time Mean; Time Mean", prefix + ".gem.sp.time", 100, 0, 120,
           prefix + ".gem.sp.layer<1"},
          {prefix + "_h1_gem_time_1", "Time Mean; Time Mean", prefix + ".gem.sp.time", 100, 0, 120,
@@ -553,6 +570,7 @@ void lad_histos_MT(
   int numThreads_max = std::thread::hardware_concurrency();
   int numThreads     = nEntries / NEVTS_PER_THREAD;
   numThreads         = std::min(numThreads, numThreads_max);
+  numThreads         = std::min(numThreads, MAX_THREADS);
   numThreads         = std::max(numThreads, 1); // Ensure at least one thread
 
   std::cout << "Running on " << numThreads << " cores. " << numThreads_max << " available." << std::endl;

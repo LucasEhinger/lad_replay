@@ -13,6 +13,7 @@ const int nPlanes                     = 6;
 const std::string planeNames[nPlanes] = {"000", "001", "100", "101", "200", "REFBAR"};
 const int nSides                      = 2;
 const int maxPaddles[nPlanes]         = {11, 11, 11, 11, 11, 1};
+const double minAdcPulseAmp = 50.0; // Minimum ADC Pulse Amplitude to consider for Time Walk correction
 
 const double Tdc2Time = 0.09766;
 
@@ -22,12 +23,12 @@ struct hist_param {
   double xMax;
 };
 
-hist_param tdc_time = {100, 460, 490}; // Histogram parameters for TDC time
+hist_param tdc_time = {100, 483, 488}; // Histogram parameters for TDC time
 
 int check_LAD_timing() {
   gROOT->SetBatch(kTRUE);
   string inputFileName =
-      "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/COSMICS/LAD_wGEM_cosmic_hall_22831_-1.root";
+      "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/COSMICS/LAD_wGEM_cosmic_hall_22827_-1.root";
   TFile *file = TFile::Open(inputFileName.c_str(), "READ");
   if (!file || file->IsZombie()) {
     printf("Error opening file\n");
@@ -43,6 +44,7 @@ int check_LAD_timing() {
 
   // Define branches
   Double_t TdcTimeCorr[nPlanes][nSides][maxPaddles[0]];
+  Double_t AdcPulseAmp[nPlanes][nSides][maxPaddles[0]];
   Double_t RefTime;
   Double_t PhotodiodeTimeRaw;
 
@@ -53,6 +55,8 @@ int check_LAD_timing() {
     for (int side = 0; side < nSides; side++) {
       TString branchName = "L.ladhod." + planeNames[npl] + "." + (side == 0 ? "GoodTop" : "GoodBtm") + "TdcTimeCorr";
       T->SetBranchAddress(branchName, TdcTimeCorr[npl][side]);
+      branchName = "L.ladhod." + planeNames[npl] + "." + (side == 0 ? "GoodTop" : "GoodBtm") + "AdcPulseAmp";
+      T->SetBranchAddress(branchName, AdcPulseAmp[npl][side]);
     }
   }
 
@@ -81,6 +85,9 @@ int check_LAD_timing() {
     for (int npl = 0; npl < nPlanes; npl++) {
       for (int side = 0; side < nSides; side++) {
         for (int paddle = 0; paddle < maxPaddles[npl]; paddle++) {
+          if (AdcPulseAmp[npl][side][paddle] < minAdcPulseAmp) {
+            continue; // Skip if ADC Pulse Amplitude is below threshold
+          }
           if (TdcTimeCorr[npl][side][paddle] > 0 &&
               TdcTimeCorr[npl][side][paddle] < 10000000) { // Check for valid TDC time
             double correctedTime = TdcTimeCorr[npl][side][paddle] - (PhotodiodeTimeRaw - RefTime) * Tdc2Time;
@@ -97,7 +104,7 @@ int check_LAD_timing() {
     }
   }
 
-  TString outFileName = "lad_timing_histograms.root";
+  TString outFileName = "lad_timing_histograms_22827_new.root";
   TFile *outFile      = new TFile(outFileName, "RECREATE");
   TDirectory *dir1D = outFile->mkdir("1D_Histograms");
   TDirectory *dir2D = outFile->mkdir("2D_Histograms");
@@ -113,7 +120,7 @@ int check_LAD_timing() {
 
       for (int paddle = 0; paddle < npaddles; paddle++) {
         c->cd(paddle + 1);
-        gPad->SetLogy();
+        // gPad->SetLogy();
         hTdcTimeCorr[npl][side][paddle]->Draw();
       }
       dir1D->cd();
