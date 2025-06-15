@@ -17,6 +17,20 @@ SHMS Angle : {ptheta_lab}
 SHMS Run Length   : {P.1MHz.scalerTime:%.3f} sec
 HMS  Run Length   : {H.1MHz.scalerTime:%.3f} sec
 
+
+
+---------------------------
+Beam Current Monitors (BCM)
+---------------------------
+
+BCM{gBCM_Current_threshold_index+1} >{gBCM_Current_threshold} uA 
+Beam over threshold for {P.1MHz.scalerTimeCut:%.3f}s,
+or {((P.1MHz.scalerTimeCut/P.1MHz.scalerTime)*100.):%.3f}% of total run time.
+
+SW_BCM4A_Current : {P.BCM4A.scalerChargeCut/P.1MHz.scalerTimeCut:%.3f} uA
+SW_BCM4A_Charge  : {P.BCM4A.scalerChargeCut/1000.:%.3f} mC
+
+
 ***********
 * Beamline
 ***********

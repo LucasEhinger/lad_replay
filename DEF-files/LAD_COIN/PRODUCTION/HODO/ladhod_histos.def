@@ -181,12 +181,12 @@ TH1F pladhod_101_fullhit_time 'SHMS-LAD 101 Full Hit Time; Time [ns]; Counts' P.
 TH1F pladhod_200_fullhit_time 'SHMS-LAD 200 Full Hit Time; Time [ns]; Counts' P.ladhod.200.HodoHitTime[I] 100 1600 2100 g.evtyp==1
 TH1F pladhod_REFBAR_fullhit_time 'SHMS-LAD REFBAR Full Hit Time; Time [ns]; Counts' P.ladhod.REFBAR.HodoHitTime[I] 100 1600 2100 g.evtyp==1
 
-TH1F pladhod_000_fullhit_ADC 'SHMS-LAD 000 Full Hit ADC; Time [ns]; Counts' P.ladhod.000.HodoHitEdep[I] 200 0 900 g.evtyp==1
-TH1F pladhod_001_fullhit_ADC 'SHMS-LAD 001 Full Hit ADC; Time [ns]; Counts' P.ladhod.001.HodoHitEdep[I] 200 0 900 g.evtyp==1
-TH1F pladhod_100_fullhit_ADC 'SHMS-LAD 100 Full Hit ADC; Time [ns]; Counts' P.ladhod.100.HodoHitEdep[I] 200 0 900 g.evtyp==1
-TH1F pladhod_101_fullhit_ADC 'SHMS-LAD 101 Full Hit ADC; Time [ns]; Counts' P.ladhod.101.HodoHitEdep[I] 200 0 900 g.evtyp==1
-TH1F pladhod_200_fullhit_ADC 'SHMS-LAD 200 Full Hit ADC; Time [ns]; Counts' P.ladhod.200.HodoHitEdep[I] 200 0 900 g.evtyp==1
-TH1F pladhod_REFBAR_fullhit_ADC 'SHMS-LAD REFBAR Full Hit ADC; Time [ns]; Counts' P.ladhod.REFBAR.HodoHitEdep[I] 200 0 900 g.evtyp==1
+TH1F pladhod_000_fullhit_ADC 'SHMS-LAD 000 Full Hit ADC; ADC Amp; Counts' P.ladhod.000.HodoHitEdep[I] 200 0 200 g.evtyp==1
+TH1F pladhod_001_fullhit_ADC 'SHMS-LAD 001 Full Hit ADC; ADC Amp; Counts' P.ladhod.001.HodoHitEdep[I] 200 0 200 g.evtyp==1
+TH1F pladhod_100_fullhit_ADC 'SHMS-LAD 100 Full Hit ADC; ADC Amp; Counts' P.ladhod.100.HodoHitEdep[I] 200 0 200 g.evtyp==1
+TH1F pladhod_101_fullhit_ADC 'SHMS-LAD 101 Full Hit ADC; ADC Amp; Counts' P.ladhod.101.HodoHitEdep[I] 200 0 200 g.evtyp==1
+TH1F pladhod_200_fullhit_ADC 'SHMS-LAD 200 Full Hit ADC; ADC Amp; Counts' P.ladhod.200.HodoHitEdep[I] 200 0 200 g.evtyp==1
+TH1F pladhod_REFBAR_fullhit_ADC 'SHMS-LAD REFBAR Full Hit ADC; ADC Amp; Counts' P.ladhod.REFBAR.HodoHitEdep[I] 200 0 200 g.evtyp==1
 
 TH1F pladhod_000_fullhit_paddle 'SHMS-LAD 000 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.000.HodoHitPaddleNum[I] 11 0.5 11.5
 TH1F pladhod_001_fullhit_paddle 'SHMS-LAD 001 Full Hit Paddle Num; Paddle Num; Counts' P.ladhod.001.HodoHitPaddleNum[I] 11 0.5 11.5 
@@ -405,12 +405,12 @@ TH1F hladhod_101_fullhit_time 'HMS-LAD 101 Full Hit Time; Time [ns]; Counts' H.l
 TH1F hladhod_200_fullhit_time 'HMS-LAD 200 Full Hit Time; Time [ns]; Counts' H.ladhod.200.HodoHitTime[I] 100 1600 2100 g.evtyp==2
 TH1F hladhod_REFBAR_fullhit_time 'HMS-LAD REFBAR Full Hit Time; Time [ns]; Counts' H.ladhod.REFBAR.HodoHitTime[I] 100 1600 2100 g.evtyp==2
 
-TH1F hladhod_000_fullhit_ADC 'HMS-LAD 000 Full Hit ADC; Time [ns]; Counts' H.ladhod.000.HodoHitEdep[I] 200 0 900 g.evtyp==2
-TH1F hladhod_001_fullhit_ADC 'HMS-LAD 001 Full Hit ADC; Time [ns]; Counts' H.ladhod.001.HodoHitEdep[I] 200 0 900 g.evtyp==2
-TH1F hladhod_100_fullhit_ADC 'HMS-LAD 100 Full Hit ADC; Time [ns]; Counts' H.ladhod.100.HodoHitEdep[I] 200 0 900 g.evtyp==2
-TH1F hladhod_101_fullhit_ADC 'HMS-LAD 101 Full Hit ADC; Time [ns]; Counts' H.ladhod.101.HodoHitEdep[I] 200 0 900 g.evtyp==2
-TH1F hladhod_200_fullhit_ADC 'HMS-LAD 200 Full Hit ADC; Time [ns]; Counts' H.ladhod.200.HodoHitEdep[I] 200 0 900 g.evtyp==2
-TH1F hladhod_REFBAR_fullhit_ADC 'HMS-LAD REFBAR Full Hit ADC; Time [ns]; Counts' H.ladhod.REFBAR.HodoHitEdep[I] 200 0 900 g.evtyp==2
+TH1F hladhod_000_fullhit_ADC 'HMS-LAD 000 Full Hit ADC; ADC Amp; Counts' H.ladhod.000.HodoHitEdep[I] 200 0 200 g.evtyp==2
+TH1F hladhod_001_fullhit_ADC 'HMS-LAD 001 Full Hit ADC; ADC Amp; Counts' H.ladhod.001.HodoHitEdep[I] 200 0 200 g.evtyp==2
+TH1F hladhod_100_fullhit_ADC 'HMS-LAD 100 Full Hit ADC; ADC Amp; Counts' H.ladhod.100.HodoHitEdep[I] 200 0 200 g.evtyp==2
+TH1F hladhod_101_fullhit_ADC 'HMS-LAD 101 Full Hit ADC; ADC Amp; Counts' H.ladhod.101.HodoHitEdep[I] 200 0 200 g.evtyp==2
+TH1F hladhod_200_fullhit_ADC 'HMS-LAD 200 Full Hit ADC; ADC Amp; Counts' H.ladhod.200.HodoHitEdep[I] 200 0 200 g.evtyp==2
+TH1F hladhod_REFBAR_fullhit_ADC 'HMS-LAD REFBAR Full Hit ADC; ADC Amp; Counts' H.ladhod.REFBAR.HodoHitEdep[I] 200 0 200 g.evtyp==2
 
 TH1F hladhod_000_fullhit_paddle 'HMS-LAD 000 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.000.HodoHitPaddleNum[I] 11 0.5 11.5
 TH1F hladhod_001_fullhit_paddle 'HMS-LAD 001 Full Hit Paddle Num; Paddle Num; Counts' H.ladhod.001.HodoHitPaddleNum[I] 11 0.5 11.5 

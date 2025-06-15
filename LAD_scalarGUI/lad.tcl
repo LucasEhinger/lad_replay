@@ -68,7 +68,7 @@ set swapxy 0
 if {$detector == 0} {
     set mapfile LAD.screen
     set layers {0 1 2 3 4 5}
-    set layernames {"W00-00 \n fadc_top      disc_top \n BAR \n fadc_btm      disc_btm" "W00-01 \n fadc_top      disc_top \n BAR \n fadc_btm      disc_btm" "W01-00 \n fadc_top      disc_top \n BAR \n fadc_btm      disc_btm" "W01-01 \n fadc_top      disc_top \n BAR \n fadc_btm      disc_btm" "W02-00 \n fadc_top      disc_top \n BAR \n fadc_btm      disc_btm" "fadc_L      disc_L \n 9:REF \n fadc_R      disc_R \n 8:LAD T1 \n 7:LAD T2 \n 6:HMS ref \n 5:SHMS ref \n 4:Laser PD"}
+    set layernames {"W00-00 \n fadc_top      disc_top \n BAR \n fadc_btm      disc_btm" "W00-01 \n fadc_top      disc_top \n BAR \n fadc_btm      disc_btm" "W01-00 \n fadc_top      disc_top \n BAR \n fadc_btm      disc_btm" "W01-01 \n fadc_top      disc_top \n BAR \n fadc_btm      disc_btm" "W02-00 \n fadc_top      disc_top \n BAR \n fadc_btm      disc_btm" "fadc_R      disc_R \n 9:REF \n fadc_L      disc_L \n 8:LAD T1 \n 7:LAD T2 \n 6:HMS ref \n 5:SHMS ref \n 4:Laser PD"}
 } else {
     set mapfile ENGE.screen
     set layers {1 2 3}
@@ -123,7 +123,8 @@ set ratecheck(lad-vme1) 493
 set Stop_Go 1
 #set epics_bcm_name "hac_bcm_average"
 #set epics_bcm_name "ibcm1"
-set epics_bcm_name "ibcm3H04A"
+#set epics_bcm_name "ibcm3H04A"
+set epics_bcm_name "IBC3H00CRCUR4"
 set current [epics get $epics_bcm_name]
 set dispcurrent 0.
 set indexnumber ""

@@ -230,6 +230,9 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   // Add event handler for scaler events
   THcScalerEvtHandler *pscaler = new THcScalerEvtHandler("P", "Hall C scaler event type 1");
   pscaler->AddEvtType(1);
+  pscaler->AddEvtType(2);
+  pscaler->AddEvtType(3);
+  pscaler->AddEvtType(4);
   pscaler->AddEvtType(129);
   pscaler->SetDelayedType(129);
   pscaler->SetUseFirstEvent(kTRUE);
@@ -300,6 +303,9 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   // Add event handler for scaler events
   THcScalerEvtHandler *hscaler = new THcScalerEvtHandler("H", "Hall C scaler event type 1");
   hscaler->AddEvtType(1);
+  hscaler->AddEvtType(2);
+  hscaler->AddEvtType(3);
+  hscaler->AddEvtType(4);
   hscaler->AddEvtType(129);
   hscaler->SetDelayedType(129);
   hscaler->SetUseFirstEvent(kTRUE);
