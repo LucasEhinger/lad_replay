@@ -51,7 +51,7 @@ lladhodo_slop     =    2.,  2.,  2.,  2., 2., 2.
 
 lladhodo_tdc_offset = 1580, 1580, 1580, 1580, 1580, 1580
 hladhodo_tdc_offset = 31700, 31700, 31700, 31700, 31700, 31700
-pladhodo_tdc_offset = 31200, 31200, 31200, 31200, 31200, 31200
+pladhodo_tdc_offset = 31700, 31700, 31700, 31700, 31700, 31700
 
 lladhodo_adc_tdc_offset = 1880, 1880, 1880, 1880, 1880, 1880
 pladhodo_adc_tdc_offset = 1880, 1880, 1880, 1880, 1880, 1880
