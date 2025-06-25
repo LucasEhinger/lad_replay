@@ -306,8 +306,8 @@ void replay_production_lad_spec(int RunNumber = 0, int MaxEvent = 0, int run_typ
   hscaler->AddEvtType(2);
   hscaler->AddEvtType(3);
   hscaler->AddEvtType(4);
-  hscaler->AddEvtType(129);
-  hscaler->SetDelayedType(129);
+  hscaler->AddEvtType(131);
+  hscaler->SetDelayedType(131);
   hscaler->SetUseFirstEvent(kTRUE);
   gHaEvtHandlers->Add(hscaler);
 
