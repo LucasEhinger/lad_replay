@@ -126,8 +126,12 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0, int run_type
 
   // Load the Hall C detector map
   gHcDetectorMap = new THcDetectorMap();
-  // gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo.map");
-  gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo_laser.map");
+  if (RunNumber < 22590) {
+    gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo_laser.map");
+  }
+  else{
+    gHcDetectorMap->Load("MAPS/LAD/DETEC/HODO/lhodo_laser_May14.map");
+  }
 
   THaApparatus *TRG = new THcTrigApp("T", "TRG");
   gHaApps->Add(TRG);
