@@ -91,6 +91,9 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0, int run_type
   case 8:
     RunFileNamePattern = "lad_LADwROC2_%02d.dat.0";
     break;
+  case 9:
+    RunFileNamePattern = "shms_cosmic_%02d.dat.0";
+    break;
   default:
     cout << "Invalid run type: " << run_type << ". Please enter a valid run type." << endl;
     return;
