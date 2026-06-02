@@ -17,12 +17,14 @@ REPORT_OUTPUT
 HISTOGRAMS
 MON_OUTPUT
 ROOTfiles
+FULL_REPORT_OUTPUT
 .root_history
 raw
 raw.copiedtotape
 cache
 scratch
 junk
+leak_checks
 
 # Symbolic links
 hcana
