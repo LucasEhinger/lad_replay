@@ -2,22 +2,23 @@
 //
 // Multi-threaded LAD ToF analysis using RDataFrame.
 //
-// Reads a .dat file (one ROOT file path per line) into a TChain (tree "T"),
-// books histograms per plane/paddle for tof, ypos, hittime, edep and
-// edep_amp, and writes canvases (one subdirectory per variable) into the
-// output ROOT file.
-//
 // Branch convention (hcana):
-//   P.ladhod.goodhit_<var>_0    -> arrays for planes 0, 2, 4
-//   P.ladhod.goodhit_<var>_1    -> arrays for planes 1, 3
-//   Ndata.P.ladhod.goodhit_<var>_{0,1}  gives the array length per event.
+//   X.ladhod.goodhit_<var>_0      -> arrays for planes 0,2,4  (X = P or H)
+//   X.ladhod.goodhit_<var>_1      -> arrays for planes 1,3
+//   X.ladhod.goodhit_chiSquare    -> per-hit chi-squared, same length as _0 and _1 arrays
 //
-// Per variable, the output ROOT file contains a subdirectory holding:
-//   * 5 canvases (one per plane) each divided into 11 paddle pads.
-//   * 1 summary canvas with 6 subpads: 5 plane sums + 1 grand total.
+// Plane numbering vs display name:
+//   index 0 -> 000,  1 -> 001,  2 -> 100,  3 -> 101,  4 -> 200
+//
+// Sum plots exclude plane 100 (idx 2) and plane 101 (idx 3) paddles 1 and 9.
+//
+// Each output directory contains three subdirectories:
+//   all_hits  -- no cut
+//   has_track -- chiSquare < 100 per hit
+//   no_track  -- chiSquare >= 100 per hit
 //
 // Usage:
-//   root -l -b -q 'lad_tof_fast.C("input.dat","lad_tof_fast.root")'
+//   root -l -b -q 'lad_tof_fast.C("input.dat","out.root")'
 //
 
 #include <ROOT/RDataFrame.hxx>
@@ -30,9 +31,8 @@
 #include <TH1.h>
 #include <TH1D.h>
 #include <TROOT.h>
+#include <cmath>
 
-// Built-in IMT-safe RDataFrame progress bar exists from ROOT 6.30 onwards.
-// The helper header has lived at two paths across versions; probe both.
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6, 30, 0)
 #if __has_include(<ROOT/RDFHelpers.hxx>)
 #include <ROOT/RDFHelpers.hxx>
@@ -43,1195 +43,886 @@
 #endif
 #endif
 
-#include <atomic>
+#include <array>
 #include <chrono>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <memory>
 #include <string>
 #include <vector>
 
 // =====================================================================
-// Histogram binning configuration -- edit these as needed
+// Histogram binning
 // =====================================================================
-const int NBINS_TOF   = 200;
-const double XMIN_TOF = 0.0;
-const double XMAX_TOF = 100.0;
+const int NBINS_TOF=200;      const double XMIN_TOF=0.,      XMAX_TOF=100.;
+const int NBINS_YPOS=200;     const double XMIN_YPOS=-100.,  XMAX_YPOS=100.;
+const int NBINS_HITTIME=200;  const double XMIN_HITTIME=1550.,XMAX_HITTIME=2050.;
+const int NBINS_EDEP=200;     const double XMIN_EDEP=0.,     XMAX_EDEP=100.;
+const int NBINS_EDEP_AMP=300; const double XMIN_EDEP_AMP=0., XMAX_EDEP_AMP=300;
+const int NBINS_PT=150;       const double XMIN_PT=-5.,      XMAX_PT=10.; // punch throughs
+const int NBINS_TCORR=900;    const double XMIN_TCORR=-150.,  XMAX_TCORR=300.;
 
-const int NBINS_YPOS   = 200;
-const double XMIN_YPOS = -100.0;
-const double XMAX_YPOS = 100.0;
+const int N_PLANES=5, N_PADDLES=11, N_CATS=3, N_SPECS=2;
+const double BG_PERIOD_NS = 4.0; // N: period of the repeating background in ns
+const double hodo_radii[N_PLANES]={615.,655.6,523.,563.6,615.}; // cm
+const char* const plane_names[N_PLANES]={"000","001","100","101","200"};
+const std::array<char,N_SPECS> specs={'P','H'};
 
-const int NBINS_HITTIME   = 200;
-const double XMIN_HITTIME = 1550.0;
-const double XMAX_HITTIME = 2050.0;
-
-const int NBINS_EDEP   = 200;
-const double XMIN_EDEP = 0.0;
-const double XMAX_EDEP = 20.0;
-
-const int NBINS_EDEP_AMP   = 200;
-const double XMIN_EDEP_AMP = 0.0;
-const double XMAX_EDEP_AMP = 1.0;
-
-const int NBINS_PUNCHTHROUGH   = 150;
-const double XMIN_PUNCHTHROUGH = -5.0;
-const double XMAX_PUNCHTHROUGH = 10.0;
-
-const int N_PLANES  = 5;  // planes 0..4
-const int N_PADDLES = 11; // paddles 0..10
-
-// Default I/O paths (overridable via function arguments)
-const char *DEFAULT_DAT_FILE = "files/all_C3_test.dat";
-const char spec_prefix       = 'P'; // Spectrometer to replay
-const char *DEFAULT_OUT_FILE = Form("files/root_fast/timing_C3_22745-23590_%c.root", spec_prefix);
+const char *DEFAULT_DAT_FILE="files/all_C3_runlist_22745-23590.dat";
+const char *DEFAULT_OUT_FILE="files/root_fast/timing_C3_22745-23590_PH.root";
 
 // =====================================================================
 
-struct VarConfig {
-  std::string name;
-  int nbins;
-  double xmin;
-  double xmax;
-};
+struct VarConfig { std::string name; int nbins; double xmin,xmax; };
 
-void lad_tof_fast(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file = DEFAULT_OUT_FILE) {
+// Background-subtract a corrected-tof histogram.
+// The first 10*period_ns of the x-range is used as background.
+// That window is folded modulo period_ns (10 full periods), averaged,
+// then the repeating pattern is subtracted from the entire x-range.
+TH1D* bgsub_tof(const TH1D* h, double period_ns = BG_PERIOD_NS) {
+  TH1D* out = (TH1D*)h->Clone((std::string(h->GetName())+"_bgsub").c_str());
+  out->SetTitle((std::string(h->GetTitle())+" (bgsub)").c_str());
 
-  // Force batch mode: no graphical windows pop up while drawing canvases.
+  int    nbins   = h->GetNbinsX();
+  double xmin    = h->GetXaxis()->GetXmin();
+  double bw      = h->GetBinWidth(1);
+  double bg_end  = xmin + 10. * period_ns;
+  double n_per   = 10.;
+
+  int N_tmpl = std::max(1, (int)std::round(period_ns / bw));
+  std::vector<double> tmpl(N_tmpl, 0.);
+
+  for (int b = 1; b <= nbins; ++b) {
+    double x = h->GetBinCenter(b);
+    if (x >= bg_end) continue;
+    double rel = x - xmin;
+    int ti = (int)(std::fmod(rel, period_ns) / bw);
+    if (ti < 0 || ti >= N_tmpl) continue;
+    tmpl[ti] += h->GetBinContent(b);
+  }
+  for (int i = 0; i < N_tmpl; ++i) tmpl[i] /= n_per;
+
+  for (int b = 1; b <= nbins; ++b) {
+    double x   = h->GetBinCenter(b);
+    double rel = x - xmin;
+    int ti = ((int)(std::fmod(rel, period_ns) / bw) % N_tmpl + N_tmpl) % N_tmpl;
+    out->SetBinContent(b, h->GetBinContent(b) - tmpl[ti]);
+  }
+  return out;
+}
+
+// chi_mode: 0=all hits, 1=chiSquare<100, 2=chiSquare>=100
+struct Cat { std::string suf, dir; int chi_mode; };
+
+void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DEFAULT_OUT_FILE) {
+
   gROOT->SetBatch(kTRUE);
-
-  // Detach all TH1s from gDirectory so the output file only stores the
-  // canvases we explicitly Write(); DrawCopy() embeds clones in the pads.
   TH1::AddDirectory(kFALSE);
   ROOT::EnableImplicitMT();
 
-  // ----------------------------------------------------------------
-  // 1. Build TChain from the .dat list
-  // ----------------------------------------------------------------
+  // ---------------------------------------------------------------
+  // 1. TChain
+  // ---------------------------------------------------------------
   TChain chain("T");
-  std::ifstream fin(dat_file);
-  if (!fin.is_open()) {
-    std::cerr << "[lad_tof_fast] ERROR: cannot open dat file '" << dat_file << "'\n";
-    return;
+  {
+    std::ifstream fin(dat_file);
+    if (!fin.is_open()) { std::cerr<<"cannot open "<<dat_file<<"\n"; return; }
+    std::string ln;
+    while (std::getline(fin,ln)) {
+      size_t a=ln.find_first_not_of(" \t\r\n");
+      if (a==std::string::npos) continue;
+      std::string p=ln.substr(a,ln.find_last_not_of(" \t\r\n")-a+1);
+      if (p.empty()||p[0]=='#') continue;
+      chain.Add(p.c_str());
+    }
   }
-  int nfiles = 0;
-  std::string line;
-  while (std::getline(fin, line)) {
-    // trim leading/trailing whitespace
-    const size_t a = line.find_first_not_of(" \t\r\n");
-    if (a == std::string::npos)
-      continue;
-    const size_t b   = line.find_last_not_of(" \t\r\n");
-    std::string path = line.substr(a, b - a + 1);
-    if (path.empty() || path[0] == '#')
-      continue;
-    chain.Add(path.c_str());
-    ++nfiles;
-  }
-  std::cout << "[lad_tof_fast] Chained " << nfiles << " ROOT files. Total entries: " << chain.GetEntries() << "\n";
-  if (chain.GetEntries() == 0) {
-    std::cerr << "[lad_tof_fast] WARNING: chain is empty; aborting.\n";
-    return;
-  }
+  std::cout<<"[lad_tof_fast] entries: "<<chain.GetEntries()<<"\n";
+  if (!chain.GetEntries()) { std::cerr<<"empty chain\n"; return; }
 
-  // ----------------------------------------------------------------
-  // 2. Build RDataFrame and alias the dotted branch names so we can
-  //    refer to them in JIT-compiled Define() expressions.
-  // ----------------------------------------------------------------
+  // ---------------------------------------------------------------
+  // 2. RDataFrame + aliases
+  // ---------------------------------------------------------------
   ROOT::RDataFrame rdf(chain);
-  ROOT::RDF::RNode df = rdf;
+  ROOT::RDF::RNode df=rdf;
 
-  // ---- Progress reporting --------------------------------------------
-  // Modern ROOT: built-in, IMT-safe, prints a live percentage + ETA bar.
-  // Older ROOT: hook OnPartialResult onto a Count() result. Count is
-  // lazy, runs in the same event loop as the histograms, and its
-  // partial result is the thread-safe running total of processed
-  // entries -- exactly what we want for a progress fraction.
-  ROOT::RDF::RResultPtr<ULong64_t> progress_count; // kept alive for the loop
+  ROOT::RDF::RResultPtr<ULong64_t> progress_count;
 #ifdef LAD_HAS_RDF_PROGRESSBAR
   ROOT::RDF::Experimental::AddProgressBar(df);
 #else
   {
-    const ULong64_t total        = chain.GetEntries();
-    const ULong64_t report_every = std::max<ULong64_t>(1ULL, total / 200ULL); // ~0.5% steps
-    auto t0        = std::make_shared<std::chrono::steady_clock::time_point>(std::chrono::steady_clock::now());
-    progress_count = df.Count();
-    // OnPartialResult is invoked thread-safely (never concurrently
-    // with itself) every `report_every` processed entries.
-    progress_count.OnPartialResult(report_every, [total, t0](ULong64_t partial) {
-      const double frac = total ? double(partial) / double(total) : 0.0;
-      const auto now    = std::chrono::steady_clock::now();
-      const double secs = std::chrono::duration<double>(now - *t0).count();
-      const double eta  = (frac > 0.0) ? secs * (1.0 / frac - 1.0) : 0.0;
-      std::fprintf(stderr,
-                   "\r[lad_tof_fast] %6.2f%%  (%llu / %llu)  "
-                   "elapsed %5.1fs  eta %5.1fs   ",
-                   100.0 * frac, (unsigned long long)partial, (unsigned long long)total, secs, eta);
+    const ULong64_t total=chain.GetEntries();
+    const ULong64_t step=std::max<ULong64_t>(1ULL,total/200ULL);
+    auto t0=std::make_shared<std::chrono::steady_clock::time_point>(std::chrono::steady_clock::now());
+    progress_count=df.Count();
+    progress_count.OnPartialResult(step,[total,t0](ULong64_t n){
+      double f=total?double(n)/double(total):0.;
+      double s=std::chrono::duration<double>(std::chrono::steady_clock::now()-*t0).count();
+      std::fprintf(stderr,"\r[lad_tof_fast] %6.2f%% (%llu/%llu) %.1fs eta %.1fs   ",
+                   100.*f,(unsigned long long)n,(unsigned long long)total,s,f>0?s*(1./f-1.):0.);
       std::fflush(stderr);
     });
   }
 #endif
-  // --------------------------------------------------------------------
 
-  for (const std::string &side : {std::string("0"), std::string("1")}) {
-    df = df.Alias("plane_" + side, "P.ladhod.goodhit_plane_" + side);
-    df = df.Alias("paddle_" + side, "P.ladhod.goodhit_paddle_" + side);
-    df = df.Alias("hittime_" + side, "P.ladhod.goodhit_hittime_" + side);
-    df = df.Alias("edep_" + side, "P.ladhod.goodhit_hitedep_" + side);
-    df = df.Alias("edep_amp_" + side, "P.ladhod.goodhit_hitedep_amp_" + side);
-    df = df.Alias("tof_" + side, "P.ladhod.goodhit_hit_tof_" + side);
-    df = df.Alias("ypos_" + side, "P.ladhod.goodhit_hit_ypos_" + side);
+  for (int is=0;is<N_SPECS;++is) {
+    const std::string sp(1,specs[is]);
+    const std::string pfx=sp+".ladhod.goodhit_";
+    for (const std::string &s:{"0","1"}) {
+      df=df.Alias(sp+"_plane_"   +s, pfx+"plane_"      +s);
+      df=df.Alias(sp+"_paddle_"  +s, pfx+"paddle_"     +s);
+      df=df.Alias(sp+"_hittime_" +s, pfx+"hittime_"    +s);
+      df=df.Alias(sp+"_edep_"    +s, pfx+"hitedep_"    +s);
+      df=df.Alias(sp+"_edep_amp_"+s, pfx+"hitedep_amp_"+s);
+      df=df.Alias(sp+"_tof_"     +s, pfx+"hit_tof_"    +s);
+      df=df.Alias(sp+"_ypos_"    +s, pfx+"hit_ypos_"   +s);
+    }
+    df=df.Alias(sp+"_chiSquare", pfx+"chiSquare");
   }
 
-  // Histogram sets to produce
-  const std::vector<VarConfig> vars = {
-      {"tof", NBINS_TOF, XMIN_TOF, XMAX_TOF},
-      {"ypos", NBINS_YPOS, XMIN_YPOS, XMAX_YPOS},
-      {"hittime", NBINS_HITTIME, XMIN_HITTIME, XMAX_HITTIME},
-      {"edep", NBINS_EDEP, XMIN_EDEP, XMAX_EDEP},
-      {"edep_amp", NBINS_EDEP_AMP, XMIN_EDEP_AMP, XMAX_EDEP_AMP},
+  // ---------------------------------------------------------------
+  // 3. Categories and variables
+  // ---------------------------------------------------------------
+  const std::array<Cat,N_CATS> cats={{
+    {"",     "all_hits",  0},
+    {"_has", "has_track", 1},
+    {"_no",  "no_track",  2},
+  }};
+
+  const std::vector<VarConfig> vars={
+    {"tof",     NBINS_TOF,     XMIN_TOF,     XMAX_TOF},
+    {"ypos",    NBINS_YPOS,    XMIN_YPOS,    XMAX_YPOS},
+    {"hittime", NBINS_HITTIME, XMIN_HITTIME, XMAX_HITTIME},
+    {"edep",    NBINS_EDEP,    XMIN_EDEP,    XMAX_EDEP},
+    {"edep_amp",NBINS_EDEP_AMP,XMIN_EDEP_AMP,XMAX_EDEP_AMP},
   };
 
-  // ----------------------------------------------------------------
-  // 3. Define masked array columns:
-  //      <var>_p<plane>_b<paddle>  -- one paddle inside one plane
-  //      <var>_p<plane>_sum        -- all paddles of one plane
-  //      <var>_total               -- concat of _0 and _1 (all planes)
-  //
-  // Planes 0,2,4 live in the "_0" arrays, planes 1,3 in the "_1" arrays.
-  // ----------------------------------------------------------------
-  for (int plane = 0; plane < N_PLANES; ++plane) {
-    const std::string side       = (plane % 2 == 0) ? "0" : "1";
-    const std::string plane_col  = "plane_" + side;
-    const std::string paddle_col = "paddle_" + side;
+  auto chi_jit=[](const std::string &sp, int mode)->std::string{
+    if (mode==1) return " && "+sp+"_chiSquare < 100";
+    if (mode==2) return " && "+sp+"_chiSquare >= 100";
+    return "";
+  };
 
-    // per-paddle masks
-    for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-      const std::string mask =
-          "(" + plane_col + "==" + std::to_string(plane) + " && " + paddle_col + "==" + std::to_string(paddle) + ")";
-      for (const auto &v : vars) {
-        const std::string col = v.name + "_p" + std::to_string(plane) + "_b" + std::to_string(paddle);
-        const std::string src = v.name + "_" + side;
-        df                    = df.Define(col, src + "[" + mask + "]");
+  // ---------------------------------------------------------------
+  // 4. Column definitions — loop over both spectrometers
+  // ---------------------------------------------------------------
+  for (int is=0;is<N_SPECS;++is) {
+    const std::string sp(1,specs[is]);
+
+    // ------------------------------------------------------------------
+    // 4a. Per-plane/paddle var columns
+    // ------------------------------------------------------------------
+    for (const auto &cat:cats) {
+      const std::string &cs=cat.suf;
+      const std::string cx=chi_jit(sp,cat.chi_mode);
+      for (int plane=0;plane<N_PLANES;++plane) {
+        const std::string side=(plane%2==0)?"0":"1";
+        const std::string pc=sp+"_plane_"+side, pdc=sp+"_paddle_"+side;
+        for (int paddle=0;paddle<N_PADDLES;++paddle) {
+          const std::string mask="("+pc+"=="+std::to_string(plane)+" && "+pdc+"=="+std::to_string(paddle)+cx+")";
+          for (const auto &v:vars)
+            df=df.Define(sp+"_"+v.name+"_p"+std::to_string(plane)+"_b"+std::to_string(paddle)+cs,
+                         sp+"_"+v.name+"_"+side+"["+mask+"]");
+        }
+        // Per-plane sum: exclude paddles 1 and 9 for planes 100 (idx 2) and 101 (idx 3)
+        const std::string excl=(plane==2||plane==3)?" && "+pdc+"!=1 && "+pdc+"!=9":"";
+        const std::string mpl="("+pc+"=="+std::to_string(plane)+cx+excl+")";
+        for (const auto &v:vars)
+          df=df.Define(sp+"_"+v.name+"_p"+std::to_string(plane)+"_sum"+cs,
+                       sp+"_"+v.name+"_"+side+"["+mpl+"]");
+      }
+      // _total: concatenate per-plane sums so paddle exclusions are inherited
+      for (const auto &v:vars) {
+        std::vector<std::string> srcs;
+        for(int p=0;p<N_PLANES;++p)
+          srcs.push_back(sp+"_"+v.name+"_p"+std::to_string(p)+"_sum"+cs);
+        df=df.Define(sp+"_"+v.name+"_total"+cs,
+          [](const ROOT::VecOps::RVec<double>&v0,const ROOT::VecOps::RVec<double>&v1,
+             const ROOT::VecOps::RVec<double>&v2,const ROOT::VecOps::RVec<double>&v3,
+             const ROOT::VecOps::RVec<double>&v4){
+            auto r=ROOT::VecOps::Concatenate(v0,v1); r=ROOT::VecOps::Concatenate(r,v2);
+            r=ROOT::VecOps::Concatenate(r,v3); return ROOT::VecOps::Concatenate(r,v4);
+          },srcs);
       }
     }
 
-    // per-plane (all paddles) mask
-    const std::string mask_plane = plane_col + "==" + std::to_string(plane);
-    for (const auto &v : vars) {
-      const std::string col = v.name + "_p" + std::to_string(plane) + "_sum";
-      const std::string src = v.name + "_" + side;
-      df                    = df.Define(col, src + "[" + mask_plane + "]");
+    // ------------------------------------------------------------------
+    // 4b. edep vs punchthrough — split into 000-001 (_01) and 100-101 (_23) pairs
+    // ------------------------------------------------------------------
+    for (const auto &cat:cats) {
+      const int cm=cat.chi_mode; const std::string &cs=cat.suf;
+      for (int paddle=0;paddle<N_PADDLES;++paddle) {
+        const double pv=paddle; const std::string ps=std::to_string(paddle);
+        using RVd=ROOT::VecOps::RVec<double>;
+        using Rpd=ROOT::VecOps::RVec<std::pair<double,double>>;
+
+        // --- 000-001 pair (pl0==0, pl1==1) ---
+        df=df.Define(sp+"_edep_0_vs_pt_01_b"+ps+cs,
+          [pv,cm](RVd pl0,RVd pd0,RVd e0,RVd pl1,RVd pd1,RVd h0,RVd h1,RVd chi){
+            Rpd r;
+            for(size_t i=0;i<pl0.size();++i){
+              if(pl0[i]!=0.||pd0[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=1.||pd1[j]!=pv) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                r.push_back({e0[i],h1[j]-h0[i]});
+              }
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+
+        df=df.Define(sp+"_edep_1_vs_pt_01_b"+ps+cs,
+          [pv,cm](RVd pl0,RVd pd0,RVd pl1,RVd pd1,RVd e1,RVd h0,RVd h1,RVd chi){
+            Rpd r;
+            for(size_t i=0;i<pl0.size();++i){
+              if(pl0[i]!=0.||pd0[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=1.||pd1[j]!=pv) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                r.push_back({e1[j],h1[j]-h0[i]});
+              }
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+
+        df=df.Define(sp+"_edepamp_0_vs_pt_01_b"+ps+cs,
+          [pv,cm](RVd pl0,RVd pd0,RVd ea,RVd pl1,RVd pd1,RVd h0,RVd h1,RVd chi){
+            Rpd r;
+            for(size_t i=0;i<pl0.size();++i){
+              if(pl0[i]!=0.||pd0[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=1.||pd1[j]!=pv) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                r.push_back({ea[i],h1[j]-h0[i]});
+              }
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_amp_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+
+        df=df.Define(sp+"_edepamp_1_vs_pt_01_b"+ps+cs,
+          [pv,cm](RVd pl0,RVd pd0,RVd pl1,RVd pd1,RVd ea,RVd h0,RVd h1,RVd chi){
+            Rpd r;
+            for(size_t i=0;i<pl0.size();++i){
+              if(pl0[i]!=0.||pd0[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=1.||pd1[j]!=pv) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                r.push_back({ea[j],h1[j]-h0[i]});
+              }
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_amp_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+
+        // --- 100-101 pair (pl0==2, pl1==3) ---
+        df=df.Define(sp+"_edep_0_vs_pt_23_b"+ps+cs,
+          [pv,cm](RVd pl0,RVd pd0,RVd e0,RVd pl1,RVd pd1,RVd h0,RVd h1,RVd chi){
+            Rpd r;
+            for(size_t i=0;i<pl0.size();++i){
+              if(pl0[i]!=2.||pd0[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=3.||pd1[j]!=pv) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                r.push_back({e0[i],h1[j]-h0[i]});
+              }
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+
+        df=df.Define(sp+"_edep_1_vs_pt_23_b"+ps+cs,
+          [pv,cm](RVd pl0,RVd pd0,RVd pl1,RVd pd1,RVd e1,RVd h0,RVd h1,RVd chi){
+            Rpd r;
+            for(size_t i=0;i<pl0.size();++i){
+              if(pl0[i]!=2.||pd0[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=3.||pd1[j]!=pv) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                r.push_back({e1[j],h1[j]-h0[i]});
+              }
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+
+        df=df.Define(sp+"_edepamp_0_vs_pt_23_b"+ps+cs,
+          [pv,cm](RVd pl0,RVd pd0,RVd ea,RVd pl1,RVd pd1,RVd h0,RVd h1,RVd chi){
+            Rpd r;
+            for(size_t i=0;i<pl0.size();++i){
+              if(pl0[i]!=2.||pd0[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=3.||pd1[j]!=pv) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                r.push_back({ea[i],h1[j]-h0[i]});
+              }
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_amp_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+
+        df=df.Define(sp+"_edepamp_1_vs_pt_23_b"+ps+cs,
+          [pv,cm](RVd pl0,RVd pd0,RVd pl1,RVd pd1,RVd ea,RVd h0,RVd h1,RVd chi){
+            Rpd r;
+            for(size_t i=0;i<pl0.size();++i){
+              if(pl0[i]!=2.||pd0[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=3.||pd1[j]!=pv) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                r.push_back({ea[j],h1[j]-h0[i]});
+              }
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_amp_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+
+        // Split pair columns into x(PT) and y(edep) for Histo2D
+        auto sx=[](const Rpd&v){RVd x; for(auto&p:v)x.push_back(p.second); return x;};
+        auto sy=[](const Rpd&v){RVd y; for(auto&p:v)y.push_back(p.first);  return y;};
+        for(const std::string &pp:{"_01","_23"}){
+          df=df.Define(sp+"_pt_0_b"     +pp+"_"+ps+cs,sx,{sp+"_edep_0_vs_pt"   +pp+"_b"+ps+cs});
+          df=df.Define(sp+"_edep_0_b_pt"+pp+"_"+ps+cs,sy,{sp+"_edep_0_vs_pt"   +pp+"_b"+ps+cs});
+          df=df.Define(sp+"_pt_1_b"     +pp+"_"+ps+cs,sx,{sp+"_edep_1_vs_pt"   +pp+"_b"+ps+cs});
+          df=df.Define(sp+"_edep_1_b_pt"+pp+"_"+ps+cs,sy,{sp+"_edep_1_vs_pt"   +pp+"_b"+ps+cs});
+          df=df.Define(sp+"_ptamp_0_b"      +pp+"_"+ps+cs,sx,{sp+"_edepamp_0_vs_pt"+pp+"_b"+ps+cs});
+          df=df.Define(sp+"_edepamp_0_b_pt" +pp+"_"+ps+cs,sy,{sp+"_edepamp_0_vs_pt"+pp+"_b"+ps+cs});
+          df=df.Define(sp+"_ptamp_1_b"      +pp+"_"+ps+cs,sx,{sp+"_edepamp_1_vs_pt"+pp+"_b"+ps+cs});
+          df=df.Define(sp+"_edepamp_1_b_pt" +pp+"_"+ps+cs,sy,{sp+"_edepamp_1_vs_pt"+pp+"_b"+ps+cs});
+        }
+      }
     }
-  }
 
-  // grand total -- concat of _0 and _1 arrays for each variable
-  for (const auto &v : vars) {
-    const std::string col = v.name + "_total";
-    df                    = df.Define(col, "ROOT::VecOps::Concatenate(" + v.name + "_0, " + v.name + "_1)");
-  }
+    // ------------------------------------------------------------------
+    // 4c. tof vs edep 2D pair columns (per-paddle, no plane filtering needed)
+    // ------------------------------------------------------------------
+    for (const auto &cat:cats) {
+      const int cm=cat.chi_mode; const std::string &cs=cat.suf;
+      for (int paddle=0;paddle<N_PADDLES;++paddle) {
+        const double pv=paddle; const std::string ps=std::to_string(paddle);
 
-  // ----------------------------------------------------------------
-  // 3b. Define punch-through time columns (hittime_1 - hittime_0)
-  // ----------------------------------------------------------------
-  // For each paddle, compute time difference between layer 1 and layer 0 hits
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    const std::string pt_col = "punchthrough_b" + std::to_string(paddle);
-    const double pad_val     = paddle; // Capture specific value as double
+        auto mk_te=[&](const std::string &col,const std::string &pd_src,
+                        const std::string &tof_src,const std::string &edep_src){
+          df=df.Define(col,[pv,cm](ROOT::VecOps::RVec<double> pd,ROOT::VecOps::RVec<double> t,
+                                    ROOT::VecOps::RVec<double> e, ROOT::VecOps::RVec<double> chi){
+            ROOT::VecOps::RVec<std::pair<double,double>> r;
+            for(size_t i=0;i<pd.size();++i){
+              if(pd[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              r.push_back({t[i],e[i]});
+            } return r;
+          },{pd_src,tof_src,edep_src,sp+"_chiSquare"});
+        };
+        mk_te(sp+"_tof_edep_0_b"   +ps+cs,sp+"_paddle_0",sp+"_tof_0",sp+"_edep_0");
+        mk_te(sp+"_tof_edep_1_b"   +ps+cs,sp+"_paddle_1",sp+"_tof_1",sp+"_edep_1");
+        mk_te(sp+"_tof_edepamp_0_b"+ps+cs,sp+"_paddle_0",sp+"_tof_0",sp+"_edep_amp_0");
+        mk_te(sp+"_tof_edepamp_1_b"+ps+cs,sp+"_paddle_1",sp+"_tof_1",sp+"_edep_amp_1");
 
-    df = df.Define(pt_col,
-                   [pad_val](ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> ht0,
-                             ROOT::VecOps::RVec<double> pd1, ROOT::VecOps::RVec<double> ht1) {
-                     ROOT::VecOps::RVec<double> result;
-                     // Get all hittimes for this paddle in layer 0
-                     auto ht0_at_paddle = ht0[pd0 == pad_val];
-                     // Get all hittimes for this paddle in layer 1
-                     auto ht1_at_paddle = ht1[pd1 == pad_val];
-                     // Calculate difference for each pair
-                     for (size_t i = 0; i < ht0_at_paddle.size(); ++i) {
-                       for (size_t j = 0; j < ht1_at_paddle.size(); ++j) {
-                         result.push_back(ht1_at_paddle[j] - ht0_at_paddle[i]);
-                       }
-                     }
-                     return result;
-                   },
-                   {"paddle_0", "hittime_0", "paddle_1", "hittime_1"});
-  }
+        auto sx=[](const ROOT::VecOps::RVec<std::pair<double,double>>&v){
+          ROOT::VecOps::RVec<double> x; for(auto&p:v)x.push_back(p.first);  return x;};
+        auto sy=[](const ROOT::VecOps::RVec<std::pair<double,double>>&v){
+          ROOT::VecOps::RVec<double> y; for(auto&p:v)y.push_back(p.second); return y;};
+        df=df.Define(sp+"_tof_0_b"        +ps+cs,sx,{sp+"_tof_edep_0_b"   +ps+cs});
+        df=df.Define(sp+"_edep_0_b_tof"   +ps+cs,sy,{sp+"_tof_edep_0_b"   +ps+cs});
+        df=df.Define(sp+"_tof_1_b"        +ps+cs,sx,{sp+"_tof_edep_1_b"   +ps+cs});
+        df=df.Define(sp+"_edep_1_b_tof"   +ps+cs,sy,{sp+"_tof_edep_1_b"   +ps+cs});
+        df=df.Define(sp+"_tofamp_0_b"     +ps+cs,sx,{sp+"_tof_edepamp_0_b"+ps+cs});
+        df=df.Define(sp+"_edepamp_0_b_tof"+ps+cs,sy,{sp+"_tof_edepamp_0_b"+ps+cs});
+        df=df.Define(sp+"_tofamp_1_b"     +ps+cs,sx,{sp+"_tof_edepamp_1_b"+ps+cs});
+        df=df.Define(sp+"_edepamp_1_b_tof"+ps+cs,sy,{sp+"_tof_edepamp_1_b"+ps+cs});
+      }
+    }
 
-  // Define edep vs punchthrough columns (edep values paired with punchthrough time)
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    const double pad_val = paddle;
+    // ------------------------------------------------------------------
+    // 4d. Punchthrough per-paddle and sums
+    // ------------------------------------------------------------------
+    for (const auto &cat:cats) {
+      const int cm=cat.chi_mode; const std::string &cs=cat.suf;
+      for (int paddle=0;paddle<N_PADDLES;++paddle) {
+        const double pv=paddle; const std::string ps=std::to_string(paddle);
 
-    // For side 0: edep values paired with punchthrough
-    const std::string edep0_pt_col = "edep_0_vs_pt_b" + std::to_string(paddle);
-    df                             = df.Define(edep0_pt_col,
-                                               [pad_val](ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> edep0,
-                             ROOT::VecOps::RVec<double> pd1, ROOT::VecOps::RVec<double> ht0,
-                             ROOT::VecOps::RVec<double> ht1) {
-                     ROOT::VecOps::RVec<std::pair<double, double>> result;
-                     auto edep0_at_paddle = edep0[pd0 == pad_val];
-                     auto ht0_at_paddle   = ht0[pd0 == pad_val];
-                     auto ht1_at_paddle   = ht1[pd1 == pad_val];
-                     for (size_t i = 0; i < edep0_at_paddle.size(); ++i) {
-                       for (size_t j = 0; j < ht1_at_paddle.size(); ++j) {
-                         result.push_back({edep0_at_paddle[i], ht1_at_paddle[j] - ht0_at_paddle[i]});
-                       }
-                     }
-                     return result;
-                   },
-                                               {"paddle_0", "edep_0", "paddle_1", "hittime_0", "hittime_1"});
+        df=df.Define(sp+"_punchthrough_01_b"+ps+cs,
+          [pv,cm](ROOT::VecOps::RVec<double> pl0,ROOT::VecOps::RVec<double> pd0,ROOT::VecOps::RVec<double> h0,
+                  ROOT::VecOps::RVec<double> pl1,ROOT::VecOps::RVec<double> pd1,ROOT::VecOps::RVec<double> h1,
+                  ROOT::VecOps::RVec<double> chi){
+            ROOT::VecOps::RVec<double> r;
+            for(size_t i=0;i<pl0.size();++i){
+              if(pl0[i]!=0.||pd0[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=1.||pd1[j]!=pv) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                r.push_back(h1[j]-h0[i]);
+              }
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",sp+"_chiSquare"});
 
-    // For side 1: edep values paired with punchthrough
-    const std::string edep1_pt_col = "edep_1_vs_pt_b" + std::to_string(paddle);
-    df                             = df.Define(edep1_pt_col,
-                                               [pad_val](ROOT::VecOps::RVec<double> pd1, ROOT::VecOps::RVec<double> edep1,
-                             ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> ht0,
-                             ROOT::VecOps::RVec<double> ht1) {
-                     ROOT::VecOps::RVec<std::pair<double, double>> result;
-                     auto edep1_at_paddle = edep1[pd1 == pad_val];
-                     auto ht0_at_paddle   = ht0[pd0 == pad_val];
-                     auto ht1_at_paddle   = ht1[pd1 == pad_val];
-                     for (size_t j = 0; j < edep1_at_paddle.size(); ++j) {
-                       for (size_t i = 0; i < ht0_at_paddle.size(); ++i) {
-                         result.push_back({edep1_at_paddle[j], ht1_at_paddle[j] - ht0_at_paddle[i]});
-                       }
-                     }
-                     return result;
-                   },
-                                               {"paddle_1", "edep_1", "paddle_0", "hittime_0", "hittime_1"});
+        df=df.Define(sp+"_punchthrough_23_b"+ps+cs,
+          [pv,cm](ROOT::VecOps::RVec<double> pl0,ROOT::VecOps::RVec<double> pd0,ROOT::VecOps::RVec<double> h0,
+                  ROOT::VecOps::RVec<double> pl1,ROOT::VecOps::RVec<double> pd1,ROOT::VecOps::RVec<double> h1,
+                  ROOT::VecOps::RVec<double> chi){
+            ROOT::VecOps::RVec<double> r;
+            for(size_t i=0;i<pl0.size();++i){
+              if(pl0[i]!=2.||pd0[i]!=pv) continue;
+              if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=3.||pd1[j]!=pv) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                r.push_back(h1[j]-h0[i]);
+              }
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",sp+"_chiSquare"});
+      }
 
-    // For edep_amp: side 0
-    const std::string edepamp0_pt_col = "edepamp_0_vs_pt_b" + std::to_string(paddle);
-    df                                = df.Define(edepamp0_pt_col,
-                                                  [pad_val](ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> edepamp0,
-                             ROOT::VecOps::RVec<double> pd1, ROOT::VecOps::RVec<double> ht0,
-                             ROOT::VecOps::RVec<double> ht1) {
-                     ROOT::VecOps::RVec<std::pair<double, double>> result;
-                     auto edepamp0_at_paddle = edepamp0[pd0 == pad_val];
-                     auto ht0_at_paddle      = ht0[pd0 == pad_val];
-                     auto ht1_at_paddle      = ht1[pd1 == pad_val];
-                     for (size_t i = 0; i < edepamp0_at_paddle.size(); ++i) {
-                       for (size_t j = 0; j < ht1_at_paddle.size(); ++j) {
-                         result.push_back({edepamp0_at_paddle[i], ht1_at_paddle[j] - ht0_at_paddle[i]});
-                       }
-                     }
-                     return result;
-                   },
-                                                  {"paddle_0", "edep_amp_0", "paddle_1", "hittime_0", "hittime_1"});
-
-    // For edep_amp: side 1
-    const std::string edepamp1_pt_col = "edepamp_1_vs_pt_b" + std::to_string(paddle);
-    df                                = df.Define(edepamp1_pt_col,
-                                                  [pad_val](ROOT::VecOps::RVec<double> pd1, ROOT::VecOps::RVec<double> edepamp1,
-                             ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> ht0,
-                             ROOT::VecOps::RVec<double> ht1) {
-                     ROOT::VecOps::RVec<std::pair<double, double>> result;
-                     auto edepamp1_at_paddle = edepamp1[pd1 == pad_val];
-                     auto ht0_at_paddle      = ht0[pd0 == pad_val];
-                     auto ht1_at_paddle      = ht1[pd1 == pad_val];
-                     for (size_t j = 0; j < edepamp1_at_paddle.size(); ++j) {
-                       for (size_t i = 0; i < ht0_at_paddle.size(); ++i) {
-                         result.push_back({edepamp1_at_paddle[j], ht1_at_paddle[j] - ht0_at_paddle[i]});
-                       }
-                     }
-                     return result;
-                   },
-                                                  {"paddle_1", "edep_amp_1", "paddle_0", "hittime_0", "hittime_1"});
-  }
-
-  // Define tof vs edep columns (edep values paired with tof)
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    const double pad_val = paddle;
-
-    // tof vs edep for side 0
-    const std::string tof_edep0_col = "tof_edep_0_b" + std::to_string(paddle);
-    df                              = df.Define(
-        tof_edep0_col,
-        [pad_val](ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> tof0, ROOT::VecOps::RVec<double> edep0) {
-          ROOT::VecOps::RVec<std::pair<double, double>> result;
-          auto tof0_at_paddle  = tof0[pd0 == pad_val];
-          auto edep0_at_paddle = edep0[pd0 == pad_val];
-          for (size_t i = 0; i < tof0_at_paddle.size(); ++i) {
-            if (i < edep0_at_paddle.size()) {
-              result.push_back({tof0_at_paddle[i], edep0_at_paddle[i]});
+      df=df.Define(sp+"_punchthrough_01_sum"+cs,
+        [cm](ROOT::VecOps::RVec<double> pl0,ROOT::VecOps::RVec<double> pd0,ROOT::VecOps::RVec<double> h0,
+             ROOT::VecOps::RVec<double> pl1,ROOT::VecOps::RVec<double> pd1,ROOT::VecOps::RVec<double> h1,
+             ROOT::VecOps::RVec<double> chi){
+          ROOT::VecOps::RVec<double> r;
+          for(size_t i=0;i<pl0.size();++i){
+            if(pl0[i]!=0.) continue;
+            if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+            for(size_t j=0;j<pl1.size();++j){
+              if(pl1[j]!=1.||pd1[j]!=pd0[i]) continue;
+              if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+              r.push_back(h1[j]-h0[i]);
             }
-          }
-          return result;
-        },
-        {"paddle_0", "tof_0", "edep_0"});
+          } return r;
+        },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",sp+"_chiSquare"});
 
-    // tof vs edep for side 1
-    const std::string tof_edep1_col = "tof_edep_1_b" + std::to_string(paddle);
-    df                              = df.Define(
-        tof_edep1_col,
-        [pad_val](ROOT::VecOps::RVec<double> pd1, ROOT::VecOps::RVec<double> tof1, ROOT::VecOps::RVec<double> edep1) {
-          ROOT::VecOps::RVec<std::pair<double, double>> result;
-          auto tof1_at_paddle  = tof1[pd1 == pad_val];
-          auto edep1_at_paddle = edep1[pd1 == pad_val];
-          for (size_t i = 0; i < tof1_at_paddle.size(); ++i) {
-            if (i < edep1_at_paddle.size()) {
-              result.push_back({tof1_at_paddle[i], edep1_at_paddle[i]});
+      // 23 sum: exclude paddles 1 and 9 (planes 100/101)
+      df=df.Define(sp+"_punchthrough_23_sum"+cs,
+        [cm](ROOT::VecOps::RVec<double> pl0,ROOT::VecOps::RVec<double> pd0,ROOT::VecOps::RVec<double> h0,
+             ROOT::VecOps::RVec<double> pl1,ROOT::VecOps::RVec<double> pd1,ROOT::VecOps::RVec<double> h1,
+             ROOT::VecOps::RVec<double> chi){
+          ROOT::VecOps::RVec<double> r;
+          for(size_t i=0;i<pl0.size();++i){
+            if(pl0[i]!=2.) continue;
+            if(pd0[i]==1.||pd0[i]==9.) continue; // exclude bad paddles
+            if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+            for(size_t j=0;j<pl1.size();++j){
+              if(pl1[j]!=3.||pd1[j]!=pd0[i]) continue;
+              if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+              r.push_back(h1[j]-h0[i]);
             }
+          } return r;
+        },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",sp+"_chiSquare"});
+
+      df=df.Define(sp+"_punchthrough_sum_total"+cs,
+        [](const ROOT::VecOps::RVec<double>&a,const ROOT::VecOps::RVec<double>&b){
+          return ROOT::VecOps::Concatenate(a,b);
+        },{sp+"_punchthrough_01_sum"+cs,sp+"_punchthrough_23_sum"+cs});
+    }
+
+    // ------------------------------------------------------------------
+    // 4e. Front veto per-paddle and sums
+    // ------------------------------------------------------------------
+    for (const auto &cat:cats) {
+      const int cm=cat.chi_mode; const std::string &cs=cat.suf;
+      for (int paddle=0;paddle<N_PADDLES;++paddle) {
+        const double pav=static_cast<double>(paddle); const std::string ps=std::to_string(paddle);
+
+        auto mk_fv=[&](const std::string &col,double bk,double fr,const std::string &val_src){
+          df=df.Define(col,
+            [bk,fr,pav,cm](ROOT::VecOps::RVec<double> pl0,ROOT::VecOps::RVec<double> pd0,
+                            ROOT::VecOps::RVec<double> pl1,ROOT::VecOps::RVec<double> pd1,
+                            ROOT::VecOps::RVec<double> val,ROOT::VecOps::RVec<double> chi){
+              ROOT::VecOps::RVec<double> r;
+              for(size_t j=0;j<pl1.size();++j){
+                if(pl1[j]!=bk||pd1[j]!=pav) continue;
+                if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+                bool veto=false;
+                for(size_t i=0;i<pl0.size();++i){
+                  if(pl0[i]!=fr||pd0[i]!=pav) continue;
+                  if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+                  veto=true; break;
+                }
+                if(!veto) r.push_back(val[j]);
+              } return r;
+            },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",val_src,sp+"_chiSquare"});
+        };
+        mk_fv(sp+"_hittime_fv_01_b"+ps+cs,1.,0.,sp+"_hittime_1");
+        mk_fv(sp+"_tof_fv_01_b"    +ps+cs,1.,0.,sp+"_tof_1");
+        mk_fv(sp+"_hittime_fv_23_b"+ps+cs,3.,2.,sp+"_hittime_1");
+        mk_fv(sp+"_tof_fv_23_b"    +ps+cs,3.,2.,sp+"_tof_1");
+      }
+
+      // Sum lambdas: for 23 pair also exclude paddles 1 and 9
+      auto mk_fv_sum=[&](const std::string &col,double bk,double fr,
+                          const std::string &val_src,bool excl_pad){
+        df=df.Define(col,
+          [bk,fr,cm,excl_pad](ROOT::VecOps::RVec<double> pl0,ROOT::VecOps::RVec<double> pd0,
+                               ROOT::VecOps::RVec<double> pl1,ROOT::VecOps::RVec<double> pd1,
+                               ROOT::VecOps::RVec<double> val,ROOT::VecOps::RVec<double> chi){
+            ROOT::VecOps::RVec<double> r;
+            for(size_t j=0;j<pl1.size();++j){
+              if(pl1[j]!=bk) continue;
+              if(excl_pad&&(pd1[j]==1.||pd1[j]==9.)) continue;
+              if(cm==1&&chi[j]>=100.) continue; if(cm==2&&chi[j]<100.) continue;
+              double pa=pd1[j]; bool veto=false;
+              for(size_t i=0;i<pl0.size();++i){
+                if(pl0[i]!=fr||pd0[i]!=pa) continue;
+                if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
+                veto=true; break;
+              }
+              if(!veto) r.push_back(val[j]);
+            } return r;
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",val_src,sp+"_chiSquare"});
+      };
+      mk_fv_sum(sp+"_hittime_fv_01_sum"+cs,1.,0.,sp+"_hittime_1",false);
+      mk_fv_sum(sp+"_tof_fv_01_sum"    +cs,1.,0.,sp+"_tof_1",    false);
+      mk_fv_sum(sp+"_hittime_fv_23_sum"+cs,3.,2.,sp+"_hittime_1", true);
+      mk_fv_sum(sp+"_tof_fv_23_sum"    +cs,3.,2.,sp+"_tof_1",     true);
+
+      df=df.Define(sp+"_hittime_fv_total"+cs,
+        [](const ROOT::VecOps::RVec<double>&a,const ROOT::VecOps::RVec<double>&b){
+          return ROOT::VecOps::Concatenate(a,b);
+        },{sp+"_hittime_fv_01_sum"+cs,sp+"_hittime_fv_23_sum"+cs});
+      df=df.Define(sp+"_tof_fv_total"+cs,
+        [](const ROOT::VecOps::RVec<double>&a,const ROOT::VecOps::RVec<double>&b){
+          return ROOT::VecOps::Concatenate(a,b);
+        },{sp+"_tof_fv_01_sum"+cs,sp+"_tof_fv_23_sum"+cs});
+    }
+
+    // ------------------------------------------------------------------
+    // 4f. Path-length corrected tof (per-paddle and per-plane sum)
+    //     Sum for planes 2/3 excludes paddles 1 and 9
+    // ------------------------------------------------------------------
+    for (const auto &cat:cats) {
+      const std::string &cs=cat.suf;
+      const int cm2=cat.chi_mode;
+      for (int plane=0;plane<N_PLANES;++plane) {
+        const std::string side=(plane%2==0)?"0":"1";
+        const double pl_val=static_cast<double>(plane);
+        const double R=hodo_radii[plane];
+        const bool excl_pad=(plane==2||plane==3);
+        for (int paddle=0;paddle<N_PADDLES;++paddle) {
+          const double dx=22.*(static_cast<double>(paddle)-6.);
+          const std::string tc=sp+"_tof_p" +std::to_string(plane)+"_b"+std::to_string(paddle)+cs;
+          const std::string yc=sp+"_ypos_p"+std::to_string(plane)+"_b"+std::to_string(paddle)+cs;
+          df=df.Define(sp+"_tof_corrected_p"+std::to_string(plane)+"_b"+std::to_string(paddle)+cs,
+            [dx,R](const ROOT::VecOps::RVec<double>&tv,const ROOT::VecOps::RVec<double>&yv){
+              ROOT::VecOps::RVec<double> r; r.reserve(tv.size());
+              for(size_t i=0;i<tv.size();++i){double p2d=std::sqrt(yv[i]*yv[i]+dx*dx);
+                r.push_back(tv[i]-std::sqrt(p2d*p2d+R*R)/100./0.3);} return r;
+            },{tc,yc});
+        }
+        df=df.Define(sp+"_tof_corrected_p"+std::to_string(plane)+"_sum"+cs,
+          [pl_val,R,cm2,excl_pad](const ROOT::VecOps::RVec<double>&plv,const ROOT::VecOps::RVec<double>&pdv,
+                                   const ROOT::VecOps::RVec<double>&yv, const ROOT::VecOps::RVec<double>&tv,
+                                   const ROOT::VecOps::RVec<double>&chi){
+            ROOT::VecOps::RVec<double> r;
+            for(size_t i=0;i<plv.size();++i){
+              if(plv[i]!=pl_val) continue;
+              if(excl_pad&&(pdv[i]==1.||pdv[i]==9.)) continue;
+              if(cm2==1&&chi[i]>=100.) continue; if(cm2==2&&chi[i]<100.) continue;
+              double dx=22.*(pdv[i]-6.); double p2d=std::sqrt(yv[i]*yv[i]+dx*dx);
+              r.push_back(tv[i]-std::sqrt(p2d*p2d+R*R)/100./0.3);} return r;
+          },{sp+"_plane_"+side,sp+"_paddle_"+side,sp+"_ypos_"+side,sp+"_tof_"+side,sp+"_chiSquare"});
+      }
+
+      auto cat5=[&](const std::string &pfx)->std::vector<std::string>{
+        std::vector<std::string> v;
+        for(int p=0;p<N_PLANES;++p) v.push_back(pfx+std::to_string(p)+"_sum"+cs);
+        return v;};
+      df=df.Define(sp+"_tof_corrected_total"+cs,
+        [](const ROOT::VecOps::RVec<double>&v0,const ROOT::VecOps::RVec<double>&v1,
+           const ROOT::VecOps::RVec<double>&v2,const ROOT::VecOps::RVec<double>&v3,
+           const ROOT::VecOps::RVec<double>&v4){
+          auto r=ROOT::VecOps::Concatenate(v0,v1); r=ROOT::VecOps::Concatenate(r,v2);
+          r=ROOT::VecOps::Concatenate(r,v3); return ROOT::VecOps::Concatenate(r,v4);
+        },cat5(sp+"_tof_corrected_p"));
+    }
+  } // end spec loop (column definitions)
+
+  // ===============================================================
+  // 5. Histogram booking
+  // ===============================================================
+  using RH1=ROOT::RDF::RResultPtr<::TH1D>;
+  using RH2=ROOT::RDF::RResultPtr<::TH2D>;
+
+  std::array<std::array<std::map<std::string,std::vector<std::vector<RH1>>>,N_CATS>,N_SPECS> hpad;
+  std::array<std::array<std::map<std::string,std::vector<RH1>>,N_CATS>,N_SPECS>              hsum;
+  std::array<std::array<std::map<std::string,RH1>,N_CATS>,N_SPECS>                           htot;
+  std::array<std::array<std::vector<RH1>,N_CATS>,N_SPECS> h_pt_01_pad,h_pt_23_pad;
+  std::array<std::array<RH1,N_CATS>,N_SPECS>              h_pt_01_sum,h_pt_23_sum,h_pt_tot;
+  std::array<std::array<std::vector<RH1>,N_CATS>,N_SPECS> h_ht_fv_01,h_ht_fv_23,h_tof_fv_01,h_tof_fv_23;
+  std::array<std::array<RH1,N_CATS>,N_SPECS> h_ht_fv_01_sum,h_ht_fv_23_sum,h_ht_fv_tot;
+  std::array<std::array<RH1,N_CATS>,N_SPECS> h_tof_fv_01_sum,h_tof_fv_23_sum,h_tof_fv_tot;
+  std::array<std::array<std::vector<std::vector<RH1>>,N_CATS>,N_SPECS> h_tof_corr;
+  std::array<std::array<std::vector<RH1>,N_CATS>,N_SPECS>              h_tof_corr_sum;
+  std::array<std::array<RH1,N_CATS>,N_SPECS>                           h_tof_corr_tot;
+  // edep vs PT split by plane pair
+  std::array<std::array<std::map<std::string,std::vector<RH2>>,N_CATS>,N_SPECS> h_edep_vs_pt_01,h_edep_vs_pt_23;
+  std::array<std::array<std::map<std::string,std::vector<RH2>>,N_CATS>,N_SPECS> h_tof_vs_edep;
+
+  for (int is=0;is<N_SPECS;++is) {
+    const std::string sp(1,specs[is]);
+    for (int ic=0;ic<N_CATS;++ic) {
+      const std::string &cs=cats[ic].suf;
+      auto bk1=[&](const std::string &col,const std::string &ttl,int nb,double lo,double hi)->RH1{
+        return df.Histo1D({col.c_str(),ttl.c_str(),nb,lo,hi},col);};
+
+      // Vars
+      for(const auto&v:vars){
+        hpad[is][ic][v.name].resize(N_PLANES);
+        hsum[is][ic][v.name].resize(N_PLANES);
+        for(int p=0;p<N_PLANES;++p) hpad[is][ic][v.name][p].resize(N_PADDLES);
+      }
+      for(const auto&v:vars){
+        for(int pl=0;pl<N_PLANES;++pl){
+          for(int pa=0;pa<N_PADDLES;++pa){
+            const std::string c=sp+"_"+v.name+"_p"+std::to_string(pl)+"_b"+std::to_string(pa)+cs;
+            const std::string t=sp+" "+v.name+" pl"+plane_names[pl]+" pd"+std::to_string(pa)+";"+v.name+";Counts";
+            hpad[is][ic][v.name][pl][pa]=bk1(c,t,v.nbins,v.xmin,v.xmax);
           }
-          return result;
-        },
-        {"paddle_1", "tof_1", "edep_1"});
-
-    // tof vs edep_amp for side 0
-    const std::string tof_edepamp0_col = "tof_edepamp_0_b" + std::to_string(paddle);
-    df                                 = df.Define(tof_edepamp0_col,
-                                                   [pad_val](ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> tof0,
-                             ROOT::VecOps::RVec<double> edepamp0) {
-                     ROOT::VecOps::RVec<std::pair<double, double>> result;
-                     auto tof0_at_paddle     = tof0[pd0 == pad_val];
-                     auto edepamp0_at_paddle = edepamp0[pd0 == pad_val];
-                     for (size_t i = 0; i < tof0_at_paddle.size(); ++i) {
-                       if (i < edepamp0_at_paddle.size()) {
-                         result.push_back({tof0_at_paddle[i], edepamp0_at_paddle[i]});
-                       }
-                     }
-                     return result;
-                   },
-                                                   {"paddle_0", "tof_0", "edep_amp_0"});
-
-    // tof vs edep_amp for side 1
-    const std::string tof_edepamp1_col = "tof_edepamp_1_b" + std::to_string(paddle);
-    df                                 = df.Define(tof_edepamp1_col,
-                                                   [pad_val](ROOT::VecOps::RVec<double> pd1, ROOT::VecOps::RVec<double> tof1,
-                             ROOT::VecOps::RVec<double> edepamp1) {
-                     ROOT::VecOps::RVec<std::pair<double, double>> result;
-                     auto tof1_at_paddle     = tof1[pd1 == pad_val];
-                     auto edepamp1_at_paddle = edepamp1[pd1 == pad_val];
-                     for (size_t i = 0; i < tof1_at_paddle.size(); ++i) {
-                       if (i < edepamp1_at_paddle.size()) {
-                         result.push_back({tof1_at_paddle[i], edepamp1_at_paddle[i]});
-                       }
-                     }
-                     return result;
-                   },
-                                                   {"paddle_1", "tof_1", "edep_amp_1"});
-  }
-
-  // Define x,y coordinate columns for 2D histograms from pair columns
-  // edep vs punchthrough
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    const std::string pair_col0 = "edep_0_vs_pt_b" + std::to_string(paddle);
-    const std::string x_col0    = "pt_0_b" + std::to_string(paddle);
-    const std::string y_col0    = "edep_0_b_pt" + std::to_string(paddle);
-    df                          = df.Define(x_col0,
-                                            [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> x;
-                     for (const auto &p : v)
-                       x.push_back(p.second);
-                     return x;
-                   },
-                                            {pair_col0});
-    df                          = df.Define(y_col0,
-                                            [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> y;
-                     for (const auto &p : v)
-                       y.push_back(p.first);
-                     return y;
-                   },
-                                            {pair_col0});
-
-    const std::string pair_col1 = "edep_1_vs_pt_b" + std::to_string(paddle);
-    const std::string x_col1    = "pt_1_b" + std::to_string(paddle);
-    const std::string y_col1    = "edep_1_b_pt" + std::to_string(paddle);
-    df                          = df.Define(x_col1,
-                                            [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> x;
-                     for (const auto &p : v)
-                       x.push_back(p.second);
-                     return x;
-                   },
-                                            {pair_col1});
-    df                          = df.Define(y_col1,
-                                            [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> y;
-                     for (const auto &p : v)
-                       y.push_back(p.first);
-                     return y;
-                   },
-                                            {pair_col1});
-
-    const std::string pair_colamp0 = "edepamp_0_vs_pt_b" + std::to_string(paddle);
-    const std::string x_colamp0    = "ptamp_0_b" + std::to_string(paddle);
-    const std::string y_colamp0    = "edepamp_0_b_pt" + std::to_string(paddle);
-    df                             = df.Define(x_colamp0,
-                                               [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> x;
-                     for (const auto &p : v)
-                       x.push_back(p.second);
-                     return x;
-                   },
-                                               {pair_colamp0});
-    df                             = df.Define(y_colamp0,
-                                               [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> y;
-                     for (const auto &p : v)
-                       y.push_back(p.first);
-                     return y;
-                   },
-                                               {pair_colamp0});
-
-    const std::string pair_colamp1 = "edepamp_1_vs_pt_b" + std::to_string(paddle);
-    const std::string x_colamp1    = "ptamp_1_b" + std::to_string(paddle);
-    const std::string y_colamp1    = "edepamp_1_b_pt" + std::to_string(paddle);
-    df                             = df.Define(x_colamp1,
-                                               [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> x;
-                     for (const auto &p : v)
-                       x.push_back(p.second);
-                     return x;
-                   },
-                                               {pair_colamp1});
-    df                             = df.Define(y_colamp1,
-                                               [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> y;
-                     for (const auto &p : v)
-                       y.push_back(p.first);
-                     return y;
-                   },
-                                               {pair_colamp1});
-  }
-
-  // tof vs edep
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    const std::string pair_col0 = "tof_edep_0_b" + std::to_string(paddle);
-    const std::string x_col0    = "tof_0_b" + std::to_string(paddle);
-    const std::string y_col0    = "edep_0_b_tof" + std::to_string(paddle);
-    df                          = df.Define(x_col0,
-                                            [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> x;
-                     for (const auto &p : v)
-                       x.push_back(p.first);
-                     return x;
-                   },
-                                            {pair_col0});
-    df                          = df.Define(y_col0,
-                                            [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> y;
-                     for (const auto &p : v)
-                       y.push_back(p.second);
-                     return y;
-                   },
-                                            {pair_col0});
-
-    const std::string pair_col1 = "tof_edep_1_b" + std::to_string(paddle);
-    const std::string x_col1    = "tof_1_b" + std::to_string(paddle);
-    const std::string y_col1    = "edep_1_b_tof" + std::to_string(paddle);
-    df                          = df.Define(x_col1,
-                                            [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> x;
-                     for (const auto &p : v)
-                       x.push_back(p.first);
-                     return x;
-                   },
-                                            {pair_col1});
-    df                          = df.Define(y_col1,
-                                            [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> y;
-                     for (const auto &p : v)
-                       y.push_back(p.second);
-                     return y;
-                   },
-                                            {pair_col1});
-
-    const std::string pair_colamp0 = "tof_edepamp_0_b" + std::to_string(paddle);
-    const std::string x_colamp0    = "tofamp_0_b" + std::to_string(paddle);
-    const std::string y_colamp0    = "edepamp_0_b_tof" + std::to_string(paddle);
-    df                             = df.Define(x_colamp0,
-                                               [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> x;
-                     for (const auto &p : v)
-                       x.push_back(p.first);
-                     return x;
-                   },
-                                               {pair_colamp0});
-    df                             = df.Define(y_colamp0,
-                                               [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> y;
-                     for (const auto &p : v)
-                       y.push_back(p.second);
-                     return y;
-                   },
-                                               {pair_colamp0});
-
-    const std::string pair_colamp1 = "tof_edepamp_1_b" + std::to_string(paddle);
-    const std::string x_colamp1    = "tofamp_1_b" + std::to_string(paddle);
-    const std::string y_colamp1    = "edepamp_1_b_tof" + std::to_string(paddle);
-    df                             = df.Define(x_colamp1,
-                                               [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> x;
-                     for (const auto &p : v)
-                       x.push_back(p.first);
-                     return x;
-                   },
-                                               {pair_colamp1});
-    df                             = df.Define(y_colamp1,
-                                               [](const ROOT::VecOps::RVec<std::pair<double, double>> &v) {
-                     ROOT::VecOps::RVec<double> y;
-                     for (const auto &p : v)
-                       y.push_back(p.second);
-                     return y;
-                   },
-                                               {pair_colamp1});
-  }
-
-  // ----------------------------------------------------------------
-  // 3c. Define additional columns for new plots
-  // ----------------------------------------------------------------
-
-  // Punch-through for specific plane pairs: 0-1 and 2-3
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    const double pad_val = paddle;
-    
-    // Punchthrough between planes 0 and 1
-    const std::string pt_01_col = "punchthrough_01_b" + std::to_string(paddle);
-    df = df.Define(pt_01_col, [pad_val](ROOT::VecOps::RVec<double> plane0, ROOT::VecOps::RVec<double> paddle0,
-                                        ROOT::VecOps::RVec<double> ht0,
-                                        ROOT::VecOps::RVec<double> plane1, ROOT::VecOps::RVec<double> paddle1,
-                                        ROOT::VecOps::RVec<double> ht1) {
-      ROOT::VecOps::RVec<double> result;
-      // Get hits in plane 0 at this paddle
-      for (size_t i = 0; i < plane0.size(); ++i) {
-        if (plane0[i] == 0.0 && paddle0[i] == pad_val) {
-          // Get hits in plane 1 at this paddle
-          for (size_t j = 0; j < plane1.size(); ++j) {
-            if (plane1[j] == 1.0 && paddle1[j] == pad_val) {
-              result.push_back(ht1[j] - ht0[i]);
-            }
-          }
+          const std::string sc=sp+"_"+v.name+"_p"+std::to_string(pl)+"_sum"+cs;
+          const std::string st=sp+" "+v.name+" plane "+plane_names[pl]+";"+v.name+";Counts";
+          hsum[is][ic][v.name][pl]=bk1(sc,st,v.nbins,v.xmin,v.xmax);
         }
+        const std::string tc=sp+"_"+v.name+"_total"+cs;
+        htot[is][ic][v.name]=bk1(tc,sp+" "+v.name+" all planes;"+v.name+";Counts",v.nbins,v.xmin,v.xmax);
       }
-      return result;
-    }, {"plane_0", "paddle_0", "hittime_0", "plane_1", "paddle_1", "hittime_1"});
-    
-    // Punchthrough between planes 2 and 3
-    const std::string pt_23_col = "punchthrough_23_b" + std::to_string(paddle);
-    df = df.Define(pt_23_col, [pad_val](ROOT::VecOps::RVec<double> plane0, ROOT::VecOps::RVec<double> paddle0,
-                                        ROOT::VecOps::RVec<double> ht0,
-                                        ROOT::VecOps::RVec<double> plane1, ROOT::VecOps::RVec<double> paddle1,
-                                        ROOT::VecOps::RVec<double> ht1) {
-      ROOT::VecOps::RVec<double> result;
-      // Get hits in plane 2 at this paddle (plane 2 is in the _0 array)
-      for (size_t i = 0; i < plane0.size(); ++i) {
-        if (plane0[i] == 2.0 && paddle0[i] == pad_val) {
-          // Get hits in plane 3 at this paddle (plane 3 is in the _1 array)
-          for (size_t j = 0; j < plane1.size(); ++j) {
-            if (plane1[j] == 3.0 && paddle1[j] == pad_val) {
-              result.push_back(ht1[j] - ht0[i]);
-            }
-          }
+
+      // Punchthrough
+      h_pt_01_pad[is][ic].resize(N_PADDLES); h_pt_23_pad[is][ic].resize(N_PADDLES);
+      for(int pa=0;pa<N_PADDLES;++pa){
+        const std::string ps=std::to_string(pa);
+        h_pt_01_pad[is][ic][pa]=bk1(sp+"_punchthrough_01_b"+ps+cs,
+          sp+" PT 000-001 pd"+ps+";PT(ns);Counts",NBINS_PT,XMIN_PT,XMAX_PT);
+        h_pt_23_pad[is][ic][pa]=bk1(sp+"_punchthrough_23_b"+ps+cs,
+          sp+" PT 100-101 pd"+ps+";PT(ns);Counts",NBINS_PT,XMIN_PT,XMAX_PT);
+      }
+      h_pt_01_sum[is][ic]=bk1(sp+"_punchthrough_01_sum"+cs,sp+" PT 000-001 sum;PT(ns);Counts",NBINS_PT,XMIN_PT,XMAX_PT);
+      h_pt_23_sum[is][ic]=bk1(sp+"_punchthrough_23_sum"+cs,sp+" PT 100-101 sum;PT(ns);Counts",NBINS_PT,XMIN_PT,XMAX_PT);
+      h_pt_tot[is][ic]   =bk1(sp+"_punchthrough_sum_total"+cs,sp+" PT total;PT(ns);Counts",    NBINS_PT,XMIN_PT,XMAX_PT);
+
+      // Front veto
+      h_ht_fv_01[is][ic].resize(N_PADDLES);  h_ht_fv_23[is][ic].resize(N_PADDLES);
+      h_tof_fv_01[is][ic].resize(N_PADDLES); h_tof_fv_23[is][ic].resize(N_PADDLES);
+      for(int pa=0;pa<N_PADDLES;++pa){
+        const std::string ps=std::to_string(pa);
+        h_ht_fv_01[is][ic][pa] =bk1(sp+"_hittime_fv_01_b"+ps+cs,sp+" ht fv 001 pd"+ps+";ht(ns);Counts", NBINS_HITTIME,XMIN_HITTIME,XMAX_HITTIME);
+        h_tof_fv_01[is][ic][pa]=bk1(sp+"_tof_fv_01_b"+ps+cs,    sp+" tof fv 001 pd"+ps+";tof(ns);Counts",NBINS_TOF,XMIN_TOF,XMAX_TOF);
+        h_ht_fv_23[is][ic][pa] =bk1(sp+"_hittime_fv_23_b"+ps+cs,sp+" ht fv 101 pd"+ps+";ht(ns);Counts", NBINS_HITTIME,XMIN_HITTIME,XMAX_HITTIME);
+        h_tof_fv_23[is][ic][pa]=bk1(sp+"_tof_fv_23_b"+ps+cs,    sp+" tof fv 101 pd"+ps+";tof(ns);Counts",NBINS_TOF,XMIN_TOF,XMAX_TOF);
+      }
+      h_ht_fv_01_sum[is][ic] =bk1(sp+"_hittime_fv_01_sum"+cs,sp+" ht fv 001 sum;ht(ns);Counts",  NBINS_HITTIME,XMIN_HITTIME,XMAX_HITTIME);
+      h_tof_fv_01_sum[is][ic]=bk1(sp+"_tof_fv_01_sum"    +cs,sp+" tof fv 001 sum;tof(ns);Counts",NBINS_TOF,XMIN_TOF,XMAX_TOF);
+      h_ht_fv_23_sum[is][ic] =bk1(sp+"_hittime_fv_23_sum"+cs,sp+" ht fv 101 sum;ht(ns);Counts",  NBINS_HITTIME,XMIN_HITTIME,XMAX_HITTIME);
+      h_tof_fv_23_sum[is][ic]=bk1(sp+"_tof_fv_23_sum"    +cs,sp+" tof fv 101 sum;tof(ns);Counts",NBINS_TOF,XMIN_TOF,XMAX_TOF);
+      h_ht_fv_tot[is][ic]    =bk1(sp+"_hittime_fv_total"  +cs,sp+" ht fv total;ht(ns);Counts",   NBINS_HITTIME,XMIN_HITTIME,XMAX_HITTIME);
+      h_tof_fv_tot[is][ic]   =bk1(sp+"_tof_fv_total"      +cs,sp+" tof fv total;tof(ns);Counts", NBINS_TOF,XMIN_TOF,XMAX_TOF);
+
+      // Corrected tof
+      h_tof_corr[is][ic].assign(N_PLANES,std::vector<RH1>(N_PADDLES));
+      h_tof_corr_sum[is][ic].resize(N_PLANES);
+      for(int pl=0;pl<N_PLANES;++pl){
+        for(int pa=0;pa<N_PADDLES;++pa){
+          const std::string ctc=sp+"_tof_corrected_p"+std::to_string(pl)+"_b"+std::to_string(pa)+cs;
+          h_tof_corr[is][ic][pl][pa]=bk1(ctc,
+            sp+" tof corr "+plane_names[pl]+" pd"+std::to_string(pa)+";tof-L/c(ns);Counts",
+            NBINS_TCORR,XMIN_TCORR,XMAX_TCORR);
         }
+        const std::string cs2=sp+"_tof_corrected_p"+std::to_string(pl)+"_sum"+cs;
+        h_tof_corr_sum[is][ic][pl]=bk1(cs2,
+          sp+" tof corr "+plane_names[pl]+" sum;tof-L/c(ns);Counts",NBINS_TCORR,XMIN_TCORR,XMAX_TCORR);
       }
-      return result;
-    }, {"plane_0", "paddle_0", "hittime_0", "plane_1", "paddle_1", "hittime_1"});
-  }
+      h_tof_corr_tot[is][ic]=bk1(sp+"_tof_corrected_total"+cs,
+        sp+" tof corr total;tof-L/c(ns);Counts",NBINS_TCORR,XMIN_TCORR,XMAX_TCORR);
 
-  // Front veto: hittime and tof for back (_1) with no hits in front (_0)
-  df = df.Define("hittime_1_front_veto", 
-                 [](ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> pd1, 
-                    ROOT::VecOps::RVec<double> ht1) {
-    ROOT::VecOps::RVec<double> result;
-    // For each hit in back, check if there's a hit in front at same paddle
-    for (size_t j = 0; j < pd1.size(); ++j) {
-      bool has_front_hit = false;
-      for (size_t i = 0; i < pd0.size(); ++i) {
-        if (pd0[i] == pd1[j]) {
-          has_front_hit = true;
-          break;
-        }
+      // 2D edep vs PT — separate for 000-001 and 100-101
+      for(const std::string&k:{"edep_0","edep_1","edep_amp_0","edep_amp_1"}){
+        h_edep_vs_pt_01[is][ic][k].resize(N_PADDLES);
+        h_edep_vs_pt_23[is][ic][k].resize(N_PADDLES);
       }
-      // Only include if no front hit at this paddle
-      if (!has_front_hit) {
-        result.push_back(ht1[j]);
+      for(int pa=0;pa<N_PADDLES;++pa){
+        const std::string ps=std::to_string(pa);
+        auto bk2pt=[&](std::map<std::string,std::vector<RH2>> &hmap,
+                        const std::string &pp, const std::string&key,
+                        const std::string&xc,const std::string&yc,
+                        int nx,double lx,double hx,int ny,double ly,double hy){
+          const std::string hn=sp+"_h_"+key+"_vs_pt"+pp+"_"+ps+cs;
+          const std::string pairname=(pp=="_01")?"000-001":"100-101";
+          hmap[key][pa]=df.Histo2D(
+            {hn.c_str(),(sp+" "+key+" vs PT "+pairname+" pd"+ps+";PT(ns);"+key).c_str(),nx,lx,hx,ny,ly,hy},xc,yc);};
+        bk2pt(h_edep_vs_pt_01[is][ic],"_01","edep_0",    sp+"_pt_0_b_01_"   +ps+cs,sp+"_edep_0_b_pt_01_"   +ps+cs,NBINS_PT,XMIN_PT,XMAX_PT,NBINS_EDEP,    XMIN_EDEP,    XMAX_EDEP);
+        bk2pt(h_edep_vs_pt_01[is][ic],"_01","edep_1",    sp+"_pt_1_b_01_"   +ps+cs,sp+"_edep_1_b_pt_01_"   +ps+cs,NBINS_PT,XMIN_PT,XMAX_PT,NBINS_EDEP,    XMIN_EDEP,    XMAX_EDEP);
+        bk2pt(h_edep_vs_pt_01[is][ic],"_01","edep_amp_0",sp+"_ptamp_0_b_01_"+ps+cs,sp+"_edepamp_0_b_pt_01_"+ps+cs,NBINS_PT,XMIN_PT,XMAX_PT,NBINS_EDEP_AMP,XMIN_EDEP_AMP,XMAX_EDEP_AMP);
+        bk2pt(h_edep_vs_pt_01[is][ic],"_01","edep_amp_1",sp+"_ptamp_1_b_01_"+ps+cs,sp+"_edepamp_1_b_pt_01_"+ps+cs,NBINS_PT,XMIN_PT,XMAX_PT,NBINS_EDEP_AMP,XMIN_EDEP_AMP,XMAX_EDEP_AMP);
+        bk2pt(h_edep_vs_pt_23[is][ic],"_23","edep_0",    sp+"_pt_0_b_23_"   +ps+cs,sp+"_edep_0_b_pt_23_"   +ps+cs,NBINS_PT,XMIN_PT,XMAX_PT,NBINS_EDEP,    XMIN_EDEP,    XMAX_EDEP);
+        bk2pt(h_edep_vs_pt_23[is][ic],"_23","edep_1",    sp+"_pt_1_b_23_"   +ps+cs,sp+"_edep_1_b_pt_23_"   +ps+cs,NBINS_PT,XMIN_PT,XMAX_PT,NBINS_EDEP,    XMIN_EDEP,    XMAX_EDEP);
+        bk2pt(h_edep_vs_pt_23[is][ic],"_23","edep_amp_0",sp+"_ptamp_0_b_23_"+ps+cs,sp+"_edepamp_0_b_pt_23_"+ps+cs,NBINS_PT,XMIN_PT,XMAX_PT,NBINS_EDEP_AMP,XMIN_EDEP_AMP,XMAX_EDEP_AMP);
+        bk2pt(h_edep_vs_pt_23[is][ic],"_23","edep_amp_1",sp+"_ptamp_1_b_23_"+ps+cs,sp+"_edepamp_1_b_pt_23_"+ps+cs,NBINS_PT,XMIN_PT,XMAX_PT,NBINS_EDEP_AMP,XMIN_EDEP_AMP,XMAX_EDEP_AMP);
       }
-    }
-    return result;
-  }, {"paddle_0", "paddle_1", "hittime_1"});
 
-  df = df.Define("tof_1_front_veto", 
-                 [](ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> pd1, 
-                    ROOT::VecOps::RVec<double> tof1) {
-    ROOT::VecOps::RVec<double> result;
-    for (size_t j = 0; j < pd1.size(); ++j) {
-      bool has_front_hit = false;
-      for (size_t i = 0; i < pd0.size(); ++i) {
-        if (pd0[i] == pd1[j]) {
-          has_front_hit = true;
-          break;
-        }
-      }
-      if (!has_front_hit) {
-        result.push_back(tof1[j]);
-      }
-    }
-    return result;
-  }, {"paddle_0", "paddle_1", "tof_1"});
-
-  // Photon path length corrected columns (subtract 55.52563)
-  const double path_corr = 55.52563;
-  
-  df = df.Define("tof_0_corrected", 
-                 [path_corr](ROOT::VecOps::RVec<double> tof0) {
-    ROOT::VecOps::RVec<double> result;
-    for (const auto& v : tof0) result.push_back(v - path_corr);
-    return result;
-  }, {"tof_0"});
-
-  df = df.Define("tof_1_corrected", 
-                 [path_corr](ROOT::VecOps::RVec<double> tof1) {
-    ROOT::VecOps::RVec<double> result;
-    for (const auto& v : tof1) result.push_back(v - path_corr);
-    return result;
-  }, {"tof_1"});
-
-  df = df.Define("hittime_0_corrected", 
-                 [path_corr](ROOT::VecOps::RVec<double> ht0) {
-    ROOT::VecOps::RVec<double> result;
-    for (const auto& v : ht0) result.push_back(v - path_corr);
-    return result;
-  }, {"hittime_0"});
-
-  df = df.Define("hittime_1_corrected", 
-                 [path_corr](ROOT::VecOps::RVec<double> ht1) {
-    ROOT::VecOps::RVec<double> result;
-    for (const auto& v : ht1) result.push_back(v - path_corr);
-    return result;
-  }, {"hittime_1"});
-
-  df = df.Define("tof_1_corrected_front_veto", 
-                 [path_corr](ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> pd1, 
-                            ROOT::VecOps::RVec<double> tof1) {
-    ROOT::VecOps::RVec<double> result;
-    for (size_t j = 0; j < pd1.size(); ++j) {
-      bool has_front_hit = false;
-      for (size_t i = 0; i < pd0.size(); ++i) {
-        if (pd0[i] == pd1[j]) {
-          has_front_hit = true;
-          break;
-        }
-      }
-      if (!has_front_hit) {
-        result.push_back(tof1[j] - path_corr);
+      // 2D tof vs edep
+      for(const std::string&k:{"edep_0","edep_1","edep_amp_0","edep_amp_1"})
+        h_tof_vs_edep[is][ic][k].resize(N_PADDLES);
+      for(int pa=0;pa<N_PADDLES;++pa){
+        const std::string ps=std::to_string(pa);
+        auto bk2te=[&](const std::string&key,const std::string&xc,const std::string&yc,
+                        int nx,double lx,double hx,int ny,double ly,double hy){
+          const std::string hn=sp+"_h_tof_"+key+"_"+ps+cs;
+          h_tof_vs_edep[is][ic][key][pa]=df.Histo2D(
+            {hn.c_str(),(sp+" tof vs "+key+" pd"+ps+";tof(ns);"+key).c_str(),nx,lx,hx,ny,ly,hy},xc,yc);};
+        bk2te("edep_0",    sp+"_tof_0_b"   +ps+cs,sp+"_edep_0_b_tof"   +ps+cs,NBINS_TOF,XMIN_TOF,XMAX_TOF,NBINS_EDEP,    XMIN_EDEP,    XMAX_EDEP);
+        bk2te("edep_1",    sp+"_tof_1_b"   +ps+cs,sp+"_edep_1_b_tof"   +ps+cs,NBINS_TOF,XMIN_TOF,XMAX_TOF,NBINS_EDEP,    XMIN_EDEP,    XMAX_EDEP);
+        bk2te("edep_amp_0",sp+"_tofamp_0_b"+ps+cs,sp+"_edepamp_0_b_tof"+ps+cs,NBINS_TOF,XMIN_TOF,XMAX_TOF,NBINS_EDEP_AMP,XMIN_EDEP_AMP,XMAX_EDEP_AMP);
+        bk2te("edep_amp_1",sp+"_tofamp_1_b"+ps+cs,sp+"_edepamp_1_b_tof"+ps+cs,NBINS_TOF,XMIN_TOF,XMAX_TOF,NBINS_EDEP_AMP,XMIN_EDEP_AMP,XMAX_EDEP_AMP);
       }
     }
-    return result;
-  }, {"paddle_0", "paddle_1", "tof_1"});
+  } // end spec loop (histogram booking)
 
-  df = df.Define("hittime_1_corrected_front_veto", 
-                 [path_corr](ROOT::VecOps::RVec<double> pd0, ROOT::VecOps::RVec<double> pd1, 
-                            ROOT::VecOps::RVec<double> ht1) {
-    ROOT::VecOps::RVec<double> result;
-    for (size_t j = 0; j < pd1.size(); ++j) {
-      bool has_front_hit = false;
-      for (size_t i = 0; i < pd0.size(); ++i) {
-        if (pd0[i] == pd1[j]) {
-          has_front_hit = true;
-          break;
-        }
-      }
-      if (!has_front_hit) {
-        result.push_back(ht1[j] - path_corr);
-      }
-    }
-    return result;
-  }, {"paddle_0", "paddle_1", "hittime_1"});
-
-  // ----------------------------------------------------------------
-  using RH1 = ROOT::RDF::RResultPtr<::TH1D>;
-  using RH2 = ROOT::RDF::RResultPtr<::TH2D>;
-  std::map<std::string, std::vector<std::vector<RH1>>> hpad; // [var][plane][paddle]
-  std::map<std::string, std::vector<RH1>> hsum;              // [var][plane]
-  std::map<std::string, RH1> htot;                           // [var]
-
-  // Punch-through histograms
-  std::map<std::string, std::vector<RH1>> hpt_pad; // [type][paddle] - type: "punchthrough"
-  std::map<std::string, std::vector<RH1>> hpt_pad_01; // punchthrough for planes 0-1
-  std::map<std::string, std::vector<RH1>> hpt_pad_23; // punchthrough for planes 2-3
-
-  // Front veto histograms
-  std::map<std::string, RH1> h_hittime_1_veto;  // hittime for back with no front hit
-  std::map<std::string, RH1> h_tof_1_veto;      // tof for back with no front hit
-
-  // Corrected tof and hittime histograms
-  std::map<std::string, RH1> h_tof_0_corr;      // corrected tof side 0
-  std::map<std::string, RH1> h_tof_1_corr;      // corrected tof side 1
-  std::map<std::string, RH1> h_hittime_0_corr;  // corrected hittime side 0
-  std::map<std::string, RH1> h_hittime_1_corr;  // corrected hittime side 1
-  std::map<std::string, RH1> h_tof_1_corr_veto; // corrected tof side 1 with front veto
-  std::map<std::string, RH1> h_hittime_1_corr_veto; // corrected hittime side 1 with front veto
-
-  // 2D histograms for edep vs punch-through
-  std::map<std::string, std::vector<RH2>> h_edep_vs_pt; // [side_edeptype][paddle]
-
-  // 2D histograms for tof vs edep
-  std::map<std::string, std::vector<RH2>> h_tof_vs_edep; // [side_edeptype][paddle]
-
-  for (const auto &v : vars) {
-    hpad[v.name].resize(N_PLANES);
-    hsum[v.name].resize(N_PLANES);
-    for (int p = 0; p < N_PLANES; ++p)
-      hpad[v.name][p].resize(N_PADDLES);
-  }
-
-  for (const auto &v : vars) {
-    for (int plane = 0; plane < N_PLANES; ++plane) {
-      for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-        const std::string col = v.name + "_p" + std::to_string(plane) + "_b" + std::to_string(paddle);
-        const std::string title =
-            v.name + " plane " + std::to_string(plane) + " paddle " + std::to_string(paddle) + ";" + v.name + ";Counts";
-        hpad[v.name][plane][paddle] = df.Histo1D({col.c_str(), title.c_str(), v.nbins, v.xmin, v.xmax}, col);
-      }
-      const std::string col   = v.name + "_p" + std::to_string(plane) + "_sum";
-      const std::string title = v.name + " plane " + std::to_string(plane) + " (all paddles);" + v.name + ";Counts";
-      hsum[v.name][plane]     = df.Histo1D({col.c_str(), title.c_str(), v.nbins, v.xmin, v.xmax}, col);
-    }
-    const std::string col   = v.name + "_total";
-    const std::string title = v.name + " all planes;" + v.name + ";Counts";
-    htot[v.name]            = df.Histo1D({col.c_str(), title.c_str(), v.nbins, v.xmin, v.xmax}, col);
-  }
-
-  // Book punch-through histograms
-  hpt_pad["punchthrough"].resize(N_PADDLES);
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    const std::string col   = "punchthrough_b" + std::to_string(paddle);
-    const std::string title = "Punch-through time paddle " + std::to_string(paddle) + ";Punch-through time (ns);Counts";
-    hpt_pad["punchthrough"][paddle] =
-        df.Histo1D({col.c_str(), title.c_str(), NBINS_PUNCHTHROUGH, XMIN_PUNCHTHROUGH, XMAX_PUNCHTHROUGH}, col);
-  }
-
-  // Book punch-through 01 histograms (planes 0-1)
-  hpt_pad_01["punchthrough_01"].resize(N_PADDLES);
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    const std::string col   = "punchthrough_01_b" + std::to_string(paddle);
-    const std::string title = "Punch-through planes 0-1 paddle " + std::to_string(paddle) + ";Punch-through time (ns);Counts";
-    hpt_pad_01["punchthrough_01"][paddle] =
-        df.Histo1D({col.c_str(), title.c_str(), NBINS_PUNCHTHROUGH, XMIN_PUNCHTHROUGH, XMAX_PUNCHTHROUGH}, col);
-  }
-
-  // Book punch-through 23 histograms (planes 2-3)
-  hpt_pad_23["punchthrough_23"].resize(N_PADDLES);
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    const std::string col   = "punchthrough_23_b" + std::to_string(paddle);
-    const std::string title = "Punch-through planes 2-3 paddle " + std::to_string(paddle) + ";Punch-through time (ns);Counts";
-    hpt_pad_23["punchthrough_23"][paddle] =
-        df.Histo1D({col.c_str(), title.c_str(), NBINS_PUNCHTHROUGH, XMIN_PUNCHTHROUGH, XMAX_PUNCHTHROUGH}, col);
-  }
-
-  // Book front veto histograms
-  {
-    const std::string col_ht = "hittime_1_front_veto";
-    const std::string title_ht = "hittime back (no front hit);hittime (ns);Counts";
-    h_hittime_1_veto["hittime_1_veto"] = df.Histo1D({col_ht.c_str(), title_ht.c_str(), 
-                                                      NBINS_HITTIME, XMIN_HITTIME, XMAX_HITTIME}, col_ht);
-
-    const std::string col_tof = "tof_1_front_veto";
-    const std::string title_tof = "tof back (no front hit);tof (ns);Counts";
-    h_tof_1_veto["tof_1_veto"] = df.Histo1D({col_tof.c_str(), title_tof.c_str(), 
-                                             NBINS_TOF, XMIN_TOF, XMAX_TOF}, col_tof);
-  }
-
-  // Book corrected tof and hittime histograms
-  {
-    const std::string col_tof0 = "tof_0_corrected";
-    const std::string title_tof0 = "tof (photon corrected) side 0;tof (ns);Counts";
-    h_tof_0_corr["tof_0_corr"] = df.Histo1D({col_tof0.c_str(), title_tof0.c_str(), 
-                                             NBINS_TOF, XMIN_TOF, XMAX_TOF}, col_tof0);
-
-    const std::string col_tof1 = "tof_1_corrected";
-    const std::string title_tof1 = "tof (photon corrected) side 1;tof (ns);Counts";
-    h_tof_1_corr["tof_1_corr"] = df.Histo1D({col_tof1.c_str(), title_tof1.c_str(), 
-                                             NBINS_TOF, XMIN_TOF, XMAX_TOF}, col_tof1);
-
-    const std::string col_ht0 = "hittime_0_corrected";
-    const std::string title_ht0 = "hittime (photon corrected) side 0;hittime (ns);Counts";
-    h_hittime_0_corr["hittime_0_corr"] = df.Histo1D({col_ht0.c_str(), title_ht0.c_str(), 
-                                                      NBINS_HITTIME, XMIN_HITTIME, XMAX_HITTIME}, col_ht0);
-
-    const std::string col_ht1 = "hittime_1_corrected";
-    const std::string title_ht1 = "hittime (photon corrected) side 1;hittime (ns);Counts";
-    h_hittime_1_corr["hittime_1_corr"] = df.Histo1D({col_ht1.c_str(), title_ht1.c_str(), 
-                                                      NBINS_HITTIME, XMIN_HITTIME, XMAX_HITTIME}, col_ht1);
-
-    const std::string col_tof1_veto = "tof_1_corrected_front_veto";
-    const std::string title_tof1_veto = "tof (photon corrected) back no front;tof (ns);Counts";
-    h_tof_1_corr_veto["tof_1_corr_veto"] = df.Histo1D({col_tof1_veto.c_str(), title_tof1_veto.c_str(), 
-                                                        NBINS_TOF, XMIN_TOF, XMAX_TOF}, col_tof1_veto);
-
-    const std::string col_ht1_veto = "hittime_1_corrected_front_veto";
-    const std::string title_ht1_veto = "hittime (photon corrected) back no front;hittime (ns);Counts";
-    h_hittime_1_corr_veto["hittime_1_corr_veto"] = df.Histo1D({col_ht1_veto.c_str(), title_ht1_veto.c_str(), 
-                                                                 NBINS_HITTIME, XMIN_HITTIME, XMAX_HITTIME}, col_ht1_veto);
-  }
-
-  // Book 2D histograms for edep vs punch-through
-  h_edep_vs_pt["edep_0"].resize(N_PADDLES);
-  h_edep_vs_pt["edep_1"].resize(N_PADDLES);
-  h_edep_vs_pt["edep_amp_0"].resize(N_PADDLES);
-  h_edep_vs_pt["edep_amp_1"].resize(N_PADDLES);
-
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    // edep_0 vs punchthrough
-    {
-      const std::string x_col = "pt_0_b" + std::to_string(paddle);
-      const std::string y_col = "edep_0_b_pt" + std::to_string(paddle);
-      const std::string title =
-          "edep vs punch-through (side 0, paddle " + std::to_string(paddle) + ");Punch-through time (ns);edep (MeV)";
-      h_edep_vs_pt["edep_0"][paddle] =
-          df.Histo2D({("h_edep_0_vs_pt_" + std::to_string(paddle)).c_str(), title.c_str(), NBINS_PUNCHTHROUGH,
-                      XMIN_PUNCHTHROUGH, XMAX_PUNCHTHROUGH, NBINS_EDEP, XMIN_EDEP, XMAX_EDEP},
-                     x_col, y_col);
-    }
-
-    // edep_1 vs punchthrough
-    {
-      const std::string x_col = "pt_1_b" + std::to_string(paddle);
-      const std::string y_col = "edep_1_b_pt" + std::to_string(paddle);
-      const std::string title =
-          "edep vs punch-through (side 1, paddle " + std::to_string(paddle) + ");Punch-through time (ns);edep (MeV)";
-      h_edep_vs_pt["edep_1"][paddle] =
-          df.Histo2D({("h_edep_1_vs_pt_" + std::to_string(paddle)).c_str(), title.c_str(), NBINS_PUNCHTHROUGH,
-                      XMIN_PUNCHTHROUGH, XMAX_PUNCHTHROUGH, NBINS_EDEP, XMIN_EDEP, XMAX_EDEP},
-                     x_col, y_col);
-    }
-
-    // edep_amp_0 vs punchthrough
-    {
-      const std::string x_col = "ptamp_0_b" + std::to_string(paddle);
-      const std::string y_col = "edepamp_0_b_pt" + std::to_string(paddle);
-      const std::string title =
-          "edep_amp vs punch-through (side 0, paddle " + std::to_string(paddle) + ");Punch-through time (ns);edep_amp";
-      h_edep_vs_pt["edep_amp_0"][paddle] =
-          df.Histo2D({("h_edepamp_0_vs_pt_" + std::to_string(paddle)).c_str(), title.c_str(), NBINS_PUNCHTHROUGH,
-                      XMIN_PUNCHTHROUGH, XMAX_PUNCHTHROUGH, NBINS_EDEP_AMP, XMIN_EDEP_AMP, XMAX_EDEP_AMP},
-                     x_col, y_col);
-    }
-
-    // edep_amp_1 vs punchthrough
-    {
-      const std::string x_col = "ptamp_1_b" + std::to_string(paddle);
-      const std::string y_col = "edepamp_1_b_pt" + std::to_string(paddle);
-      const std::string title =
-          "edep_amp vs punch-through (side 1, paddle " + std::to_string(paddle) + ");Punch-through time (ns);edep_amp";
-      h_edep_vs_pt["edep_amp_1"][paddle] =
-          df.Histo2D({("h_edepamp_1_vs_pt_" + std::to_string(paddle)).c_str(), title.c_str(), NBINS_PUNCHTHROUGH,
-                      XMIN_PUNCHTHROUGH, XMAX_PUNCHTHROUGH, NBINS_EDEP_AMP, XMIN_EDEP_AMP, XMAX_EDEP_AMP},
-                     x_col, y_col);
-    }
-  }
-
-  // Book 2D histograms for tof vs edep
-  h_tof_vs_edep["edep_0"].resize(N_PADDLES);
-  h_tof_vs_edep["edep_1"].resize(N_PADDLES);
-  h_tof_vs_edep["edep_amp_0"].resize(N_PADDLES);
-  h_tof_vs_edep["edep_amp_1"].resize(N_PADDLES);
-
-  for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-    // tof vs edep_0
-    {
-      const std::string x_col = "tof_0_b" + std::to_string(paddle);
-      const std::string y_col = "edep_0_b_tof" + std::to_string(paddle);
-      const std::string title = "edep vs tof (side 0, paddle " + std::to_string(paddle) + ");tof (ns);edep (MeV)";
-      h_tof_vs_edep["edep_0"][paddle] = df.Histo2D({("h_tof_edep_0_" + std::to_string(paddle)).c_str(), title.c_str(),
-                                                    NBINS_TOF, XMIN_TOF, XMAX_TOF, NBINS_EDEP, XMIN_EDEP, XMAX_EDEP},
-                                                   x_col, y_col);
-    }
-
-    // tof vs edep_1
-    {
-      const std::string x_col = "tof_1_b" + std::to_string(paddle);
-      const std::string y_col = "edep_1_b_tof" + std::to_string(paddle);
-      const std::string title = "edep vs tof (side 1, paddle " + std::to_string(paddle) + ");tof (ns);edep (MeV)";
-      h_tof_vs_edep["edep_1"][paddle] = df.Histo2D({("h_tof_edep_1_" + std::to_string(paddle)).c_str(), title.c_str(),
-                                                    NBINS_TOF, XMIN_TOF, XMAX_TOF, NBINS_EDEP, XMIN_EDEP, XMAX_EDEP},
-                                                   x_col, y_col);
-    }
-
-    // tof vs edep_amp_0
-    {
-      const std::string x_col = "tofamp_0_b" + std::to_string(paddle);
-      const std::string y_col = "edepamp_0_b_tof" + std::to_string(paddle);
-      const std::string title = "edep_amp vs tof (side 0, paddle " + std::to_string(paddle) + ");tof (ns);edep_amp";
-      h_tof_vs_edep["edep_amp_0"][paddle] =
-          df.Histo2D({("h_tofamp_edep_0_" + std::to_string(paddle)).c_str(), title.c_str(), NBINS_TOF, XMIN_TOF,
-                      XMAX_TOF, NBINS_EDEP_AMP, XMIN_EDEP_AMP, XMAX_EDEP_AMP},
-                     x_col, y_col);
-    }
-
-    // tof vs edep_amp_1
-    {
-      const std::string x_col = "tofamp_1_b" + std::to_string(paddle);
-      const std::string y_col = "edepamp_1_b_tof" + std::to_string(paddle);
-      const std::string title = "edep_amp vs tof (side 1, paddle " + std::to_string(paddle) + ");tof (ns);edep_amp";
-      h_tof_vs_edep["edep_amp_1"][paddle] =
-          df.Histo2D({("h_tofamp_edep_1_" + std::to_string(paddle)).c_str(), title.c_str(), NBINS_TOF, XMIN_TOF,
-                      XMAX_TOF, NBINS_EDEP_AMP, XMIN_EDEP_AMP, XMAX_EDEP_AMP},
-                     x_col, y_col);
-    }
-  }
-
-  // ----------------------------------------------------------------
-  // 5. Trigger the event loop once, then write canvases.
-  // ----------------------------------------------------------------
-  std::cout << "[lad_tof_fast] Running event loop (IMT enabled)...\n";
-  (void)htot[vars.front().name]->GetEntries(); // force materialization
+  // ===============================================================
+  // 6. Trigger event loop
+  // ===============================================================
+  std::cout<<"[lad_tof_fast] Running event loop...\n";
+  (void)htot[0][0][vars.front().name]->GetEntries();
 #ifndef LAD_HAS_RDF_PROGRESSBAR
-  std::fprintf(stderr, "\n"); // close the manual progress line
+  std::fprintf(stderr,"\n");
 #endif
 
-  TFile fout(out_file, "RECREATE");
-  if (fout.IsZombie()) {
-    std::cerr << "[lad_tof_fast] ERROR: cannot open output '" << out_file << "'\n";
-    return;
-  }
+  // ===============================================================
+  // 7. Write output
+  // ===============================================================
+  TFile fout(out_file,"RECREATE");
+  if(fout.IsZombie()){std::cerr<<"cannot open output\n";return;}
 
-  for (const auto &v : vars) {
-    TDirectory *dir = fout.mkdir(v.name.c_str());
-    dir->cd();
+  auto wc=[](TCanvas*c){c->Write();delete c;};
 
-    // 5 per-plane canvases, each with 11 paddle pads
-    for (int plane = 0; plane < N_PLANES; ++plane) {
-      const std::string cname  = "c_" + v.name + "_plane" + std::to_string(plane);
-      const std::string ctitle = v.name + " plane " + std::to_string(plane);
-      TCanvas *c               = new TCanvas(cname.c_str(), ctitle.c_str(), 1600, 1000);
-      c->Divide(4, 3); // 12 pads; we use the first 11
-      for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-        c->cd(paddle + 1);
-        hpad[v.name][plane][paddle]->DrawCopy();
+  for (int is=0;is<N_SPECS;++is) {
+    const std::string sp(1,specs[is]);
+    TDirectory* sdir=fout.mkdir(sp.c_str());
+
+    // Var directories
+    for(const auto&v:vars){
+      TDirectory*vdir=sdir->mkdir(v.name.c_str());
+      for(int ic=0;ic<N_CATS;++ic){
+        TDirectory*cdir=vdir->mkdir(cats[ic].dir.c_str()); cdir->cd();
+        for(int pl=0;pl<N_PLANES;++pl){
+          TCanvas*c=new TCanvas((sp+"_c_"+v.name+"_pl"+plane_names[pl]).c_str(),
+                                (sp+" "+v.name+" plane "+plane_names[pl]).c_str(),1600,1000);
+          c->Divide(4,3);
+          for(int pa=0;pa<N_PADDLES;++pa){c->cd(pa+1);hpad[is][ic][v.name][pl][pa]->DrawCopy();}
+          wc(c);
+        }
+        TCanvas*cs=new TCanvas((sp+"_c_"+v.name+"_summary").c_str(),(sp+" "+v.name+" summary").c_str(),1600,1000);
+        cs->Divide(3,2);
+        for(int pl=0;pl<N_PLANES;++pl){cs->cd(pl+1);hsum[is][ic][v.name][pl]->DrawCopy();}
+        cs->cd(6);htot[is][ic][v.name]->DrawCopy();wc(cs);
       }
-      c->Write();
-      delete c;
+      sdir->cd();
     }
 
-    // summary canvas: 5 plane sums + grand total
-    const std::string cname  = "c_" + v.name + "_summary";
-    const std::string ctitle = v.name + " summary (plane sums + total)";
-    TCanvas *c               = new TCanvas(cname.c_str(), ctitle.c_str(), 1600, 1000);
-    c->Divide(3, 2);
-    for (int plane = 0; plane < N_PLANES; ++plane) {
-      c->cd(plane + 1);
-      hsum[v.name][plane]->DrawCopy();
-    }
-    c->cd(6);
-    htot[v.name]->DrawCopy();
-    c->Write();
-    delete c;
-
-    fout.cd();
-  }
-
-  // Write punch-through histograms
-  {
-    TDirectory *dir = fout.mkdir("punchthrough");
-    dir->cd();
-
-    TCanvas *c = new TCanvas("c_punchthrough_summary", "Punch-through time summary", 1600, 1000);
-    c->Divide(4, 3);
-    for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-      c->cd(paddle + 1);
-      hpt_pad["punchthrough"][paddle]->DrawCopy();
-    }
-    c->Write();
-    delete c;
-
-    fout.cd();
-  }
-
-  // Write edep vs punch-through 2D histograms
-  {
-    TDirectory *dir = fout.mkdir("edep_vs_punchthrough");
-    dir->cd();
-
-    // Side 0 - edep
+    // Punchthrough
     {
-      TCanvas *c = new TCanvas("c_edep_0_vs_pt", "edep vs punch-through (side 0)", 1600, 1000);
-      c->Divide(4, 3);
-      for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-        c->cd(paddle + 1);
-        h_edep_vs_pt["edep_0"][paddle]->DrawCopy("COLZ");
+      TDirectory*d=sdir->mkdir("punchthrough");
+      for(int ic=0;ic<N_CATS;++ic){
+        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+        TCanvas*c01=new TCanvas((sp+"_c_pt_000_001").c_str(),(sp+" PT 000-001 per paddle").c_str(),1600,1000);
+        c01->Divide(4,3);for(int p=0;p<N_PADDLES;++p){c01->cd(p+1);h_pt_01_pad[is][ic][p]->DrawCopy();}wc(c01);
+        TCanvas*c23=new TCanvas((sp+"_c_pt_100_101").c_str(),(sp+" PT 100-101 per paddle").c_str(),1600,1000);
+        c23->Divide(4,3);for(int p=0;p<N_PADDLES;++p){c23->cd(p+1);h_pt_23_pad[is][ic][p]->DrawCopy();}wc(c23);
+        TCanvas*cs=new TCanvas((sp+"_c_pt_sums").c_str(),(sp+" PT sums").c_str(),1600,600);cs->Divide(3,1);
+        cs->cd(1);h_pt_01_sum[is][ic]->DrawCopy();cs->cd(2);h_pt_23_sum[is][ic]->DrawCopy();cs->cd(3);h_pt_tot[is][ic]->DrawCopy();wc(cs);
       }
-      c->Write();
-      delete c;
+      sdir->cd();
     }
 
-    // Side 1 - edep
+    // edep vs punchthrough — two canvases per key (000-001 and 100-101)
     {
-      TCanvas *c = new TCanvas("c_edep_1_vs_pt", "edep vs punch-through (side 1)", 1600, 1000);
-      c->Divide(4, 3);
-      for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-        c->cd(paddle + 1);
-        h_edep_vs_pt["edep_1"][paddle]->DrawCopy("COLZ");
+      TDirectory*d=sdir->mkdir("edep_vs_punchthrough");
+      for(int ic=0;ic<N_CATS;++ic){
+        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+        for(const auto&key:{"edep_0","edep_1","edep_amp_0","edep_amp_1"}){
+          std::string k(key);
+          TCanvas*c01=new TCanvas((sp+"_c_"+k+"_vs_pt_000_001").c_str(),(sp+" "+k+" vs PT 000-001").c_str(),1600,1000);
+          c01->Divide(4,3);for(int p=0;p<N_PADDLES;++p){c01->cd(p+1);h_edep_vs_pt_01[is][ic][key][p]->DrawCopy("COLZ");}wc(c01);
+          TCanvas*c23=new TCanvas((sp+"_c_"+k+"_vs_pt_100_101").c_str(),(sp+" "+k+" vs PT 100-101").c_str(),1600,1000);
+          c23->Divide(4,3);for(int p=0;p<N_PADDLES;++p){c23->cd(p+1);h_edep_vs_pt_23[is][ic][key][p]->DrawCopy("COLZ");}wc(c23);
+        }
       }
-      c->Write();
-      delete c;
+      sdir->cd();
     }
 
-    // Side 0 - edep_amp
+    // tof vs edep
     {
-      TCanvas *c = new TCanvas("c_edepamp_0_vs_pt", "edep_amp vs punch-through (side 0)", 1600, 1000);
-      c->Divide(4, 3);
-      for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-        c->cd(paddle + 1);
-        h_edep_vs_pt["edep_amp_0"][paddle]->DrawCopy("COLZ");
+      TDirectory*d=sdir->mkdir("tof_vs_edep");
+      for(int ic=0;ic<N_CATS;++ic){
+        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+        for(const auto&key:{"edep_0","edep_1","edep_amp_0","edep_amp_1"}){
+          TCanvas*c=new TCanvas((sp+"_c_tof_vs_"+std::string(key)).c_str(),(sp+" tof vs "+std::string(key)).c_str(),1600,1000);
+          c->Divide(4,3);for(int p=0;p<N_PADDLES;++p){c->cd(p+1);h_tof_vs_edep[is][ic][key][p]->DrawCopy("COLZ");}wc(c);
+        }
       }
-      c->Write();
-      delete c;
+      sdir->cd();
     }
 
-    // Side 1 - edep_amp
+    // Front veto
     {
-      TCanvas *c = new TCanvas("c_edepamp_1_vs_pt", "edep_amp vs punch-through (side 1)", 1600, 1000);
-      c->Divide(4, 3);
-      for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-        c->cd(paddle + 1);
-        h_edep_vs_pt["edep_amp_1"][paddle]->DrawCopy("COLZ");
+      TDirectory*d=sdir->mkdir("front_veto");
+      for(int ic=0;ic<N_CATS;++ic){
+        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+        TCanvas*cht01=new TCanvas((sp+"_c_ht_fv_001").c_str(),(sp+" ht fv 001 per paddle").c_str(),1600,1000);
+        cht01->Divide(4,3);for(int p=0;p<N_PADDLES;++p){cht01->cd(p+1);h_ht_fv_01[is][ic][p]->DrawCopy();}wc(cht01);
+        TCanvas*cht23=new TCanvas((sp+"_c_ht_fv_101").c_str(),(sp+" ht fv 101 per paddle").c_str(),1600,1000);
+        cht23->Divide(4,3);for(int p=0;p<N_PADDLES;++p){cht23->cd(p+1);h_ht_fv_23[is][ic][p]->DrawCopy();}wc(cht23);
+        TCanvas*chts=new TCanvas((sp+"_c_ht_fv_sums").c_str(),(sp+" ht fv sums").c_str(),1600,600);chts->Divide(3,1);
+        chts->cd(1);h_ht_fv_01_sum[is][ic]->DrawCopy();chts->cd(2);h_ht_fv_23_sum[is][ic]->DrawCopy();chts->cd(3);h_ht_fv_tot[is][ic]->DrawCopy();wc(chts);
+        TCanvas*ctof01=new TCanvas((sp+"_c_tof_fv_001").c_str(),(sp+" tof fv 001 per paddle").c_str(),1600,1000);
+        ctof01->Divide(4,3);for(int p=0;p<N_PADDLES;++p){ctof01->cd(p+1);h_tof_fv_01[is][ic][p]->DrawCopy();}wc(ctof01);
+        TCanvas*ctof23=new TCanvas((sp+"_c_tof_fv_101").c_str(),(sp+" tof fv 101 per paddle").c_str(),1600,1000);
+        ctof23->Divide(4,3);for(int p=0;p<N_PADDLES;++p){ctof23->cd(p+1);h_tof_fv_23[is][ic][p]->DrawCopy();}wc(ctof23);
+        TCanvas*ctofs=new TCanvas((sp+"_c_tof_fv_sums").c_str(),(sp+" tof fv sums").c_str(),1600,600);ctofs->Divide(3,1);
+        ctofs->cd(1);h_tof_fv_01_sum[is][ic]->DrawCopy();ctofs->cd(2);h_tof_fv_23_sum[is][ic]->DrawCopy();ctofs->cd(3);h_tof_fv_tot[is][ic]->DrawCopy();wc(ctofs);
       }
-      c->Write();
-      delete c;
+      sdir->cd();
     }
 
-    fout.cd();
-  }
-
-  // Write tof vs edep 2D histograms
-  {
-    TDirectory *dir = fout.mkdir("tof_vs_edep");
-    dir->cd();
-
-    // Side 0 - edep
+    // Corrected tof + background-subtracted
     {
-      TCanvas *c = new TCanvas("c_tof_vs_edep_0", "tof vs edep (side 0)", 1600, 1000);
-      c->Divide(4, 3);
-      for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-        c->cd(paddle + 1);
-        h_tof_vs_edep["edep_0"][paddle]->DrawCopy("COLZ");
+      TDirectory*d=sdir->mkdir("corrected");
+      for(int ic=0;ic<N_CATS;++ic){
+        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+        for(int pl=0;pl<N_PLANES;++pl){
+          TCanvas*ct=new TCanvas((sp+"_c_tof_corr_"+plane_names[pl]).c_str(),
+                                  (sp+" tof corr "+plane_names[pl]).c_str(),1600,1000);
+          ct->Divide(4,3);for(int p=0;p<N_PADDLES;++p){ct->cd(p+1);h_tof_corr[is][ic][pl][p]->DrawCopy();}wc(ct);
+        }
+        TCanvas*cts=new TCanvas((sp+"_c_tof_corr_summary").c_str(),(sp+" tof corr summary").c_str(),1600,1000);
+        cts->Divide(3,2);
+        for(int pl=0;pl<N_PLANES;++pl){cts->cd(pl+1);h_tof_corr_sum[is][ic][pl]->DrawCopy();}
+        cts->cd(6);h_tof_corr_tot[is][ic]->DrawCopy();wc(cts);
       }
-      c->Write();
-      delete c;
+      sdir->cd();
     }
 
-    // Side 1 - edep
+    // Background-subtracted corrected tof — separate top-level directory
     {
-      TCanvas *c = new TCanvas("c_tof_vs_edep_1", "tof vs edep (side 1)", 1600, 1000);
-      c->Divide(4, 3);
-      for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-        c->cd(paddle + 1);
-        h_tof_vs_edep["edep_1"][paddle]->DrawCopy("COLZ");
+      TDirectory*d=sdir->mkdir("corrected_bgsub");
+      for(int ic=0;ic<N_CATS;++ic){
+        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+        for(int pl=0;pl<N_PLANES;++pl){
+          TCanvas*cbg=new TCanvas((sp+"_c_tof_corr_bgsub_"+plane_names[pl]).c_str(),
+                                   (sp+" tof corr bgsub "+plane_names[pl]).c_str(),1600,1000);
+          cbg->Divide(4,3);
+          for(int pa=0;pa<N_PADDLES;++pa){
+            cbg->cd(pa+1);
+            TH1D* hb=bgsub_tof(h_tof_corr[is][ic][pl][pa].GetPtr());
+            hb->DrawCopy(); delete hb;
+          } wc(cbg);
+        }
+        TCanvas*cbgs=new TCanvas((sp+"_c_tof_corr_bgsub_summary").c_str(),(sp+" tof corr bgsub summary").c_str(),1600,1000);
+        cbgs->Divide(3,2);
+        for(int pl=0;pl<N_PLANES;++pl){
+          cbgs->cd(pl+1);
+          TH1D* hb=bgsub_tof(h_tof_corr_sum[is][ic][pl].GetPtr());
+          hb->DrawCopy(); delete hb;
+        }
+        cbgs->cd(6);
+        {TH1D* hb=bgsub_tof(h_tof_corr_tot[is][ic].GetPtr());hb->DrawCopy();delete hb;}
+        wc(cbgs);
       }
-      c->Write();
-      delete c;
-    }
-
-    // Side 0 - edep_amp
-    {
-      TCanvas *c = new TCanvas("c_tof_vs_edepamp_0", "tof vs edep_amp (side 0)", 1600, 1000);
-      c->Divide(4, 3);
-      for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-        c->cd(paddle + 1);
-        h_tof_vs_edep["edep_amp_0"][paddle]->DrawCopy("COLZ");
-      }
-      c->Write();
-      delete c;
-    }
-
-    // Side 1 - edep_amp
-    {
-      TCanvas *c = new TCanvas("c_tof_vs_edepamp_1", "tof vs edep_amp (side 1)", 1600, 1000);
-      c->Divide(4, 3);
-      for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-        c->cd(paddle + 1);
-        h_tof_vs_edep["edep_amp_1"][paddle]->DrawCopy("COLZ");
-      }
-      c->Write();
-      delete c;
+      sdir->cd();
     }
 
     fout.cd();
-  }
-
-  // Write punch-through 01 and 23 canvases
-  {
-    TDirectory *dir = fout.mkdir("punchthrough_planes");
-    dir->cd();
-
-    TCanvas *c_01 = new TCanvas("c_punchthrough_01", "Punch-through planes 0-1", 1600, 1000);
-    c_01->Divide(4, 3);
-    for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-      c_01->cd(paddle + 1);
-      hpt_pad_01["punchthrough_01"][paddle]->DrawCopy();
-    }
-    c_01->Write();
-    delete c_01;
-
-    TCanvas *c_23 = new TCanvas("c_punchthrough_23", "Punch-through planes 2-3", 1600, 1000);
-    c_23->Divide(4, 3);
-    for (int paddle = 0; paddle < N_PADDLES; ++paddle) {
-      c_23->cd(paddle + 1);
-      hpt_pad_23["punchthrough_23"][paddle]->DrawCopy();
-    }
-    c_23->Write();
-    delete c_23;
-
-    fout.cd();
-  }
-
-  // Write front veto histograms
-  {
-    TDirectory *dir = fout.mkdir("front_veto");
-    dir->cd();
-
-    TCanvas *c = new TCanvas("c_front_veto", "Front veto (back with no front hit)", 1200, 600);
-    c->Divide(2, 1);
-    c->cd(1);
-    h_hittime_1_veto["hittime_1_veto"]->DrawCopy();
-    c->cd(2);
-    h_tof_1_veto["tof_1_veto"]->DrawCopy();
-    c->Write();
-    delete c;
-
-    fout.cd();
-  }
-
-  // Write corrected tof and hittime histograms
-  {
-    TDirectory *dir = fout.mkdir("corrected");
-    dir->cd();
-
-    TCanvas *c_tof = new TCanvas("c_tof_corrected", "TOF with photon path correction", 1200, 600);
-    c_tof->Divide(2, 1);
-    c_tof->cd(1);
-    h_tof_0_corr["tof_0_corr"]->DrawCopy();
-    c_tof->cd(2);
-    h_tof_1_corr["tof_1_corr"]->DrawCopy();
-    c_tof->Write();
-    delete c_tof;
-
-    TCanvas *c_ht = new TCanvas("c_hittime_corrected", "Hittime with photon path correction", 1200, 600);
-    c_ht->Divide(2, 1);
-    c_ht->cd(1);
-    h_hittime_0_corr["hittime_0_corr"]->DrawCopy();
-    c_ht->cd(2);
-    h_hittime_1_corr["hittime_1_corr"]->DrawCopy();
-    c_ht->Write();
-    delete c_ht;
-
-    TCanvas *c_veto = new TCanvas("c_corrected_veto", "Corrected with front veto", 1200, 600);
-    c_veto->Divide(2, 1);
-    c_veto->cd(1);
-    h_tof_1_corr_veto["tof_1_corr_veto"]->DrawCopy();
-    c_veto->cd(2);
-    h_hittime_1_corr_veto["hittime_1_corr_veto"]->DrawCopy();
-    c_veto->Write();
-    delete c_veto;
-
-    fout.cd();
-  }
+  } // end spec loop (output)
 
   fout.Close();
-  std::cout << "[lad_tof_fast] Done. Wrote " << out_file << "\n";
+  std::cout<<"[lad_tof_fast] Done. Wrote "<<out_file<<"\n";
 }
