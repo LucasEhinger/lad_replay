@@ -12,13 +12,25 @@
 //
 // Sum plots exclude plane 100 (idx 2) and plane 101 (idx 3) paddles 1 and 9.
 //
-// Each output directory contains three subdirectories:
-//   all_hits  -- no cut
-//   has_track -- chiSquare < 100 per hit
-//   no_track  -- chiSquare >= 100 per hit
+// Tracking variants (per-hit chiSquare branches, X = P or H):
+//   standard         -> X.ladhod.goodhit_chiSquare
+//   xz               -> X.ladhod.goodhit_chiSquare_xz
+//   noTrackVertex    -> X.ladhod.goodhit_chiSquare_noTrackVertex
+//   noTrackVertex_xz -> X.ladhod.goodhit_chiSquare_noTrackVertex_xz
+// Only variants present in the data (for both spectrometers) are produced; the
+// standard tracking is always assumed present.
+//
+// Each output directory contains:
+//   all_hits              -- no cut (tracking-independent)
+//   <variant>/has_track   -- that variant's chiSquare < 100 per hit
+//   <variant>/no_track    -- that variant's chiSquare >= 100 per hit
 //
 // Usage:
 //   root -l -b -q 'lad_tof_fast.C("input.dat","out.root")'
+//   root -l -b -q 'lad_tof_fast.C("input.dat","out.root",8)'  // 8 MT threads
+// The 3rd arg caps RDataFrame worker threads (default 4); each thread holds its
+// own copy of every histogram, so lower it if the job is OOM-killed, raise it if
+// there is spare RAM.  <=0 uses all cores.
 //
 
 #include <ROOT/RDataFrame.hxx>
@@ -49,6 +61,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -63,8 +76,13 @@ const int NBINS_EDEP_AMP=300; const double XMIN_EDEP_AMP=0., XMAX_EDEP_AMP=300;
 const int NBINS_PT=150;       const double XMIN_PT=-5.,      XMAX_PT=10.; // punch throughs
 const int NBINS_TCORR=900;    const double XMIN_TCORR=-150.,  XMAX_TCORR=300.;
 
-const int N_PLANES=5, N_PADDLES=11, N_CATS=3, N_SPECS=2;
-const double BG_PERIOD_NS = 4.0; // N: period of the repeating background in ns
+// N_TRACKS is the max # of tracking variants; N_CATS = 1 (all_hits) + 2*N_TRACKS
+// (has_track/no_track per variant).  Both are compile-time capacities for the
+// histogram-holder arrays; the actually-used counts (ntracks, ncats) are runtime.
+const int N_PLANES=5, N_PADDLES=11, N_SPECS=2;
+const int N_TRACKS=4, N_CATS=1+2*N_TRACKS;
+const double BG_PERIOD_NS  = 4.0; // N: period of the repeating background in ns
+const int    PROTON_REBIN  = 15;  // rebin factor applied before sideband-subtracted efficiency
 const double hodo_radii[N_PLANES]={615.,655.6,523.,563.6,615.}; // cm
 const char* const plane_names[N_PLANES]={"000","001","100","101","200"};
 const std::array<char,N_SPECS> specs={'P','H'};
@@ -112,14 +130,45 @@ TH1D* bgsub_tof(const TH1D* h, double period_ns = BG_PERIOD_NS) {
   return out;
 }
 
-// chi_mode: 0=all hits, 1=chiSquare<100, 2=chiSquare>=100
-struct Cat { std::string suf, dir; int chi_mode; };
+// Sideband-subtract a histogram by computing the mean bin content
+// in [xmin, xmin+sideband_ns] and subtracting that constant from all bins.
+TH1D* flat_bgsub(const TH1D* h, double sideband_ns = 50.) {
+  TH1D* out = (TH1D*)h->Clone((std::string(h->GetName())+"_sb").c_str());
+  out->SetTitle((std::string(h->GetTitle())+" (sb-sub)").c_str());
+  double bg_end = h->GetXaxis()->GetXmin() + sideband_ns;
+  int n_sb = 0; double sum_sb = 0.;
+  for(int b = 1; b <= h->GetNbinsX(); ++b){
+    if(h->GetBinCenter(b) >= bg_end) break;
+    sum_sb += h->GetBinContent(b); ++n_sb;
+  }
+  double bg = (n_sb > 0) ? sum_sb / n_sb : 0.;
+  for(int b = 1; b <= h->GetNbinsX(); ++b)
+    out->SetBinContent(b, h->GetBinContent(b) - bg);
+  return out;
+}
 
-void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DEFAULT_OUT_FILE) {
+// A tracking variant: 'dir' is its output sub-directory name; 'tsuf' is the
+// suffix appended to "goodhit_chiSquare" (empty for the standard/full tracking).
+struct Track { std::string dir, tsuf; };
+
+// chi_mode: 0=all hits, 1=chiSquare<100, 2=chiSquare>=100.
+// 'tsuf' selects which tracking variant's chiSquare column drives the cut.
+struct Cat { std::string suf, dir; int chi_mode; std::string tsuf; };
+
+void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DEFAULT_OUT_FILE,
+                  int nthreads=4) {
 
   gROOT->SetBatch(kTRUE);
   TH1::AddDirectory(kFALSE);
-  ROOT::EnableImplicitMT();
+  // RDataFrame clones every booked histogram per worker thread, so peak memory
+  // scales with the thread count.  With 4 tracking variants (9 categories) the
+  // full result set is large; cap the threads to avoid the OOM killer (which
+  // shows up as a silent SIGKILL / exit 9) on memory-limited farm nodes.
+  // Pass nthreads<=0 to use all available cores.
+  if (nthreads>0) { ROOT::EnableImplicitMT(nthreads);
+    std::cout<<"[lad_tof_fast] implicit MT: "<<nthreads<<" threads\n"; }
+  else            { ROOT::EnableImplicitMT();
+    std::cout<<"[lad_tof_fast] implicit MT: all cores\n"; }
 
   // ---------------------------------------------------------------
   // 1. TChain
@@ -139,6 +188,32 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
   }
   std::cout<<"[lad_tof_fast] entries: "<<chain.GetEntries()<<"\n";
   if (!chain.GetEntries()) { std::cerr<<"empty chain\n"; return; }
+
+  // ---------------------------------------------------------------
+  // 1b. Detect which tracking variants are present in the data.
+  //     Each variant t adds branches X.ladhod.goodhit_chiSquare<tsuf>.  A variant
+  //     is used only if present for BOTH spectrometers (so every alias below
+  //     resolves); the standard tracking is always assumed present.
+  // ---------------------------------------------------------------
+  chain.LoadTree(0);
+  auto has_branch=[&chain](const std::string& n){ return chain.GetBranch(n.c_str())!=nullptr; };
+  std::vector<Track> tracks;
+  tracks.push_back({"standard",""});
+  {
+    const std::array<Track,3> variants={{
+      {"xz","_xz"},{"noTrackVertex","_noTrackVertex"},{"noTrackVertex_xz","_noTrackVertex_xz"}}};
+    for (const auto& v:variants) {
+      bool ok=true;
+      for (int is=0;is<N_SPECS;++is)
+        if(!has_branch(std::string(1,specs[is])+".ladhod.goodhit_chiSquare"+v.tsuf)) ok=false;
+      if(ok) tracks.push_back(v);
+      else    std::cout<<"[lad_tof_fast] tracking variant '"<<v.dir<<"' absent in data; skipping\n";
+    }
+  }
+  const int ntracks=(int)tracks.size();
+  std::cout<<"[lad_tof_fast] tracking variants ("<<ntracks<<"):";
+  for(const auto&t:tracks) std::cout<<" "<<t.dir;
+  std::cout<<"\n";
 
   // ---------------------------------------------------------------
   // 2. RDataFrame + aliases
@@ -177,17 +252,26 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
       df=df.Alias(sp+"_tof_"     +s, pfx+"hit_tof_"    +s);
       df=df.Alias(sp+"_ypos_"    +s, pfx+"hit_ypos_"   +s);
     }
-    df=df.Alias(sp+"_chiSquare", pfx+"chiSquare");
+    for (const auto& tk:tracks)
+      df=df.Alias(sp+"_chiSquare"+tk.tsuf, pfx+"chiSquare"+tk.tsuf);
+    df=df.Alias(sp+"_isProton_0",  pfx+"isProton_0");
+    df=df.Alias(sp+"_isProton_1",  pfx+"isProton_1");
   }
 
   // ---------------------------------------------------------------
   // 3. Categories and variables
   // ---------------------------------------------------------------
-  const std::array<Cat,N_CATS> cats={{
-    {"",     "all_hits",  0},
-    {"_has", "has_track", 1},
-    {"_no",  "no_track",  2},
-  }};
+  // One "all_hits" category (tracking-independent) plus has_track/no_track for
+  // each detected tracking variant, each living in its own <variant>/ sub-dir.
+  // For the standard variant (tsuf="") the column suffixes are "_has"/"_no",
+  // matching the original single-tracking column names.
+  std::vector<Cat> cats;
+  cats.push_back({"", "all_hits", 0, ""});
+  for (const auto& tk:tracks) {
+    cats.push_back({tk.tsuf+"_has", tk.dir+"/has_track", 1, tk.tsuf});
+    cats.push_back({tk.tsuf+"_no",  tk.dir+"/no_track",  2, tk.tsuf});
+  }
+  const int ncats=(int)cats.size();
 
   const std::vector<VarConfig> vars={
     {"tof",     NBINS_TOF,     XMIN_TOF,     XMAX_TOF},
@@ -197,9 +281,9 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     {"edep_amp",NBINS_EDEP_AMP,XMIN_EDEP_AMP,XMAX_EDEP_AMP},
   };
 
-  auto chi_jit=[](const std::string &sp, int mode)->std::string{
-    if (mode==1) return " && "+sp+"_chiSquare < 100";
-    if (mode==2) return " && "+sp+"_chiSquare >= 100";
+  auto chi_jit=[](const std::string &chi, int mode)->std::string{
+    if (mode==1) return " && "+chi+" < 100";
+    if (mode==2) return " && "+chi+" >= 100";
     return "";
   };
 
@@ -214,7 +298,8 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // ------------------------------------------------------------------
     for (const auto &cat:cats) {
       const std::string &cs=cat.suf;
-      const std::string cx=chi_jit(sp,cat.chi_mode);
+      const std::string chi=sp+"_chiSquare"+cat.tsuf;
+      const std::string cx=chi_jit(chi,cat.chi_mode);
       for (int plane=0;plane<N_PLANES;++plane) {
         const std::string side=(plane%2==0)?"0":"1";
         const std::string pc=sp+"_plane_"+side, pdc=sp+"_paddle_"+side;
@@ -251,6 +336,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // ------------------------------------------------------------------
     for (const auto &cat:cats) {
       const int cm=cat.chi_mode; const std::string &cs=cat.suf;
+      const std::string chi=sp+"_chiSquare"+cat.tsuf;
       for (int paddle=0;paddle<N_PADDLES;++paddle) {
         const double pv=paddle; const std::string ps=std::to_string(paddle);
         using RVd=ROOT::VecOps::RVec<double>;
@@ -269,7 +355,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 r.push_back({e0[i],h1[j]-h0[i]});
               }
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",chi});
 
         df=df.Define(sp+"_edep_1_vs_pt_01_b"+ps+cs,
           [pv,cm](RVd pl0,RVd pd0,RVd pl1,RVd pd1,RVd e1,RVd h0,RVd h1,RVd chi){
@@ -283,7 +369,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 r.push_back({e1[j],h1[j]-h0[i]});
               }
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_1",sp+"_hittime_0",sp+"_hittime_1",chi});
 
         df=df.Define(sp+"_edepamp_0_vs_pt_01_b"+ps+cs,
           [pv,cm](RVd pl0,RVd pd0,RVd ea,RVd pl1,RVd pd1,RVd h0,RVd h1,RVd chi){
@@ -297,7 +383,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 r.push_back({ea[i],h1[j]-h0[i]});
               }
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_amp_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_amp_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",chi});
 
         df=df.Define(sp+"_edepamp_1_vs_pt_01_b"+ps+cs,
           [pv,cm](RVd pl0,RVd pd0,RVd pl1,RVd pd1,RVd ea,RVd h0,RVd h1,RVd chi){
@@ -311,7 +397,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 r.push_back({ea[j],h1[j]-h0[i]});
               }
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_amp_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_amp_1",sp+"_hittime_0",sp+"_hittime_1",chi});
 
         // --- 100-101 pair (pl0==2, pl1==3) ---
         df=df.Define(sp+"_edep_0_vs_pt_23_b"+ps+cs,
@@ -326,7 +412,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 r.push_back({e0[i],h1[j]-h0[i]});
               }
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",chi});
 
         df=df.Define(sp+"_edep_1_vs_pt_23_b"+ps+cs,
           [pv,cm](RVd pl0,RVd pd0,RVd pl1,RVd pd1,RVd e1,RVd h0,RVd h1,RVd chi){
@@ -340,7 +426,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 r.push_back({e1[j],h1[j]-h0[i]});
               }
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_1",sp+"_hittime_0",sp+"_hittime_1",chi});
 
         df=df.Define(sp+"_edepamp_0_vs_pt_23_b"+ps+cs,
           [pv,cm](RVd pl0,RVd pd0,RVd ea,RVd pl1,RVd pd1,RVd h0,RVd h1,RVd chi){
@@ -354,7 +440,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 r.push_back({ea[i],h1[j]-h0[i]});
               }
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_amp_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_edep_amp_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_0",sp+"_hittime_1",chi});
 
         df=df.Define(sp+"_edepamp_1_vs_pt_23_b"+ps+cs,
           [pv,cm](RVd pl0,RVd pd0,RVd pl1,RVd pd1,RVd ea,RVd h0,RVd h1,RVd chi){
@@ -368,7 +454,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 r.push_back({ea[j],h1[j]-h0[i]});
               }
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_amp_1",sp+"_hittime_0",sp+"_hittime_1",sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",sp+"_edep_amp_1",sp+"_hittime_0",sp+"_hittime_1",chi});
 
         // Split pair columns into x(PT) and y(edep) for Histo2D
         auto sx=[](const Rpd&v){RVd x; for(auto&p:v)x.push_back(p.second); return x;};
@@ -391,6 +477,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // ------------------------------------------------------------------
     for (const auto &cat:cats) {
       const int cm=cat.chi_mode; const std::string &cs=cat.suf;
+      const std::string chi=sp+"_chiSquare"+cat.tsuf;
       for (int paddle=0;paddle<N_PADDLES;++paddle) {
         const double pv=paddle; const std::string ps=std::to_string(paddle);
 
@@ -404,7 +491,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
               if(cm==1&&chi[i]>=100.) continue; if(cm==2&&chi[i]<100.) continue;
               r.push_back({t[i],e[i]});
             } return r;
-          },{pd_src,tof_src,edep_src,sp+"_chiSquare"});
+          },{pd_src,tof_src,edep_src,chi});
         };
         mk_te(sp+"_tof_edep_0_b"   +ps+cs,sp+"_paddle_0",sp+"_tof_0",sp+"_edep_0");
         mk_te(sp+"_tof_edep_1_b"   +ps+cs,sp+"_paddle_1",sp+"_tof_1",sp+"_edep_1");
@@ -431,6 +518,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // ------------------------------------------------------------------
     for (const auto &cat:cats) {
       const int cm=cat.chi_mode; const std::string &cs=cat.suf;
+      const std::string chi=sp+"_chiSquare"+cat.tsuf;
       for (int paddle=0;paddle<N_PADDLES;++paddle) {
         const double pv=paddle; const std::string ps=std::to_string(paddle);
 
@@ -448,7 +536,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 r.push_back(h1[j]-h0[i]);
               }
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",chi});
 
         df=df.Define(sp+"_punchthrough_23_b"+ps+cs,
           [pv,cm](ROOT::VecOps::RVec<double> pl0,ROOT::VecOps::RVec<double> pd0,ROOT::VecOps::RVec<double> h0,
@@ -464,7 +552,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 r.push_back(h1[j]-h0[i]);
               }
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",chi});
       }
 
       df=df.Define(sp+"_punchthrough_01_sum"+cs,
@@ -481,7 +569,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
               r.push_back(h1[j]-h0[i]);
             }
           } return r;
-        },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",sp+"_chiSquare"});
+        },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",chi});
 
       // 23 sum: exclude paddles 1 and 9 (planes 100/101)
       df=df.Define(sp+"_punchthrough_23_sum"+cs,
@@ -499,7 +587,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
               r.push_back(h1[j]-h0[i]);
             }
           } return r;
-        },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",sp+"_chiSquare"});
+        },{sp+"_plane_0",sp+"_paddle_0",sp+"_hittime_0",sp+"_plane_1",sp+"_paddle_1",sp+"_hittime_1",chi});
 
       df=df.Define(sp+"_punchthrough_sum_total"+cs,
         [](const ROOT::VecOps::RVec<double>&a,const ROOT::VecOps::RVec<double>&b){
@@ -512,6 +600,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // ------------------------------------------------------------------
     for (const auto &cat:cats) {
       const int cm=cat.chi_mode; const std::string &cs=cat.suf;
+      const std::string chi=sp+"_chiSquare"+cat.tsuf;
       for (int paddle=0;paddle<N_PADDLES;++paddle) {
         const double pav=static_cast<double>(paddle); const std::string ps=std::to_string(paddle);
 
@@ -532,7 +621,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 }
                 if(!veto) r.push_back(val[j]);
               } return r;
-            },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",val_src,sp+"_chiSquare"});
+            },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",val_src,chi});
         };
         mk_fv(sp+"_hittime_fv_01_b"+ps+cs,1.,0.,sp+"_hittime_1");
         mk_fv(sp+"_tof_fv_01_b"    +ps+cs,1.,0.,sp+"_tof_1");
@@ -560,7 +649,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
               }
               if(!veto) r.push_back(val[j]);
             } return r;
-          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",val_src,sp+"_chiSquare"});
+          },{sp+"_plane_0",sp+"_paddle_0",sp+"_plane_1",sp+"_paddle_1",val_src,chi});
       };
       mk_fv_sum(sp+"_hittime_fv_01_sum"+cs,1.,0.,sp+"_hittime_1",false);
       mk_fv_sum(sp+"_tof_fv_01_sum"    +cs,1.,0.,sp+"_tof_1",    false);
@@ -584,6 +673,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     for (const auto &cat:cats) {
       const std::string &cs=cat.suf;
       const int cm2=cat.chi_mode;
+      const std::string chi=sp+"_chiSquare"+cat.tsuf;
       for (int plane=0;plane<N_PLANES;++plane) {
         const std::string side=(plane%2==0)?"0":"1";
         const double pl_val=static_cast<double>(plane);
@@ -611,7 +701,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
               if(cm2==1&&chi[i]>=100.) continue; if(cm2==2&&chi[i]<100.) continue;
               double dx=22.*(pdv[i]-6.); double p2d=std::sqrt(yv[i]*yv[i]+dx*dx);
               r.push_back(tv[i]-std::sqrt(p2d*p2d+R*R)/100./0.3);} return r;
-          },{sp+"_plane_"+side,sp+"_paddle_"+side,sp+"_ypos_"+side,sp+"_tof_"+side,sp+"_chiSquare"});
+          },{sp+"_plane_"+side,sp+"_paddle_"+side,sp+"_ypos_"+side,sp+"_tof_"+side,chi});
       }
 
       auto cat5=[&](const std::string &pfx)->std::vector<std::string>{
@@ -625,6 +715,86 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
           auto r=ROOT::VecOps::Concatenate(v0,v1); r=ROOT::VecOps::Concatenate(r,v2);
           r=ROOT::VecOps::Concatenate(r,v3); return ROOT::VecOps::Concatenate(r,v4);
         },cat5(sp+"_tof_corrected_p"));
+    }
+    // ------------------------------------------------------------------
+    // 4g. Proton-tagged corrected tof (side-1 hits with isProton_1==1)
+    //     Planes 001 (idx 1) and 101 (idx 3) only; radius looked up from hodo_radii.
+    // ------------------------------------------------------------------
+    {
+      using RVd=ROOT::VecOps::RVec<double>;
+      auto mk_proton=[&](const std::string& col, bool req_track, const std::string& chicol){
+        df=df.Define(col,
+          [req_track](const RVd& pl1,const RVd& pd1,const RVd& y1,const RVd& t1,
+                      const RVd& ip1,const RVd& chi){
+            RVd r;
+            for(size_t i=0;i<pl1.size();++i){
+              if(ip1[i]!=1.) continue;
+              if(req_track&&chi[i]>=100.) continue;
+              int pi=(int)std::round(pl1[i]);
+              if(pi!=1&&pi!=3) continue; // only planes 001 and 101
+              double R=hodo_radii[pi];
+              double dx=22.*(pd1[i]-6.);
+              double p2d=std::sqrt(y1[i]*y1[i]+dx*dx);
+              r.push_back(t1[i]-std::sqrt(p2d*p2d+R*R)/100./0.3);
+            } return r;
+          },{sp+"_plane_1",sp+"_paddle_1",sp+"_ypos_1",sp+"_tof_1",sp+"_isProton_1",chicol});
+      };
+      // proton-only is tracking-independent; proton+track once per tracking variant.
+      mk_proton(sp+"_tof_corr_proton", false, sp+"_chiSquare");
+      for(const auto& tk:tracks)
+        mk_proton(sp+"_tof_corr_proton_track"+tk.tsuf, true, sp+"_chiSquare"+tk.tsuf);
+
+      // Per-paddle and per-plane sums for planes 001 (idx 1) and 101 (idx 3)
+      for(int pp=0;pp<2;++pp){
+        const int   pi_c =(pp==0)?1:3;
+        const double R_c  =hodo_radii[pi_c];
+        const bool excl_c=(pi_c==3); // exclude paddles 1,9 for plane 101
+
+        for(int paddle=0;paddle<N_PADDLES;++paddle){
+          const double pv_c=static_cast<double>(paddle);
+          const std::string ps=std::to_string(paddle);
+          auto mk_p=[&](const std::string& col,bool req_track,const std::string& chicol){
+            df=df.Define(col,
+              [pi_c,R_c,pv_c,req_track](const RVd& pl1,const RVd& pd1,const RVd& y1,
+                                         const RVd& t1, const RVd& ip1,const RVd& chi){
+                RVd r;
+                for(size_t i=0;i<pl1.size();++i){
+                  if(ip1[i]!=1.) continue;
+                  if((int)std::round(pl1[i])!=pi_c) continue;
+                  if(pd1[i]!=pv_c) continue;
+                  if(req_track&&chi[i]>=100.) continue;
+                  double dx=22.*(pd1[i]-6.);
+                  double p2d=std::sqrt(y1[i]*y1[i]+dx*dx);
+                  r.push_back(t1[i]-std::sqrt(p2d*p2d+R_c*R_c)/100./0.3);
+                } return r;
+              },{sp+"_plane_1",sp+"_paddle_1",sp+"_ypos_1",sp+"_tof_1",sp+"_isProton_1",chicol});
+          };
+          mk_p(sp+"_tof_corr_proton_p"+std::to_string(pi_c)+"_b"+ps, false, sp+"_chiSquare");
+          for(const auto& tk:tracks)
+            mk_p(sp+"_tof_corr_proton_track_p"+std::to_string(pi_c)+"_b"+ps+tk.tsuf, true, sp+"_chiSquare"+tk.tsuf);
+        }
+
+        // Per-plane sum (plane 101 excludes paddles 1 and 9)
+        auto mk_sum=[&](const std::string& col,bool req_track,const std::string& chicol){
+          df=df.Define(col,
+            [pi_c,R_c,excl_c,req_track](const RVd& pl1,const RVd& pd1,const RVd& y1,
+                                         const RVd& t1, const RVd& ip1,const RVd& chi){
+              RVd r;
+              for(size_t i=0;i<pl1.size();++i){
+                if(ip1[i]!=1.) continue;
+                if((int)std::round(pl1[i])!=pi_c) continue;
+                if(excl_c&&(pd1[i]==1.||pd1[i]==9.)) continue;
+                if(req_track&&chi[i]>=100.) continue;
+                double dx=22.*(pd1[i]-6.);
+                double p2d=std::sqrt(y1[i]*y1[i]+dx*dx);
+                r.push_back(t1[i]-std::sqrt(p2d*p2d+R_c*R_c)/100./0.3);
+              } return r;
+            },{sp+"_plane_1",sp+"_paddle_1",sp+"_ypos_1",sp+"_tof_1",sp+"_isProton_1",chicol});
+        };
+        mk_sum(sp+"_tof_corr_proton_p"+std::to_string(pi_c)+"_sum", false, sp+"_chiSquare");
+        for(const auto& tk:tracks)
+          mk_sum(sp+"_tof_corr_proton_track_p"+std::to_string(pi_c)+"_sum"+tk.tsuf, true, sp+"_chiSquare"+tk.tsuf);
+      }
     }
   } // end spec loop (column definitions)
 
@@ -648,10 +818,21 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
   // edep vs PT split by plane pair
   std::array<std::array<std::map<std::string,std::vector<RH2>>,N_CATS>,N_SPECS> h_edep_vs_pt_01,h_edep_vs_pt_23;
   std::array<std::array<std::map<std::string,std::vector<RH2>>,N_CATS>,N_SPECS> h_tof_vs_edep;
+  // Proton-tagged corrected tof (per spec, no category split — cuts are built-in).
+  // Proton-only histos have no tracking dimension; proton+track histos carry an
+  // extra [track] index (one booking per detected tracking variant).
+  std::array<RH1,N_SPECS>                      h_proton_tof;
+  std::array<std::array<RH1,N_TRACKS>,N_SPECS> h_proton_track_tof;
+  // Per-paddle [spec][pp (0=001,1=101)][paddle] and per-plane sum [spec][pp];
+  // track variants insert a [track] index after [spec].
+  std::array<std::array<std::vector<RH1>,2>,N_SPECS>                       h_proton_pad;
+  std::array<std::array<std::array<std::vector<RH1>,2>,N_TRACKS>,N_SPECS>  h_proton_track_pad;
+  std::array<std::array<RH1,2>,N_SPECS>                                    h_proton_psum;
+  std::array<std::array<std::array<RH1,2>,N_TRACKS>,N_SPECS>               h_proton_track_psum;
 
   for (int is=0;is<N_SPECS;++is) {
     const std::string sp(1,specs[is]);
-    for (int ic=0;ic<N_CATS;++ic) {
+    for (int ic=0;ic<ncats;++ic) {
       const std::string &cs=cats[ic].suf;
       auto bk1=[&](const std::string &col,const std::string &ttl,int nb,double lo,double hi)->RH1{
         return df.Histo1D({col.c_str(),ttl.c_str(),nb,lo,hi},col);};
@@ -767,6 +948,45 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     }
   } // end spec loop (histogram booking)
 
+  // Proton histogram booking (outside cat loop — no category split).
+  // Proton-only booked once; proton+track booked once per tracking variant.
+  for(int is=0;is<N_SPECS;++is){
+    const std::string sp(1,specs[is]);
+    auto bkp=[&](const std::string& col,const std::string& ttl)->RH1{
+      return df.Histo1D({col.c_str(),ttl.c_str(),NBINS_TCORR,XMIN_TCORR,XMAX_TCORR},col);};
+    h_proton_tof[is]=bkp(sp+"_tof_corr_proton", sp+" tof corr proton;tof-L/c(ns);Counts");
+    for(int it=0;it<ntracks;++it){
+      const std::string& td=tracks[it].dir; const std::string& tu=tracks[it].tsuf;
+      h_proton_track_tof[is][it]=bkp(sp+"_tof_corr_proton_track"+tu,
+        sp+" tof corr proton+track ["+td+"];tof-L/c(ns);Counts");
+    }
+    for(int pp=0;pp<2;++pp){
+      const int pi=(pp==0)?1:3;
+      const std::string pn=plane_names[pi];
+      h_proton_pad[is][pp].resize(N_PADDLES);
+      for(int it=0;it<ntracks;++it) h_proton_track_pad[is][it][pp].resize(N_PADDLES);
+      for(int pa=0;pa<N_PADDLES;++pa){
+        const std::string ps=std::to_string(pa);
+        const std::string cp=sp+"_tof_corr_proton_p"+std::to_string(pi)+"_b"+ps;
+        h_proton_pad[is][pp][pa]=bkp(cp,sp+" tof corr proton "+pn+" pd"+ps+";tof-L/c(ns);Counts");
+        for(int it=0;it<ntracks;++it){
+          const std::string& td=tracks[it].dir; const std::string& tu=tracks[it].tsuf;
+          const std::string ct=sp+"_tof_corr_proton_track_p"+std::to_string(pi)+"_b"+ps+tu;
+          h_proton_track_pad[is][it][pp][pa]=bkp(ct,
+            sp+" tof corr proton+track ["+td+"] "+pn+" pd"+ps+";tof-L/c(ns);Counts");
+        }
+      }
+      const std::string cs2=sp+"_tof_corr_proton_p"+std::to_string(pi)+"_sum";
+      h_proton_psum[is][pp]=bkp(cs2,sp+" tof corr proton "+pn+" sum;tof-L/c(ns);Counts");
+      for(int it=0;it<ntracks;++it){
+        const std::string& td=tracks[it].dir; const std::string& tu=tracks[it].tsuf;
+        const std::string ts2=sp+"_tof_corr_proton_track_p"+std::to_string(pi)+"_sum"+tu;
+        h_proton_track_psum[is][it][pp]=bkp(ts2,
+          sp+" tof corr proton+track ["+td+"] "+pn+" sum;tof-L/c(ns);Counts");
+      }
+    }
+  }
+
   // ===============================================================
   // 6. Trigger event loop
   // ===============================================================
@@ -784,6 +1004,18 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
 
   auto wc=[](TCanvas*c){c->Write();delete c;};
 
+  // Create (or fetch) a possibly-nested "a/b/c" directory under base.
+  auto mkpath=[](TDirectory* base,const std::string& path)->TDirectory*{
+    TDirectory* dcur=base; std::string seg; std::istringstream ss(path);
+    while(std::getline(ss,seg,'/')){
+      if(seg.empty()) continue;
+      TDirectory* nd=dcur->GetDirectory(seg.c_str());
+      if(!nd) nd=dcur->mkdir(seg.c_str());
+      dcur=nd;
+    }
+    return dcur?dcur:base;
+  };
+
   for (int is=0;is<N_SPECS;++is) {
     const std::string sp(1,specs[is]);
     TDirectory* sdir=fout.mkdir(sp.c_str());
@@ -791,8 +1023,8 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // Var directories
     for(const auto&v:vars){
       TDirectory*vdir=sdir->mkdir(v.name.c_str());
-      for(int ic=0;ic<N_CATS;++ic){
-        TDirectory*cdir=vdir->mkdir(cats[ic].dir.c_str()); cdir->cd();
+      for(int ic=0;ic<ncats;++ic){
+        TDirectory*cdir=mkpath(vdir,cats[ic].dir); cdir->cd();
         for(int pl=0;pl<N_PLANES;++pl){
           TCanvas*c=new TCanvas((sp+"_c_"+v.name+"_pl"+plane_names[pl]).c_str(),
                                 (sp+" "+v.name+" plane "+plane_names[pl]).c_str(),1600,1000);
@@ -811,8 +1043,8 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // Punchthrough
     {
       TDirectory*d=sdir->mkdir("punchthrough");
-      for(int ic=0;ic<N_CATS;++ic){
-        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+      for(int ic=0;ic<ncats;++ic){
+        TDirectory*cdir=mkpath(d,cats[ic].dir);cdir->cd();
         TCanvas*c01=new TCanvas((sp+"_c_pt_000_001").c_str(),(sp+" PT 000-001 per paddle").c_str(),1600,1000);
         c01->Divide(4,3);for(int p=0;p<N_PADDLES;++p){c01->cd(p+1);h_pt_01_pad[is][ic][p]->DrawCopy();}wc(c01);
         TCanvas*c23=new TCanvas((sp+"_c_pt_100_101").c_str(),(sp+" PT 100-101 per paddle").c_str(),1600,1000);
@@ -826,8 +1058,8 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // edep vs punchthrough — two canvases per key (000-001 and 100-101)
     {
       TDirectory*d=sdir->mkdir("edep_vs_punchthrough");
-      for(int ic=0;ic<N_CATS;++ic){
-        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+      for(int ic=0;ic<ncats;++ic){
+        TDirectory*cdir=mkpath(d,cats[ic].dir);cdir->cd();
         for(const auto&key:{"edep_0","edep_1","edep_amp_0","edep_amp_1"}){
           std::string k(key);
           TCanvas*c01=new TCanvas((sp+"_c_"+k+"_vs_pt_000_001").c_str(),(sp+" "+k+" vs PT 000-001").c_str(),1600,1000);
@@ -842,8 +1074,8 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // tof vs edep
     {
       TDirectory*d=sdir->mkdir("tof_vs_edep");
-      for(int ic=0;ic<N_CATS;++ic){
-        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+      for(int ic=0;ic<ncats;++ic){
+        TDirectory*cdir=mkpath(d,cats[ic].dir);cdir->cd();
         for(const auto&key:{"edep_0","edep_1","edep_amp_0","edep_amp_1"}){
           TCanvas*c=new TCanvas((sp+"_c_tof_vs_"+std::string(key)).c_str(),(sp+" tof vs "+std::string(key)).c_str(),1600,1000);
           c->Divide(4,3);for(int p=0;p<N_PADDLES;++p){c->cd(p+1);h_tof_vs_edep[is][ic][key][p]->DrawCopy("COLZ");}wc(c);
@@ -855,8 +1087,8 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // Front veto
     {
       TDirectory*d=sdir->mkdir("front_veto");
-      for(int ic=0;ic<N_CATS;++ic){
-        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+      for(int ic=0;ic<ncats;++ic){
+        TDirectory*cdir=mkpath(d,cats[ic].dir);cdir->cd();
         TCanvas*cht01=new TCanvas((sp+"_c_ht_fv_001").c_str(),(sp+" ht fv 001 per paddle").c_str(),1600,1000);
         cht01->Divide(4,3);for(int p=0;p<N_PADDLES;++p){cht01->cd(p+1);h_ht_fv_01[is][ic][p]->DrawCopy();}wc(cht01);
         TCanvas*cht23=new TCanvas((sp+"_c_ht_fv_101").c_str(),(sp+" ht fv 101 per paddle").c_str(),1600,1000);
@@ -876,8 +1108,8 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // Corrected tof + background-subtracted
     {
       TDirectory*d=sdir->mkdir("corrected");
-      for(int ic=0;ic<N_CATS;++ic){
-        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+      for(int ic=0;ic<ncats;++ic){
+        TDirectory*cdir=mkpath(d,cats[ic].dir);cdir->cd();
         for(int pl=0;pl<N_PLANES;++pl){
           TCanvas*ct=new TCanvas((sp+"_c_tof_corr_"+plane_names[pl]).c_str(),
                                   (sp+" tof corr "+plane_names[pl]).c_str(),1600,1000);
@@ -894,8 +1126,8 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
     // Background-subtracted corrected tof — separate top-level directory
     {
       TDirectory*d=sdir->mkdir("corrected_bgsub");
-      for(int ic=0;ic<N_CATS;++ic){
-        TDirectory*cdir=d->mkdir(cats[ic].dir.c_str());cdir->cd();
+      for(int ic=0;ic<ncats;++ic){
+        TDirectory*cdir=mkpath(d,cats[ic].dir);cdir->cd();
         for(int pl=0;pl<N_PLANES;++pl){
           TCanvas*cbg=new TCanvas((sp+"_c_tof_corr_bgsub_"+plane_names[pl]).c_str(),
                                    (sp+" tof corr bgsub "+plane_names[pl]).c_str(),1600,1000);
@@ -917,6 +1149,103 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
         {TH1D* hb=bgsub_tof(h_tof_corr_tot[is][ic].GetPtr());hb->DrawCopy();delete hb;}
         wc(cbgs);
       }
+      sdir->cd();
+    }
+
+    // Proton-tagged tof: one sub-directory per tracking variant.  The proton-only
+    // (no-track) histos are shared across variants; each variant folder draws them
+    // alongside its own proton+track histos so the ratio is self-contained.
+    {
+      TDirectory*d=sdir->mkdir("proton_id");
+      for(int it=0; it<ntracks; ++it){
+        const std::string& tu=tracks[it].tsuf;
+        TDirectory*td=mkpath(d,tracks[it].dir); td->cd();
+
+        TCanvas*c=new TCanvas((sp+"_c_proton_tof").c_str(),(sp+" proton tof").c_str(),1800,600);
+        c->Divide(3,1);
+        c->cd(1); h_proton_tof[is]->DrawCopy();
+        c->cd(2); h_proton_track_tof[is][it]->DrawCopy();
+        c->cd(3);
+        TH1D* hratio=(TH1D*)h_proton_track_tof[is][it]->Clone((sp+"_proton_track_ratio"+tu).c_str());
+        hratio->SetTitle((sp+" proton track/total;tof-L/c(ns);ratio").c_str());
+        hratio->Divide(h_proton_tof[is].GetPtr());
+        hratio->DrawCopy(); delete hratio;
+        wc(c);
+
+        // Sideband-subtracted efficiency: (track-bg)/(total-bg)
+        // Background = mean bin content in first 50 ns of x-range
+        TCanvas*csb=new TCanvas((sp+"_c_proton_tof_sb").c_str(),(sp+" proton tof sb-sub").c_str(),1800,600);
+        csb->Divide(3,1);
+        TH1D* hp_rb=(TH1D*)h_proton_tof[is]->Clone((sp+"_proton_rb"+tu).c_str());       hp_rb->Rebin(PROTON_REBIN);
+        TH1D* ht_rb=(TH1D*)h_proton_track_tof[is][it]->Clone((sp+"_proton_track_rb"+tu).c_str()); ht_rb->Rebin(PROTON_REBIN);
+        TH1D* hpb=flat_bgsub(hp_rb);
+        TH1D* htb=flat_bgsub(ht_rb);
+        delete hp_rb; delete ht_rb;
+        TH1D* hratio_sb=(TH1D*)htb->Clone((sp+"_proton_track_ratio_sb"+tu).c_str());
+        hratio_sb->SetTitle((sp+" proton (track-bg)/(total-bg);tof-L/c(ns);ratio").c_str());
+        hratio_sb->Divide(hpb);
+        csb->cd(1); hpb->DrawCopy();
+        csb->cd(2); htb->DrawCopy();
+        csb->cd(3); hratio_sb->DrawCopy();
+        wc(csb);
+        delete hpb; delete htb; delete hratio_sb;
+
+        // Per-paddle canvases for planes 001 and 101
+        for(int pp=0;pp<2;++pp){
+          const int pi=(pp==0)?1:3;
+          const std::string pn=plane_names[pi];
+
+          TCanvas*cp=new TCanvas((sp+"_c_proton_"+pn).c_str(),(sp+" proton "+pn+" per paddle").c_str(),1600,1000);
+          cp->Divide(4,3);
+          for(int pa=0;pa<N_PADDLES;++pa){cp->cd(pa+1);h_proton_pad[is][pp][pa]->DrawCopy();}
+          wc(cp);
+
+          TCanvas*ct=new TCanvas((sp+"_c_proton_track_"+pn).c_str(),(sp+" proton+track "+pn+" per paddle").c_str(),1600,1000);
+          ct->Divide(4,3);
+          for(int pa=0;pa<N_PADDLES;++pa){ct->cd(pa+1);h_proton_track_pad[is][it][pp][pa]->DrawCopy();}
+          wc(ct);
+
+          TCanvas*cr=new TCanvas((sp+"_c_proton_ratio_"+pn).c_str(),(sp+" proton ratio "+pn+" per paddle").c_str(),1600,1000);
+          cr->Divide(4,3);
+          for(int pa=0;pa<N_PADDLES;++pa){
+            cr->cd(pa+1);
+            TH1D* hr=(TH1D*)h_proton_track_pad[is][it][pp][pa]->Clone(
+              (sp+"_proton_ratio_p"+std::to_string(pi)+"_b"+std::to_string(pa)+tu).c_str());
+            hr->Divide(h_proton_pad[is][pp][pa].GetPtr());
+            hr->DrawCopy(); delete hr;
+          }
+          wc(cr);
+        }
+
+        // Summary canvases: 3 pads (plane 001, plane 101, total)
+        {
+          TCanvas*csp2=new TCanvas((sp+"_c_proton_sum").c_str(),(sp+" proton plane sums").c_str(),1800,600);
+          csp2->Divide(3,1);
+          csp2->cd(1);h_proton_psum[is][0]->DrawCopy();
+          csp2->cd(2);h_proton_psum[is][1]->DrawCopy();
+          csp2->cd(3);h_proton_tof[is]->DrawCopy();
+          wc(csp2);
+
+          TCanvas*cst2=new TCanvas((sp+"_c_proton_track_sum").c_str(),(sp+" proton+track plane sums").c_str(),1800,600);
+          cst2->Divide(3,1);
+          cst2->cd(1);h_proton_track_psum[is][it][0]->DrawCopy();
+          cst2->cd(2);h_proton_track_psum[is][it][1]->DrawCopy();
+          cst2->cd(3);h_proton_track_tof[is][it]->DrawCopy();
+          wc(cst2);
+
+          TCanvas*csr2=new TCanvas((sp+"_c_proton_ratio_sum").c_str(),(sp+" proton ratio plane sums").c_str(),1800,600);
+          csr2->Divide(3,1);
+          for(int pp=0;pp<2;++pp){
+            csr2->cd(pp+1);
+            TH1D* hr=(TH1D*)h_proton_track_psum[is][it][pp]->Clone((sp+"_proton_ratio_sum_"+std::to_string(pp)+tu).c_str());
+            hr->Divide(h_proton_psum[is][pp].GetPtr()); hr->DrawCopy(); delete hr;
+          }
+          csr2->cd(3);
+          {TH1D* hr=(TH1D*)h_proton_track_tof[is][it]->Clone((sp+"_proton_ratio_total"+tu).c_str());
+           hr->Divide(h_proton_tof[is].GetPtr()); hr->DrawCopy(); delete hr;}
+          wc(csr2);
+        }
+      } // end tracking-variant loop
       sdir->cd();
     }
 
