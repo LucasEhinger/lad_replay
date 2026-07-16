@@ -54,8 +54,8 @@ const int NBINS_PT   = 150;
 const double XMIN_PT = -5., XMAX_PT = 10.;
 const int NBINS_EDEP   = 200;
 const double XMIN_EDEP = 0., XMAX_EDEP = 100.;
-const int NBINS_EDEP_AMP   = 300;
-const double XMIN_EDEP_AMP = 0., XMAX_EDEP_AMP = 300.;
+const int NBINS_EDEP_AMP   = 400;
+const double XMIN_EDEP_AMP = 0., XMAX_EDEP_AMP = 400.;
 
 // const char *DEFAULT_DAT_FILE = "files/runlists/test.dat";
 const char *DEFAULT_DAT_FILE = "files/runlists/all_C3_runlist_22745-23590.dat";
