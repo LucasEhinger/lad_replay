@@ -30,7 +30,7 @@ lgem_m1_position = -0.00165544, 0.259285, 96.2848
 lgem_m1_angle = 127, 0.587734; deg 
 lgem_m1_rotation = -20.8754 , -0.189912, 0.561991; deg
 
-lgem_d0_cut = 20000.0; cm
+lgem_d0_cut = 20.0; cm
 
 
 ; strip angles
