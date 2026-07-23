@@ -23,6 +23,12 @@ l_rf_offset =   22013,          -0.15,      -3.65,
 
 l_rf_period = 4.00801
 
+; --- Tracking-mode toggles ---
+; Which optional tracking passes THcLADKine runs (1 = on, 0 = off).
+ldo_noVertex_tracking = 0  ; no-vertex tracking (free line, no target vertex)
+ldo_xz_tracking       = 0  ; x-z (no-y) tracking: fit only x and z, drop the y residual
+                           ; the no-vertex x-z pass runs only when BOTH toggles are 1
+
 ; --- Track fit constraints (set to the code defaults) ---
 ; Angles are in RADIANS to match the values used in the track fit.
 lz_cell_min = -15.0        ; cm
