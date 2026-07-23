@@ -88,7 +88,8 @@ const char* const plane_names[N_PLANES]={"000","001","100","101","200"};
 const std::array<char,N_SPECS> specs={'P','H'};
 
 const char *DEFAULT_DAT_FILE="files/all_C3_runlist_22745-23590.dat";
-const char *DEFAULT_OUT_FILE="files/root_fast/timing_C3_22745-23590_PH.root";
+// const char *DEFAULT_DAT_FILE="files/all_C3_runlist_good_only.dat";
+const char *DEFAULT_OUT_FILE="files/root_fast/timing_C3_22745-23590_PH_all_5k.root";
 
 // =====================================================================
 
@@ -156,7 +157,7 @@ struct Track { std::string dir, tsuf; };
 struct Cat { std::string suf, dir; int chi_mode; std::string tsuf; };
 
 void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DEFAULT_OUT_FILE,
-                  int nthreads=4) {
+                  int nthreads=100) {
 
   gROOT->SetBatch(kTRUE);
   TH1::AddDirectory(kFALSE);
