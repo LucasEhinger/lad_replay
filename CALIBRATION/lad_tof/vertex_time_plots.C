@@ -1,7 +1,7 @@
 // vertex_time_plots.C
 // Reads a runlist of ROOT files, makes per-run vertex-time histograms,
 // fits a Gaussian to each, and produces run-number vs mean and width plots.
-// Usage in ROOT: .x vertex_time_plots.C("all_C3_runlist.dat");
+// Usage in ROOT: .x vertex_time_plots.C("../files/run-lists/all_C3_runlist.dat");
 
 #include <TCanvas.h>
 #include <TChain.h>
@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-void vertex_time_plots(const char *listfile = "files/all_C3_runlist.dat", const char *spec_prefix = "H",
+void vertex_time_plots(const char *listfile = "../files/run-lists/all_C3_runlist.dat", const char *spec_prefix = "H",
                        double etot_cut = 0.7) {
   gStyle->SetOptFit(1111);
   gROOT->SetBatch(kTRUE);

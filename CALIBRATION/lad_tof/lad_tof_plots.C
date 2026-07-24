@@ -806,9 +806,9 @@ int lad_tof_plots() {
   // "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/LAD_COIN/PRODUCTION/LAD_COIN_22572_0_6_2000000.root"};
   // "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/LAD_COIN/PRODUCTION/LAD_COIN_22382_0_21_-1.root",
   // "/volatile/hallc/c-lad/ehingerl/lad_replay/ROOTfiles/LAD_COIN/PRODUCTION/LAD_COIN_22382_0_21_-1_1.root"};
-  std::vector<TString> fileNames = get_file_names("files/all_C3_runlist_22745-23590.dat");
-  // std::vector<TString> fileNames = get_file_names("files/all_C3_runlist_23700.dat");
-  // std::vector<TString> fileNames = get_file_names("files/all_C3_runlist.dat");
+  std::vector<TString> fileNames = get_file_names("../files/run-lists/all_C3_runlist_22745-23590.dat");
+  // std::vector<TString> fileNames = get_file_names("../files/run-lists/all_C3_runlist_23700.dat");
+  // std::vector<TString> fileNames = get_file_names("../files/run-lists/all_C3_runlist.dat");
   // std::vector<TString> fileNames = get_file_names("files/LD2_setting1_new2.dat");
 
   TString outputFileName = Form("files/root/updated_timing_plots_C3_22745-23590_%c.root", spec_prefix);

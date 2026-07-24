@@ -87,8 +87,8 @@ const double hodo_radii[N_PLANES]={615.,655.6,523.,563.6,615.}; // cm
 const char* const plane_names[N_PLANES]={"000","001","100","101","200"};
 const std::array<char,N_SPECS> specs={'P','H'};
 
-const char *DEFAULT_DAT_FILE="files/all_C3_runlist_22745-23590.dat";
-// const char *DEFAULT_DAT_FILE="files/all_C3_runlist_good_only.dat";
+const char *DEFAULT_DAT_FILE="../files/run-lists/all_C3_runlist_22745-23590.dat";
+// const char *DEFAULT_DAT_FILE="../files/run-lists/all_C3_runlist_good_only.dat";
 const char *DEFAULT_OUT_FILE="files/root_fast/timing_C3_22745-23590_PH_all_5k.root";
 
 // =====================================================================

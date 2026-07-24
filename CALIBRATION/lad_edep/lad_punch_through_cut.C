@@ -57,8 +57,8 @@ const double XMIN_EDEP = 0., XMAX_EDEP = 100.;
 const int NBINS_EDEP_AMP   = 400;
 const double XMIN_EDEP_AMP = 0., XMAX_EDEP_AMP = 400.;
 
-// const char *DEFAULT_DAT_FILE = "files/runlists/test.dat";
-const char *DEFAULT_DAT_FILE = "files/runlists/all_C3_runlist_22745-23590.dat";
+// const char *DEFAULT_DAT_FILE = "../files/run-lists/test.dat";
+const char *DEFAULT_DAT_FILE = "../files/run-lists/all_C3_runlist_22745-23590.dat";
 const char *DEFAULT_OUT_FILE = "files/punch_through_cut/punch_through_cut.root";
 
 // =====================================================================

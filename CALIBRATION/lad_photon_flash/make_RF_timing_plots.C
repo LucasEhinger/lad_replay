@@ -103,7 +103,7 @@ const double PHASE_WIN_MIN =  -50.;   // satellite-peak window (exactly 15 perio
 const double PHASE_WIN_MAX =   10.;   // just below the main peak so the two techniques compare)
 
 const char *DEFAULT_DAT_FILE =
-  "files/all_C3_runlist_22745-23590.dat";
+  "../files/run-lists/all_C3_runlist_22745-23590.dat";
 const char *DEFAULT_OUT_FILE = "files/root/RF_timing_plots_full.root";
 
 // label for target index t: 0..4 -> plane name, 5 -> "total"
