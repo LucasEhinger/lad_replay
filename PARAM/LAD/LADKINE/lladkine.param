@@ -28,6 +28,15 @@ l_rf_period = 4.00801
 ldo_noVertex_tracking = 0  ; no-vertex tracking (free line, no target vertex)
 ldo_xz_tracking       = 0  ; x-z (no-y) tracking: fit only x and z, drop the y residual
                            ; the no-vertex x-z pass runs only when BOTH toggles are 1
+ldo_1Dcluster_tracking = 0 ; 1D-cluster tracking: seed from individual GEM strip
+                           ; clusters (unpaired U/V) + vertex + hodoscope instead of
+                           ; 2D space points, so a plane missing a U or V cluster still
+                           ; tracks. Writes the P/H.ladkin.trk1d.* branches; leaves the
+                           ; existing 2D-space-point tracking untouched for comparison.
+; 1D-cluster tracking combinatorics limits (only used when the flag above is 1):
+lmax_1Dcluster_per_slot  = 3    ; clusters kept per (layer,axis) slot, highest ADC
+                                ; first (enumeration ~ (per_slot+1)^4). <=0 = no limit.
+lmax_1Dcluster_candidates = 2000 ; max candidate tracks stored per event. <=0 = no limit.
 
 ; --- Track fit constraints (set to the code defaults) ---
 ; Angles are in RADIANS to match the values used in the track fit.
