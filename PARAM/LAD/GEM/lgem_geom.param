@@ -40,7 +40,7 @@ lgem_m1_rotation = -0.322357 ,0.0888885,  -0.0762915; deg
 ;lgem_m1_angle = 126.546, -0.0137295; deg 
 ;lgem_m1_rotation = 1.36714 ,0.860878,  -0.0538969; deg
 
-lgem_d0_cut = 200; cm
+lgem_d0_cut = 20; cm
 
 
 ; strip angles
