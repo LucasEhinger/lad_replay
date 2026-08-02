@@ -20,16 +20,27 @@ lgem_m0_apvmap = 1
 lgem_m1_apvmap = 1
 
 ; Positions, all units in cm
-lgem_m0_position =  -0.0591264, 0.73661, 84.9545; 2nd alignment pass
-lgem_m0_angle = 126.585, 0.538076; deg 
-lgem_m0_rotation = 1.62673,0.984291, 0.247989; deg
+; SHMS at 17 deg
+lgem_m0_position =  0.0390553, 1.33479, 85.9126; 
+lgem_m0_angle = 127.008, 0.057755; deg 
+lgem_m0_rotation = -1.1876, 1.26238, -0.049502; deg
 
 
-lgem_m1_position = -0.0415148, 1.32821, 104.098
-lgem_m1_angle = 126.546, -0.0137295; deg 
-lgem_m1_rotation = 1.36714 ,0.860878,  -0.0538969; deg
+lgem_m1_position = -0.0337049, 1.33553, 105.913
+lgem_m1_angle = 127, 0.000285756; deg 
+lgem_m1_rotation = -0.322357 ,0.0888885,  -0.0762915; deg
 
-lgem_d0_cut = 20; cm
+; SHMS at 13.5 deg
+;lgem_m0_position =  -0.0591264, 0.73661, 84.9545; 2nd alignment pass
+;lgem_m0_angle = 126.585, 0.538076; deg 
+;lgem_m0_rotation = 1.62673,0.984291, 0.247989; deg
+
+
+;lgem_m1_position = -0.0415148, 1.32821, 104.098
+;lgem_m1_angle = 126.546, -0.0137295; deg 
+;lgem_m1_rotation = 1.36714 ,0.860878,  -0.0538969; deg
+
+lgem_d0_cut = 200; cm
 
 
 ; strip angles
