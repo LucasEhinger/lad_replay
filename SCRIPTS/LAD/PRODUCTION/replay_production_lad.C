@@ -117,6 +117,8 @@ void replay_production_lad(Int_t RunNumber = 0, Int_t MaxEvent = 0, int run_type
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
+  // GEM alignment for this run's SHMS angle; selected by run number in standard.database
+  gHcParms->Load(gHcParms->GetString("g_ctp_lad_gem_align_filename"));
   gHcParms->Load("PARAM/TRIG/tshms.param");
 
   // Load correct GEM common mode and pedestal files

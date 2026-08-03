@@ -20,26 +20,15 @@ lgem_m1_layer = 1
 lgem_m0_apvmap = 1
 lgem_m1_apvmap = 1
 
-; Positions, all units in cm
-; SHMS at 17 deg
-lgem_m0_position =  0.0390553, 1.33479, 85.9126; 
-lgem_m0_angle = 127.008, 0.057755; deg 
-lgem_m0_rotation = -1.1876, 1.26238, -0.049502; deg
-
-
-lgem_m1_position = -0.0337049, 1.33553, 105.913
-lgem_m1_angle = 127, 0.000285756; deg 
-lgem_m1_rotation = -0.322357 ,0.0888885,  -0.0762915; deg
-
-; SHMS at 13.5 deg
-;lgem_m0_position =  -0.0591264, 0.73661, 84.9545; 2nd alignment pass
-;lgem_m0_angle = 126.585, 0.538076; deg 
-;lgem_m0_rotation = 1.62673,0.984291, 0.247989; deg
-
-
-;lgem_m1_position = -0.0415148, 1.32821, 104.098
-;lgem_m1_angle = 126.546, -0.0137295; deg 
-;lgem_m1_rotation = 1.36714 ,0.860878,  -0.0538969; deg
+; Module positions/angles/rotations (lgem_mN_position, _angle, _rotation) are
+; NOT set here.  They depend on the SHMS angle, so they live in per-setting
+; files that standard.database picks by run number:
+;   PARAM/LAD/GEM/lgem_align_shms17.param    (SHMS 17 deg,   runs < 23426)
+;   PARAM/LAD/GEM/lgem_align_shms13p5.param  (SHMS 13.5 deg, runs >= 23426)
+; See g_ctp_lad_gem_align_filename in DBASE/LAD/standard.database and
+; DBASE/LAD_COIN/standard.database.  Do not add alignment constants here --
+; this file is #include'd from general.param, which is loaded without a run
+; number, so anything set here would override the run-selected values.
 
 lgem_d0_cut = 20; cm
 
