@@ -1,0 +1,15 @@
+; LAD GEM alignment -- SHMS at 17 deg
+;
+; Selected by run number via g_ctp_lad_gem_align_filename in
+; DBASE/LAD/standard.database and DBASE/LAD_COIN/standard.database.
+; Do not #include this file directly.
+;
+; Positions, all units in cm
+
+lgem_m0_position =  0.0390553, 1.33479, 85.9126;
+lgem_m0_angle = 127.008, 0.057755; deg
+lgem_m0_rotation = -1.1876, 1.26238, -0.049502; deg
+
+lgem_m1_position = -0.0337049, 1.33553, 105.913
+lgem_m1_angle = 127, 0.000285756; deg
+lgem_m1_rotation = -0.322357 ,0.0888885,  -0.0762915; deg

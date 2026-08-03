@@ -1,0 +1,7 @@
+; LAD hodoscope ADC-TDC offsets -- before the May 16 timing shift
+;
+; Selected by run number via g_ctp_lad_hodo_offset_filename in
+; DBASE/LAD_COIN/standard.database.  Do not #include this file directly.
+
+pladhodo_adc_tdc_offset = 1950, 1950, 1950, 1950, 1950, 1950
+hladhodo_adc_tdc_offset = 1897, 1897, 1897, 1897, 1897, 1897

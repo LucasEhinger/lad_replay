@@ -47,18 +47,21 @@ lladhodo_slop     =    2.,  2.,  2.,  2., 2., 2.
 
 ; lladhodo_tdc_offset is array of time offsets for all paddles in a plane
 ;   to move the tdc to between 0 and 4000 channels.
-;lladhodo_tdc_offset = 1580, 1580, 1580, 1580, 1580
-
 lladhodo_tdc_offset = 1580, 1580, 1580, 1580, 1580, 1580
 hladhodo_tdc_offset = 31700, 31700, 31700, 31700, 31700, 31700
 pladhodo_tdc_offset = 31700, 31700, 31700, 31700, 31700, 31700
 
 lladhodo_adc_tdc_offset = 1880, 1880, 1880, 1880, 1880, 1880
-pladhodo_adc_tdc_offset = 1950, 1950, 1950, 1950, 1950, 1950
-hladhodo_adc_tdc_offset = 1897, 1897, 1897, 1897, 1897, 1897
 
-;Offset changed with HCANA update (April 2021)
-;lladhodo_adc_tdc_offset = 171., 171., 171., 171., 171., 171.
+; pladhodo_adc_tdc_offset and hladhodo_adc_tdc_offset are NOT set here.
+; They changed with the May 16 timing shift, so they live in per-period
+; files that standard.database picks by run number:
+;   PARAM/LAD/HODO/lhodo_adc_tdc_offsets_preMay16.param  (runs < 22590)
+;   PARAM/LAD/HODO/lhodo_adc_tdc_offsets_May16.param     (runs >= 22590)
+; See g_ctp_lad_hodo_offset_filename in DBASE/LAD_COIN/standard.database.
+; Do not add them back here -- this file is #include'd from general.param,
+; which is loaded without a run number, so anything set here would override
+; the run-selected values.
 
 ; HMS ladhodoscope Parameter File Containing TimeWindow Min/Max Cuts
 ;Startup of XEM 2022 with run 4402

@@ -20,17 +20,17 @@ lgem_m1_layer = 1
 lgem_m0_apvmap = 1
 lgem_m1_apvmap = 1
 
-; Positions, all units in cm
-lgem_m0_position =  -0.0447779, 0.736818, 84.9568; 2nd alignment pass
-lgem_m0_angle = 126.594, 0.53828; deg 
-lgem_m0_rotation = 1.37655,0.986246, 0.247089; deg
+; Module positions/angles/rotations (lgem_mN_position, _angle, _rotation) are
+; NOT set here.  They depend on the SHMS angle, so they live in per-setting
+; files that standard.database picks by run number:
+;   PARAM/LAD/GEM/lgem_align_shms17.param    (SHMS 17 deg,   runs < 23426)
+;   PARAM/LAD/GEM/lgem_align_shms13p5.param  (SHMS 13.5 deg, runs >= 23426)
+; See g_ctp_lad_gem_align_filename in DBASE/LAD/standard.database and
+; DBASE/LAD_COIN/standard.database.  Do not add alignment constants here --
+; this file is #include'd from general.param, which is loaded without a run
+; number, so anything set here would override the run-selected values.
 
-
-lgem_m1_position = -0.000405143, 1.32821, 104.104
-lgem_m1_angle = 126.545, -0.0137263; deg 
-lgem_m1_rotation = 1.35703 ,0.860877,  -0.0537995; deg
-
-lgem_d0_cut = 20.0; cm
+lgem_d0_cut = 20; cm
 
 
 ; strip angles
@@ -43,10 +43,6 @@ lgem_m1_uangle = 90.0
 lgem_m1_vangle = 180.0
 
 ; Number of strips
-;lgem_m0_nstripsu = 3072
-;lgem_m0_nstripsv = 1536
-;lgem_m1_nstripsu = 3072
-;lgem_m1_nstripsv = 1536
 lgem_m0_nstripsv = 3072
 lgem_m0_nstripsu = 1536
 lgem_m1_nstripsv = 3072
