@@ -43,10 +43,6 @@ lgem_m1_uangle = 90.0
 lgem_m1_vangle = 180.0
 
 ; Number of strips
-;lgem_m0_nstripsu = 3072
-;lgem_m0_nstripsv = 1536
-;lgem_m1_nstripsu = 3072
-;lgem_m1_nstripsv = 1536
 lgem_m0_nstripsv = 3072
 lgem_m0_nstripsu = 1536
 lgem_m1_nstripsv = 3072

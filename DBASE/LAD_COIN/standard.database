@@ -10,6 +10,13 @@ g_ctp_lad_gem_align_filename = "PARAM/LAD/GEM/lgem_align_shms17.param"
 23426-99999
 g_ctp_lad_gem_align_filename = "PARAM/LAD/GEM/lgem_align_shms13p5.param"
 
+; LAD hodo ADC-TDC offsets changed with the May 16 timing shift at run 22590.
+0-22589
+g_ctp_lad_hodo_offset_filename = "PARAM/LAD/HODO/lhodo_adc_tdc_offsets_preMay16.param"
+
+22590-99999
+g_ctp_lad_hodo_offset_filename = "PARAM/LAD/HODO/lhodo_adc_tdc_offsets_May16.param"
+
 
 
 ## Everything below commented out. Can keep as template for run
