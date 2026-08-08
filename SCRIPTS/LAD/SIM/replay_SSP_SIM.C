@@ -8,6 +8,8 @@ void replay_SSP_SIM(int RunNumber = 111, int MaxEvent = 100) {
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
+  // GEM alignment for this run's SHMS angle; selected by run number in standard.database
+  gHcParms->Load(gHcParms->GetString("g_ctp_lad_gem_align_filename"));
   // gHcParms->Load("PARAM/LAD/GEM/lgem_geom.param");
   // gHcParms->Load("MAPS/LAD/DETEC/GEM/lgem_chan_mc.map");
   // gHcParms->Load("DB_LAD/lgem_cuts.param");

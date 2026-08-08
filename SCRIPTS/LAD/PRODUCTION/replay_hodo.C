@@ -38,6 +38,8 @@ void replay_hodo(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
+  // GEM alignment for this run's SHMS angle; selected by run number in standard.database
+  gHcParms->Load(gHcParms->GetString("g_ctp_lad_gem_align_filename"));
 
   // Load fadc debug parameters
   // gHcParms->Load("PARAM/HMS/GEN/h_fadc_debug.param");

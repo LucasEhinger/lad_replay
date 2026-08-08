@@ -130,14 +130,16 @@ void replay_production_no_lad(int RunNumber = 0, int MaxEvent = 0, int run_type 
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
+  // GEM alignment for this run's SHMS angle; selected by run number in standard.database
+  gHcParms->Load(gHcParms->GetString("g_ctp_lad_gem_align_filename"));
   // Load parameters for HMS and SHMS trigger configuration
   gHcParms->Load("PARAM/TRIG/tshms.param");
   gHcParms->Load("PARAM/TRIG/thms.param");
   // Load fadc debug parameters
   // gHcParms->Load("PARAM/SHMS/GEN/p_fadc_debug.param");
 
-  if (RunNumber > 22589)
-    gHcParms->Load("PARAM/LAD/HODO/lhodo_cuts_May16.param");
+  // LAD hodo ADC-TDC offsets for this run period; selected by run number in standard.database
+  gHcParms->Load(gHcParms->GetString("g_ctp_lad_hodo_offset_filename"));
 
   // Load the Hall C detector map
   // Load map depending on whether run is before or after SHMS DC swap
