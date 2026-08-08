@@ -35,8 +35,15 @@ ldo_1Dcluster_tracking = 0 ; 1D-cluster tracking: seed from individual GEM strip
                            ; existing 2D-space-point tracking untouched for comparison.
 ; 1D-cluster tracking combinatorics limits (only used when the flag above is 1):
 lmax_1Dcluster_per_slot  = 3    ; clusters kept per (layer,axis) slot, highest ADC
-                                ; first (enumeration ~ (per_slot+1)^4). <=0 = no limit.
-lmax_1Dcluster_candidates = 2000 ; max candidate tracks stored per event. <=0 = no limit.
+                                ; first. <=0 = no limit.
+lmax_1Dcluster_candidates = 2000 ; cap on projective fits attempted per event. <=0 = no limit.
+; Hodoscope resolutions used ONLY by the 1D-cluster projective tracking (cm).
+; x-z is the coarse paddle direction (~ paddle width / sqrt(12)); y is the finer
+; along-paddle (timing) coordinate. hodo_xz_zero_hw zeroes the x-z hodo residual
+; within this half-width (0 = off; this replaces the old hard-coded half-paddle zeroing).
+lsigma_hodo_x    = 6.0 ; cm
+lsigma_hodo_y    = 3.0 ; cm
+lhodo_xz_zero_hw = 0.0 ; cm
 
 ; --- Track fit constraints (set to the code defaults) ---
 ; Angles are in RADIANS to match the values used in the track fit.
