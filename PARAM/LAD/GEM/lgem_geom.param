@@ -1,8 +1,12 @@
 ; LAD GEM geometry
 ; Total two layers, each has one module
 
-lgem_chanmap_file = "MAPS/LAD/DETEC/GEM/lgem_chan.map" ; 
-;If using sim (is_mc=1), chanmap must be "MAPS/LAD/DETEC/GEM/lgem_chan_mc.map"
+lgem_chanmap_file = "MAPS/LAD/DETEC/GEM/lgem_chan.map" ;
+; This default is for data. THcLADGEMModule::ReadDatabase() automatically
+; overrides it to "MAPS/LAD/DETEC/GEM/lgem_chan_mc.map" whenever the global
+; is_mc flag is 1, so no manual edit is needed here for sim replays -- just
+; make sure is_mc is set (see PARAM/LAD/HODO/lhodo_cuts_mc.param, pulled in
+; by DBASE/LAD/general_mc.param).
 
 lgem_pedestal_mode = 0 ; temp test
 lgem_pedfile = "PARAM/LAD/GEM/gem_ped_22528.dat" ;
