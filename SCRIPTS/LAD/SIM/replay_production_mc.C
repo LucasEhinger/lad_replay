@@ -1,5 +1,18 @@
-#include "../LAD_link_defs.h"
-void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
+// Replays digitized LAD Monte Carlo (hodoscope + GEM) through the same
+// analysis framework used for data (c.f.
+// SCRIPTS/LAD_COIN/PRODUCTION/replay_production_lad_spec.C).
+//
+// Input file resolution:
+//   - If InputFile is given, it is used verbatim (e.g. for the fake/test
+//     digitized file produced by libLADdig/test_scripts/lad_fake_g4.cxx +
+//     laddig).
+//   - Otherwise, falls back to a RunNumber-based path under
+//     ROOTfiles/LAD/SIM/INPUT/, which is a symlink -- locally it points at
+//     libLADdig/output; on a farm/production machine, re-point it at
+//     wherever real digitized G4SBS output lives, e.g.
+//     /volatile/hallc/c-lad/ehingerl/G4_LAD/carlos_proton/dig. See
+//     libLADdig/README.md for how to (re)create the symlink.
+void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0, const char *InputFile = "") {
 
   // Get RunNumber and MaxEvent if not provided.
   if (RunNumber == 0) {
@@ -13,18 +26,23 @@ void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
     cin >> MaxEvent;
     if (MaxEvent == 0) {
       cerr << "...Invalid entry\n";
-      exit;
+      return;
     }
   }
 
   // Load Global parameters
   // Add variables to global list.
   gHcParms->Define("gen_run_number", "Run Number", RunNumber);
-  gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD/standard.database");
+  // standard_mc.database is identical to standard.database except it points
+  // g_ctp_parm_filename at general_mc.param, which sets is_mc=1. That single
+  // global flag drives all the MC-vs-data switching in THcLADHodoscope,
+  // THcLADHodoPlane and THcLADGEMModule (chanmap selection, pedestal/
+  // common-mode subtraction) -- nothing here needs to change per detector.
+  gHcParms->AddString("g_ctp_database_filename", "DBASE/LAD/standard_mc.database");
   gHcParms->Load(gHcParms->GetString("g_ctp_database_filename"), RunNumber);
   gHcParms->Load(gHcParms->GetString("g_ctp_parm_filename"));
   gHcParms->Load(gHcParms->GetString("g_ctp_kinematics_filename"), RunNumber);
-  // GEM alignment for this run's SHMS angle; selected by run number in standard.database
+  // GEM alignment for this run's SHMS angle; selected by run number in standard_mc.database
   gHcParms->Load(gHcParms->GetString("g_ctp_lad_gem_align_filename"));
 
   // Load the Hall C detector map
@@ -48,8 +66,9 @@ void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
 
   THaEvent *event = new THaEvent;
 
-  // TString run_file = "../libLADdig/test_scripts/lad_hodo_gem_sim.root";
-  TString run_file = Form("/volatile/hallc/c-lad/ehingerl/G4_LAD/carlos_proton/dig/ScanLAD_proton_%dMeV_10k_20240205_dig.root", RunNumber);
+  TString run_file = TString(InputFile).IsNull()
+                          ? Form("ROOTfiles/LAD/SIM/INPUT/ScanLAD_proton_%dMeV_10k_20240205_dig.root", RunNumber)
+                          : TString(InputFile);
   THaRunBase *run = new LADSimFile(run_file.Data(), "lad", "");
 
   // Set to read in Hall C run database parameters
@@ -72,8 +91,7 @@ void replay_production_mc(Int_t RunNumber = 0, Int_t MaxEvent = 0) {
   // Define crate map
   analyzer->SetCrateMapFileName("MAPS/db_cratemap_mc.dat");
   // Define output ROOT file
-
-  analyzer->SetOutFile(Form("ROOTfiles/full_mc_%dMeV_%d_v2.root", RunNumber, MaxEvent));
+  analyzer->SetOutFile(Form("ROOTfiles/LAD/SIM/full_mc_%dMeV_%d_v2.root", RunNumber, MaxEvent));
   // // Define output DEF-file
   analyzer->SetOdefFile("DEF-files/LAD/PRODUCTION/lstackana_production_all.def");
   // // Define cuts file

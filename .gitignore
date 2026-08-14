@@ -16,7 +16,7 @@ RAID
 REPORT_OUTPUT
 HISTOGRAMS
 MON_OUTPUT
-ROOTfiles
+ROOTfiles/*
 FULL_REPORT_OUTPUT
 .root_history
 raw
@@ -44,3 +44,10 @@ PARAM/LAD/HODO/ladhodo_Vpcalib_*.param
 !PARAM/LAD/HODO/ladhodo_Vpcalib_229.param
 !PARAM/LAD/HODO/ladhodo_Vpcalib_22827.param
 !PARAM/LAD/HODO/ladhodo_Vpcalib_23798.param
+
+# ROOTfiles is bulk-ignored above, but the MC input symlink lives under it
+# and needs to be tracked -- it's how a checkout points sim replays at
+# wherever digitized MC actually lives (see libLADdig/README.md).
+!ROOTfiles/LAD
+!ROOTfiles/LAD/SIM
+!ROOTfiles/LAD/SIM/INPUT
