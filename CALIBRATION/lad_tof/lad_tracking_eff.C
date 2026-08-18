@@ -56,6 +56,7 @@
 #endif
 #endif
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdio>
@@ -102,6 +103,29 @@ const double XMIN_DT = -10., XMAX_DT = 30.; // t_back - t_front (ns)
 const int NBINS_E2 = 200;
 const double EMIN_F = 0., EMAX_F = 400.; // front-plane edep (MeV)
 const double EMIN_B = 0., EMAX_B = 150.; // back-plane  edep (MeV)
+
+// GEM hit-position (x,y) plots for tracked proton hits. Position source:
+//   2D variants  -> <sp>.gem.trk.x1/y1 (GEM0) and .x2/y2 (GEM1), indexed by the
+//                   variant's goodhit_trackid<suf> (track id == trk array index).
+//   1D variants  -> <sp>.ladhod.goodhit_trk1D_x0/y0 (GEM0) and _x1/y1 (GEM1),
+//                   the winning 1D-cluster lab position (-1000 = none).
+// These branches are optional; a variant/spectrometer without them is skipped.
+// Binning (lab cm): x ~ [36,102], y ~ [-26,24] in data -> framed generously.
+const int GEM_NX1 = 130, GEM_NY1 = 100;             // 1D projections (1 cm bins)
+const int GEM_NX2 = 65, GEM_NY2 = 50;               // 2D x-vs-y (2 cm bins)
+const double GEM_XLO = 0., GEM_XHI = 130.;          // x range (cm)
+const double GEM_YLO = -50., GEM_YHI = 50.;         // y range (cm)
+// tof-L/c regions used to split the GEM hits: all / out-of-time sideband (oot) /
+// in-time sideband (it) / coincidence peak. Non-overlapping (except "all").
+const int N_GREG = 4;
+const char *const GREG_NAME[N_GREG] = {"all", "oot", "it", "peak"};
+// Per-region tof intervals (a hit is in-region if its corrected tof falls in any
+// interval). "all" uses a catch-all interval. See SB_* and the [30,50] peak.
+const std::vector<std::vector<std::array<double, 2>>> GREG_INT = {
+    {{-1e9, 1e9}},                                // all
+    {{SB_LO1, SB_HI1}, {SB_LO2, SB_HI2}},         // oot: [-150,-100] u [125,175]
+    {{-25., 30.}, {50., 125.}},                   // it:  [-25,30] u [50,125]
+    {{30., 50.}}};                                // peak: [30,50]
 
 const double hodo_radii[N_PLANES] = {615., 655.6, 523., 563.6, 615.}; // cm
 const char *const plane_names[N_PLANES] = {"000", "001", "100", "101", "200"};
@@ -247,18 +271,52 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     std::cout << " " << t.dir;
   std::cout << "\n";
 
+  // Per-variant GEM hit-position availability (needs the position branches on
+  // BOTH spectrometers). 2D variants use <sp>.gem.trk.x1 + goodhit_trackid<suf>;
+  // 1D variants use the per-hit goodhit_trk1D_* branches. Absent -> no GEM plots
+  // for that variant (graceful on files replayed before these branches existed).
+  auto is1D_of = [](const Track &t) { return t.dir.rfind("1D_", 0) == 0; };
+  std::vector<bool> gem_ok(ntracks, false);
+  for (int it = 0; it < ntracks; ++it) {
+    bool ok = true;
+    for (int is = 0; is < N_SPECS && ok; ++is) {
+      const std::string sp(1, specs[is]);
+      if (is1D_of(tracks[it])) {
+        ok = has_branch(sp + ".ladhod.goodhit_trk1D_x0") && has_branch(sp + ".ladhod.goodhit_trk1D_y0") &&
+             has_branch(sp + ".ladhod.goodhit_trk1D_x1") && has_branch(sp + ".ladhod.goodhit_trk1D_y1");
+      } else {
+        ok = has_branch(sp + ".gem.trk.x1") && has_branch(sp + ".gem.trk.y1") && has_branch(sp + ".gem.trk.x2") &&
+             has_branch(sp + ".gem.trk.y2") && has_branch(sp + ".ladhod.goodhit_trackid" + tracks[it].tsuf);
+      }
+    }
+    gem_ok[it] = ok;
+  }
+  const bool any_gem = std::any_of(gem_ok.begin(), gem_ok.end(), [](bool b) { return b; });
+  std::cout << "[lad_tracking_eff] GEM hit-position plots: "
+            << (any_gem ? "enabled for variants" : "no position branches found; disabled");
+  if (any_gem)
+    for (int it = 0; it < ntracks; ++it)
+      if (gem_ok[it])
+        std::cout << " " << tracks[it].dir;
+  std::cout << "\n";
+  // GEM position plots are produced for every chi-square cut (one set of
+  // canvases per cut, in each cut's variant folder).
+
   // ---------------------------------------------------------------
   // 1c. Histogram cache decision. Build a configuration signature; if a cache
   //     file exists with a matching signature we load histograms from it and
   //     skip the (expensive) event loop. Bump CACHE_VERSION whenever the set of
   //     booked histograms changes so old caches are rejected.
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "v1";
+  const char *CACHE_VERSION = "v3"; // v3: GEM hit-position histograms per chi-square cut
   std::string sig = std::string("lad_tracking_eff;") + CACHE_VERSION + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";dt=" + std::to_string(NBINS_DT) + "," + std::to_string(XMIN_DT) + "," + std::to_string(XMAX_DT) +
          ";e2=" + std::to_string(NBINS_E2) + "," + std::to_string(EMIN_F) + "," + std::to_string(EMAX_F) + "," +
-         std::to_string(EMIN_B) + "," + std::to_string(EMAX_B) + ";cuts=";
+         std::to_string(EMIN_B) + "," + std::to_string(EMAX_B) +
+         ";gem=" + std::to_string(GEM_NX1) + "," + std::to_string(GEM_NY1) + "," + std::to_string(GEM_NX2) + "," +
+         std::to_string(GEM_NY2) + "," + std::to_string(GEM_XLO) + "," + std::to_string(GEM_XHI) + "," +
+         std::to_string(GEM_YLO) + "," + std::to_string(GEM_YHI) + ";cuts=";
   for (int ic = 0; ic < N_CUTS; ++ic)
     sig += std::to_string(CHI_CUT_SCALES[ic]) + ",";
   sig += ";vars=";
@@ -321,6 +379,27 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     }
     bind2.push_back(
         {&slot, df.Histo2D({nm.c_str(), tt.c_str(), NBINS_DT, XMIN_DT, XMAX_DT, NBINS_E2, ymin, ymax}, xcol, ycol)});
+  };
+  // GEM position booking: BKG1 books a 1D x- or y-position histogram (isX picks
+  // the x vs y binning), BKG2 books a 2D x-vs-y histogram. Both share the
+  // cache-aware fill/load behavior of BK1/BK2.
+  auto BKG1 = [&](TH1D *&slot, const std::string &col, const std::string &nm, const std::string &tt, bool isX) {
+    if (load) {
+      slot = dynamic_cast<TH1D *>(fcache->Get(nm.c_str()));
+      return;
+    }
+    const int nb = isX ? GEM_NX1 : GEM_NY1;
+    const double lo = isX ? GEM_XLO : GEM_YLO, hi = isX ? GEM_XHI : GEM_YHI;
+    bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), nb, lo, hi}, col)});
+  };
+  auto BKG2 = [&](TH2D *&slot, const std::string &xcol, const std::string &ycol, const std::string &nm,
+                  const std::string &tt) {
+    if (load) {
+      slot = dynamic_cast<TH2D *>(fcache->Get(nm.c_str()));
+      return;
+    }
+    bind2.push_back({&slot, df.Histo2D({nm.c_str(), tt.c_str(), GEM_NX2, GEM_XLO, GEM_XHI, GEM_NY2, GEM_YLO, GEM_YHI},
+                                       xcol, ycol)});
   };
 
   if (!load) { // sections 2-3 (aliases + column definitions) are only needed to fill
@@ -506,6 +585,113 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       for (const auto &tk : tracks)
         mk_pid("trk" + tk.tsuf + "_cut" + std::to_string(ic), true, sp + "_chiSquare" + tk.tsuf, tk.chi_lo,
                tk.chi_hi * CHI_CUT_SCALES[ic]);
+
+    // -----------------------------------------------------------------
+    // GEM hit-position columns (one set per chi-square cut). For each enabled
+    // variant and cut a single "packed" column stores, per selected+tracked
+    // proton hit (isProton==1, plane 001/101, chiSquare in the variant's cut
+    // window), five aligned doubles: {corrected tof, GEM0 x, GEM0 y, GEM1 x,
+    // GEM1 y}. Region/gem-filtered x/y columns for the histograms are then
+    // unpacked from it. Missing positions use the -1000 sentinel and are dropped
+    // by the >-999 filter below.
+    for (int it = 0; it < ntracks; ++it) {
+      if (!gem_ok[it])
+        continue;
+      const Track &tk = tracks[it];
+      const std::string &tu = tk.tsuf;
+      for (int ic = 0; ic < N_CUTS; ++ic) {
+      const std::string cc = "_cut" + std::to_string(ic);
+      const std::string pk = sp + "_gempack_" + tk.dir + cc;
+      const double clo = tk.chi_lo, chi = tk.chi_hi * CHI_CUT_SCALES[ic];
+      if (is1D_of(tk)) {
+        df = df.Define(
+            pk,
+            [clo, chi](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &t1, const RVd &ip1, const RVd &cs,
+                       const RVd &x0, const RVd &y0, const RVd &x1, const RVd &y1) {
+              RVd r;
+              for (size_t i = 0; i < pl1.size(); ++i) {
+                if (ip1[i] != 1.)
+                  continue;
+                int pi = (int)std::round(pl1[i]);
+                if (pi != 1 && pi != 3)
+                  continue;
+                if (!(cs[i] >= clo && cs[i] < chi))
+                  continue;
+                double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
+                r.push_back(tofc);
+                r.push_back(i < x0.size() ? x0[i] : -1000.);
+                r.push_back(i < y0.size() ? y0[i] : -1000.);
+                r.push_back(i < x1.size() ? x1[i] : -1000.);
+                r.push_back(i < y1.size() ? y1[i] : -1000.);
+              }
+              return r;
+            },
+            {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_tof_1", sp + "_isProton_1",
+             sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trk1D_x0", sp + ".ladhod.goodhit_trk1D_y0",
+             sp + ".ladhod.goodhit_trk1D_x1", sp + ".ladhod.goodhit_trk1D_y1"});
+      } else {
+        df = df.Define(
+            pk,
+            [clo, chi](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &t1, const RVd &ip1, const RVd &cs,
+                       const RVd &tid, const RVd &tx1, const RVd &ty1, const RVd &tx2, const RVd &ty2) {
+              RVd r;
+              for (size_t i = 0; i < pl1.size(); ++i) {
+                if (ip1[i] != 1.)
+                  continue;
+                int pi = (int)std::round(pl1[i]);
+                if (pi != 1 && pi != 3)
+                  continue;
+                if (!(cs[i] >= clo && cs[i] < chi))
+                  continue;
+                double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
+                int k = (i < tid.size()) ? (int)std::round(tid[i]) : -1;
+                double a = -1000., b = -1000., c = -1000., d = -1000.;
+                if (k >= 0 && k < (int)tx1.size()) {
+                  a = tx1[k];
+                  b = ty1[k];
+                  c = tx2[k];
+                  d = ty2[k];
+                }
+                r.push_back(tofc);
+                r.push_back(a);
+                r.push_back(b);
+                r.push_back(c);
+                r.push_back(d);
+              }
+              return r;
+            },
+            {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_tof_1", sp + "_isProton_1",
+             sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trackid" + tu, sp + ".gem.trk.x1", sp + ".gem.trk.y1",
+             sp + ".gem.trk.x2", sp + ".gem.trk.y2"});
+      }
+      // Region/gem-filtered x and y columns unpacked from the packed column.
+      // gem g uses pack offsets (x,y) = (1,2) for GEM0, (3,4) for GEM1.
+      for (int g = 0; g < 2; ++g) {
+        const int ox = (g == 0) ? 1 : 3, oy = (g == 0) ? 2 : 4;
+        for (int r = 0; r < N_GREG; ++r) {
+          const auto ivals = GREG_INT[r];
+          auto inReg = [ivals](double tofc) {
+            for (const auto &iv : ivals)
+              if (tofc >= iv[0] && tofc < iv[1])
+                return true;
+            return false;
+          };
+          const std::string base = sp + "_gem_" + tk.dir + cc + "_g" + std::to_string(g) + "_" + GREG_NAME[r];
+          // 1D x (mask x valid), 1D y (mask y valid), 2D pair (mask both valid).
+          df = df.Define(base + "_x", [inReg, ox](const RVd &p) {
+            RVd r; for (size_t h = 0; h + 4 < p.size(); h += 5) if (inReg(p[h]) && p[h + ox] > -999.) r.push_back(p[h + ox]); return r; }, {pk});
+          df = df.Define(base + "_y", [inReg, oy](const RVd &p) {
+            RVd r; for (size_t h = 0; h + 4 < p.size(); h += 5) if (inReg(p[h]) && p[h + oy] > -999.) r.push_back(p[h + oy]); return r; }, {pk});
+          df = df.Define(base + "_x2", [inReg, ox, oy](const RVd &p) {
+            RVd r; for (size_t h = 0; h + 4 < p.size(); h += 5) if (inReg(p[h]) && p[h + ox] > -999. && p[h + oy] > -999.) r.push_back(p[h + ox]); return r; }, {pk});
+          df = df.Define(base + "_y2", [inReg, ox, oy](const RVd &p) {
+            RVd r; for (size_t h = 0; h + 4 < p.size(); h += 5) if (inReg(p[h]) && p[h + ox] > -999. && p[h + oy] > -999.) r.push_back(p[h + oy]); return r; }, {pk});
+        }
+      }
+      } // end cut loop
+    }
   }
   } // end if(!load): RDF alias/define setup
 
@@ -524,6 +710,13 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   // edep-vs-tof 2D panels: proton-only (variant-independent) and proton+track.
   std::array<TH2D *, N_SPECS> h_pid_ef_pro{}, h_pid_eb_pro{};                            // front/back, proton cut
   std::array<std::array<std::array<TH2D *, N_TRACKS>, N_CUTS>, N_SPECS> h_pid_ef_trk{}, h_pid_eb_trk{}; // proton+track
+  // GEM hit-position histograms. Indices [spec][cut][variant][gem][region].
+  std::array<std::array<std::array<std::array<std::array<TH2D *, N_GREG>, 2>, N_TRACKS>, N_CUTS>, N_SPECS>
+      h_gem_xy{}; // x-vs-y 2D
+  std::array<std::array<std::array<std::array<std::array<TH1D *, N_GREG>, 2>, N_TRACKS>, N_CUTS>, N_SPECS>
+      h_gem_x{}; // x projection
+  std::array<std::array<std::array<std::array<std::array<TH1D *, N_GREG>, 2>, N_TRACKS>, N_CUTS>, N_SPECS>
+      h_gem_y{}; // y projection
 
   for (int is = 0; is < N_SPECS; ++is) {
     const std::string sp(1, specs[is]);
@@ -587,6 +780,26 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
             sp + "_pid_back_trk" + tu + cc,
             sp + " back edep vs tof (proton+track [" + td + "]);t_{back}-t_{front} (ns);back edep (MeV)", EMIN_B,
             EMAX_B);
+      }
+
+    // GEM hit-position histograms (per chi-square cut, enabled variants only).
+    for (int ic = 0; ic < N_CUTS; ++ic)
+      for (int it = 0; it < ntracks; ++it) {
+        if (!gem_ok[it])
+          continue;
+        const std::string &td = tracks[it].dir;
+        const std::string cc = "_cut" + std::to_string(ic);
+        for (int g = 0; g < 2; ++g) {
+          const std::string gl = (g == 0) ? "GEM0" : "GEM1";
+          for (int r = 0; r < N_GREG; ++r) {
+            const std::string base = sp + "_gem_" + td + cc + "_g" + std::to_string(g) + "_" + GREG_NAME[r];
+            const std::string ttl = sp + " " + td + " " + gl + " [" + GREG_NAME[r] + "]";
+            BKG2(h_gem_xy[is][ic][it][g][r], base + "_x2", base + "_y2", base + "_xy",
+                 ttl + " x vs y;x (cm);y (cm)");
+            BKG1(h_gem_x[is][ic][it][g][r], base + "_x", base + "_xh", ttl + " x;x (cm);Counts", true);
+            BKG1(h_gem_y[is][ic][it][g][r], base + "_y", base + "_yh", ttl + " y;y (cm);Counts", false);
+          }
+        }
       }
   }
 
@@ -1133,6 +1346,51 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       cpid->cd(4);
       h_pid_eb_trk[is][ic][it]->DrawCopy("COLZ");
       wc(cpid);
+
+      // GEM hit-position plots (this chi-square cut). Three canvases per variant:
+      // x-vs-y (2D), x projection, y projection; each a 2-row (GEM0 top / GEM1
+      // bottom) by N_GREG-column (all / oot / it / peak) grid. Written into the
+      // current cut's variant folder.
+      if (gem_ok[it]) {
+        td->cd();
+        const std::string gt = tracks[it].dir;
+        // 2D x-vs-y
+        TCanvas *cgxy = new TCanvas((sp + "_c_gem_xy").c_str(),
+                                    (sp + " GEM x-vs-y [" + gt + ", chi2<" + cutstr + "] (all/oot/it/peak)").c_str(),
+                                    1600, 800);
+        cgxy->Divide(N_GREG, 2);
+        for (int g = 0; g < 2; ++g)
+          for (int r = 0; r < N_GREG; ++r) {
+            cgxy->cd(g * N_GREG + r + 1);
+            if (h_gem_xy[is][ic][it][g][r])
+              h_gem_xy[is][ic][it][g][r]->DrawCopy("COLZ");
+          }
+        wc(cgxy);
+        // 1D x projection
+        TCanvas *cgx = new TCanvas((sp + "_c_gem_x").c_str(),
+                                   (sp + " GEM x [" + gt + ", chi2<" + cutstr + "] (all/oot/it/peak)").c_str(), 1600,
+                                   800);
+        cgx->Divide(N_GREG, 2);
+        for (int g = 0; g < 2; ++g)
+          for (int r = 0; r < N_GREG; ++r) {
+            cgx->cd(g * N_GREG + r + 1);
+            if (h_gem_x[is][ic][it][g][r])
+              h_gem_x[is][ic][it][g][r]->DrawCopy();
+          }
+        wc(cgx);
+        // 1D y projection
+        TCanvas *cgy = new TCanvas((sp + "_c_gem_y").c_str(),
+                                   (sp + " GEM y [" + gt + ", chi2<" + cutstr + "] (all/oot/it/peak)").c_str(), 1600,
+                                   800);
+        cgy->Divide(N_GREG, 2);
+        for (int g = 0; g < 2; ++g)
+          for (int r = 0; r < N_GREG; ++r) {
+            cgy->cd(g * N_GREG + r + 1);
+            if (h_gem_y[is][ic][it][g][r])
+              h_gem_y[is][ic][it][g][r]->DrawCopy();
+          }
+        wc(cgy);
+      }
       } // end tracking-variant loop
     } // end chi-square-cut loop
 
