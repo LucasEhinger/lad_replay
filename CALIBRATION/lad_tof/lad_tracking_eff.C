@@ -10,12 +10,14 @@
 //
 // Tracking variants (per-hit chiSquare branches, X = P or H):
 //   standard          -> X.ladhod.goodhit_chiSquare
-//   xz                -> X.ladhod.goodhit_chiSquare_xz
+//   x                 -> X.ladhod.goodhit_chiSquare_xz
 //   noTrackVertex     -> X.ladhod.goodhit_chiSquare_noTrackVertex
-//   noTrackVertex_xz  -> X.ladhod.goodhit_chiSquare_noTrackVertex_xz
-//   1D_xz_GEM0/1/both -> X.ladhod.goodhit_chiSquare_1D_xz_GEM0 / _GEM1 / _GEMboth
+//   noTrackVertex_x   -> X.ladhod.goodhit_chiSquare_noTrackVertex_xz
+//   1D_x_GEM0/1/both  -> X.ladhod.goodhit_chiSquare_1D_xz_GEM0 / _GEM1 / _GEMboth
 //   1D_y_GEM0/1/both  -> X.ladhod.goodhit_chiSquare_1D_y_GEM0  / _GEM1 / _GEMboth
 //   1D_GEM0/1/both    -> X.ladhod.goodhit_chiSquare_1D_GEM0    / _GEM1 / _GEMboth
+// (The folder/display label uses 'x'; the underlying chiSquare branch keeps its
+//  original '_xz' suffix, which is fixed in the data.)
 // Variants absent from the input are skipped automatically. The 1D variants use
 // -1 as the "no track" sentinel, so a hit counts as tracked when its chiSquare is
 // in [0, CHI_CUT_1D); the 2D variants (large sentinel) use chiSquare < CHI_CUT_2D.
@@ -69,14 +71,14 @@
 // =====================================================================
 // Constants
 // =====================================================================
-const int NBINS_TCORR = 900;
-const double XMIN_TCORR = -150., XMAX_TCORR = 300.;
+const int NBINS_TCORR = 650; // 0.5 ns bins over [-150, 175]
+const double XMIN_TCORR = -150., XMAX_TCORR = 175.;
 
 const int N_PLANES = 5, N_PADDLES = 11, N_SPECS = 2;
 // N_TRACKS is the compile-time capacity for the per-variant histogram arrays.
 // Runtime count (ntracks) is <= this. 4 legacy + 9 1D variants = 13.
 const int N_TRACKS = 13;
-const int PROTON_REBIN = 15; // rebin before sideband-subtracted efficiency
+const int PROTON_REBIN = 10; // rebin before sideband-subtracted efficiency (divides NBINS_TCORR=650 -> 5 ns bins)
 // Two-sided sidebands (tof-L/c ns) for the _c_proton_tof track/total ratio.
 const double SB_LO1 = -150., SB_HI1 = -100., SB_LO2 = 125., SB_HI2 = 175.;
 
@@ -126,6 +128,40 @@ const std::vector<std::vector<std::array<double, 2>>> GREG_INT = {
     {{SB_LO1, SB_HI1}, {SB_LO2, SB_HI2}},         // oot: [-150,-100] u [125,175]
     {{-25., 30.}, {50., 125.}},                   // it:  [-25,30] u [50,125]
     {{30., 50.}}};                                // peak: [30,50]
+// Hodoscope plane groups the GEM hits are split by: 000/001 (plane 001, pl==1)
+// vs 100/101 (plane 101, pl==3). The 1D x/y plots overlay both groups in
+// distinct colors; the 2D x-vs-y sums both groups into one standard COLZ heatmap.
+const int N_GGRP = 2;
+const char *const GGRP_NAME[N_GGRP] = {"000_001", "100_101"};   // hist/canvas name suffix
+const char *const GGRP_TITLE[N_GGRP] = {"000/001", "100/101"};  // title / legend text
+const int GGRP_COLOR[N_GGRP] = {kRed + 1, kAzure + 2};          // 1D overlay colors
+
+// Punchthrough paddle-vs-y plots. A tracked proton hit in plane 001/101 is (by
+// definition) a punchthrough, so these use the SAME hit selection as the GEM
+// position plots (isProton_1==1, plane 001/101, chiSquare in the track window)
+// but need no GEM branches -- they are produced for EVERY tracking variant. The
+// paddle axis has one bin per paddle; ypos is the hodoscope y position (cm).
+const int PT_NPAD = N_PADDLES;                              // one bin per paddle
+const double PT_PADLO = -0.5, PT_PADHI = N_PADDLES - 0.5;   // paddles 0..10 centered
+const int PT_NY = 120;                                     // ypos bins (4 cm)
+const double PT_YLO = -240., PT_YHI = 240.;                // ypos range (cm); bars span ~+/-210 cm
+
+// GEM cluster-ADC-amplitude plots. Per tracking variant, two canvases (one per
+// strip axis). The strip-axis <-> lab-coordinate mapping is taken from the 1D
+// tracking code (THcLADKine::Do1DClusterTracking), which is authoritative: the
+// V strips (LADGEM::kVaxis == 1) form the x-z projection -> "x strips"; the U
+// strips (LADGEM::kUaxis == 0) form the y projection -> "y strips". (Some
+// commented DEF-file histogram titles label these the other way; that mislabel
+// is NOT followed here.) Cluster ADC sum ~ [0,3000] (cf. the commented
+// h1_gem_clustADCSum* in gem_histos.def). Each canvas has 7 panels: all clusters
+// (no track), with-track+proton-hodo (all tof), oot, it, peak, IT-OOT, and
+// peak-IT-OOT (the last two use the same tof-window scale factors as the GEM
+// position background subtraction).
+const int CADC_NBINS = 150;
+const double CADC_LO = 0., CADC_HI = 3000.;                    // cluster ADC sum
+const int CADC_NAX = 2;                                        // logical axes: 0 = x (V), 1 = y (U)
+const char *const CADC_LAXNAME[CADC_NAX] = {"x", "y"};         // canvas/hist label per logical axis
+const int CADC_AXVAL[CADC_NAX] = {1, 0};                       // clust.axis value: x -> V(1), y -> U(0)
 
 const double hodo_radii[N_PLANES] = {615., 655.6, 523., 563.6, 615.}; // cm
 const char *const plane_names[N_PLANES] = {"000", "001", "100", "101", "200"};
@@ -241,12 +277,12 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   tracks.push_back({"standard", "", -1e30, CHI_CUT_2D});
   {
     const std::array<Track, 12> variants = {{
-        {"xz", "_xz", -1e30, CHI_CUT_2D},
+        {"x", "_xz", -1e30, CHI_CUT_2D},
         {"noTrackVertex", "_noTrackVertex", -1e30, CHI_CUT_2D},
-        {"noTrackVertex_xz", "_noTrackVertex_xz", -1e30, CHI_CUT_2D},
-        {"1D_xz_GEM0", "_1D_xz_GEM0", 0., CHI_CUT_1D},
-        {"1D_xz_GEM1", "_1D_xz_GEM1", 0., CHI_CUT_1D},
-        {"1D_xz_GEMboth", "_1D_xz_GEMboth", 0., CHI_CUT_1D},
+        {"noTrackVertex_x", "_noTrackVertex_xz", -1e30, CHI_CUT_2D},
+        {"1D_x_GEM0", "_1D_xz_GEM0", 0., CHI_CUT_1D},
+        {"1D_x_GEM1", "_1D_xz_GEM1", 0., CHI_CUT_1D},
+        {"1D_x_GEMboth", "_1D_xz_GEMboth", 0., CHI_CUT_1D},
         {"1D_y_GEM0", "_1D_y_GEM0", 0., CHI_CUT_1D},
         {"1D_y_GEM1", "_1D_y_GEM1", 0., CHI_CUT_1D},
         {"1D_y_GEMboth", "_1D_y_GEMboth", 0., CHI_CUT_1D},
@@ -302,13 +338,48 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   // GEM position plots are produced for every chi-square cut (one set of
   // canvases per cut, in each cut's variant folder).
 
+  // Cluster-ADC plot availability. Panel 1 (all clusters, no track) needs the GEM
+  // cluster branches on both spectrometers. The with-track panels need, per
+  // variant, either the 2D per-spacepoint track ADC branches (+ that variant's
+  // trackid) or the new 1D winning-cluster ADC branches (goodhit_trk1D_adc*,
+  // present only after a re-replay with the extended LADlib).
+  bool clust_ok = true;
+  for (int is = 0; is < N_SPECS; ++is) {
+    const std::string sp(1, specs[is]);
+    if (!has_branch(sp + ".gem.clust.adc") || !has_branch(sp + ".gem.clust.axis"))
+      clust_ok = false;
+  }
+  std::vector<bool> cadc_ok(ntracks, false);
+  for (int it = 0; it < ntracks; ++it) {
+    bool ok = true;
+    for (int is = 0; is < N_SPECS && ok; ++is) {
+      const std::string sp(1, specs[is]);
+      if (is1D_of(tracks[it])) {
+        ok = has_branch(sp + ".ladhod.goodhit_trk1D_adcx0") && has_branch(sp + ".ladhod.goodhit_trk1D_adcy0") &&
+             has_branch(sp + ".ladhod.goodhit_trk1D_adcx1") && has_branch(sp + ".ladhod.goodhit_trk1D_adcy1");
+      } else {
+        ok = has_branch(sp + ".gem.trk.adc1") && has_branch(sp + ".gem.trk.asy1") &&
+             has_branch(sp + ".gem.trk.adc2") && has_branch(sp + ".gem.trk.asy2") &&
+             has_branch(sp + ".ladhod.goodhit_trackid" + tracks[it].tsuf);
+      }
+    }
+    cadc_ok[it] = ok;
+  }
+  const bool any_cadc = clust_ok || std::any_of(cadc_ok.begin(), cadc_ok.end(), [](bool b) { return b; });
+  std::cout << "[lad_tracking_eff] cluster-ADC plots: all-clusters(no-track)=" << (clust_ok ? "on" : "off")
+            << "; with-track for variants:";
+  for (int it = 0; it < ntracks; ++it)
+    if (cadc_ok[it])
+      std::cout << " " << tracks[it].dir;
+  std::cout << "\n";
+
   // ---------------------------------------------------------------
   // 1c. Histogram cache decision. Build a configuration signature; if a cache
   //     file exists with a matching signature we load histograms from it and
   //     skip the (expensive) event loop. Bump CACHE_VERSION whenever the set of
   //     booked histograms changes so old caches are rejected.
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "v3"; // v3: GEM hit-position histograms per chi-square cut
+  const char *CACHE_VERSION = "v7"; // v7: cluster-ADC amplitude histograms (all/with-track per axis+region)
   std::string sig = std::string("lad_tracking_eff;") + CACHE_VERSION + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";dt=" + std::to_string(NBINS_DT) + "," + std::to_string(XMIN_DT) + "," + std::to_string(XMAX_DT) +
@@ -316,7 +387,11 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
          std::to_string(EMIN_B) + "," + std::to_string(EMAX_B) +
          ";gem=" + std::to_string(GEM_NX1) + "," + std::to_string(GEM_NY1) + "," + std::to_string(GEM_NX2) + "," +
          std::to_string(GEM_NY2) + "," + std::to_string(GEM_XLO) + "," + std::to_string(GEM_XHI) + "," +
-         std::to_string(GEM_YLO) + "," + std::to_string(GEM_YHI) + ";cuts=";
+         std::to_string(GEM_YLO) + "," + std::to_string(GEM_YHI) +
+         ";pt=" + std::to_string(PT_NPAD) + "," + std::to_string(PT_PADLO) + "," + std::to_string(PT_PADHI) + "," +
+         std::to_string(PT_NY) + "," + std::to_string(PT_YLO) + "," + std::to_string(PT_YHI) +
+         ";cadc=" + std::to_string(CADC_NBINS) + "," + std::to_string(CADC_LO) + "," + std::to_string(CADC_HI) +
+         ";cuts=";
   for (int ic = 0; ic < N_CUTS; ++ic)
     sig += std::to_string(CHI_CUT_SCALES[ic]) + ",";
   sig += ";vars=";
@@ -400,6 +475,26 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     }
     bind2.push_back({&slot, df.Histo2D({nm.c_str(), tt.c_str(), GEM_NX2, GEM_XLO, GEM_XHI, GEM_NY2, GEM_YLO, GEM_YHI},
                                        xcol, ycol)});
+  };
+  // Punchthrough booking: BKP2 books a 2D paddle-vs-ypos histogram (same
+  // cache-aware behavior as the others).
+  auto BKP2 = [&](TH2D *&slot, const std::string &xcol, const std::string &ycol, const std::string &nm,
+                  const std::string &tt) {
+    if (load) {
+      slot = dynamic_cast<TH2D *>(fcache->Get(nm.c_str()));
+      return;
+    }
+    bind2.push_back({&slot, df.Histo2D({nm.c_str(), tt.c_str(), PT_NPAD, PT_PADLO, PT_PADHI, PT_NY, PT_YLO, PT_YHI},
+                                       xcol, ycol)});
+  };
+  // Cluster-ADC booking: BKA1 books a 1D cluster-ADC histogram (same cache-aware
+  // fill/load behavior as the others).
+  auto BKA1 = [&](TH1D *&slot, const std::string &col, const std::string &nm, const std::string &tt) {
+    if (load) {
+      slot = dynamic_cast<TH1D *>(fcache->Get(nm.c_str()));
+      return;
+    }
+    bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), CADC_NBINS, CADC_LO, CADC_HI}, col)});
   };
 
   if (!load) { // sections 2-3 (aliases + column definitions) are only needed to fill
@@ -590,8 +685,9 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     // GEM hit-position columns (one set per chi-square cut). For each enabled
     // variant and cut a single "packed" column stores, per selected+tracked
     // proton hit (isProton==1, plane 001/101, chiSquare in the variant's cut
-    // window), five aligned doubles: {corrected tof, GEM0 x, GEM0 y, GEM1 x,
-    // GEM1 y}. Region/gem-filtered x/y columns for the histograms are then
+    // window), six aligned doubles: {corrected tof, plane group, GEM0 x, GEM0 y,
+    // GEM1 x, GEM1 y}. Plane group = 0 for plane 001 (000/001) or 1 for plane 101
+    // (100/101). Region/gem/group-filtered x/y columns for the histograms are then
     // unpacked from it. Missing positions use the -1000 sentinel and are dropped
     // by the >-999 filter below.
     for (int it = 0; it < ntracks; ++it) {
@@ -620,6 +716,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                 double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                 double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
                 r.push_back(tofc);
+                r.push_back((pi == 1) ? 0. : 1.); // plane group: 001 -> 0, 101 -> 1
                 r.push_back(i < x0.size() ? x0[i] : -1000.);
                 r.push_back(i < y0.size() ? y0[i] : -1000.);
                 r.push_back(i < x1.size() ? x1[i] : -1000.);
@@ -655,6 +752,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                   d = ty2[k];
                 }
                 r.push_back(tofc);
+                r.push_back((pi == 1) ? 0. : 1.); // plane group: 001 -> 0, 101 -> 1
                 r.push_back(a);
                 r.push_back(b);
                 r.push_back(c);
@@ -666,31 +764,225 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
              sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trackid" + tu, sp + ".gem.trk.x1", sp + ".gem.trk.y1",
              sp + ".gem.trk.x2", sp + ".gem.trk.y2"});
       }
-      // Region/gem-filtered x and y columns unpacked from the packed column.
-      // gem g uses pack offsets (x,y) = (1,2) for GEM0, (3,4) for GEM1.
+      // Region/gem/group-filtered x and y columns unpacked from the packed
+      // column (stride 6: offset 0 = tof, 1 = plane group, GEM0 (x,y) = (2,3),
+      // GEM1 (x,y) = (4,5)). One set per gem, tof region, and plane group.
       for (int g = 0; g < 2; ++g) {
-        const int ox = (g == 0) ? 1 : 3, oy = (g == 0) ? 2 : 4;
+        const int ox = (g == 0) ? 2 : 4, oy = (g == 0) ? 3 : 5;
         for (int r = 0; r < N_GREG; ++r) {
           const auto ivals = GREG_INT[r];
-          auto inReg = [ivals](double tofc) {
-            for (const auto &iv : ivals)
-              if (tofc >= iv[0] && tofc < iv[1])
-                return true;
-            return false;
-          };
-          const std::string base = sp + "_gem_" + tk.dir + cc + "_g" + std::to_string(g) + "_" + GREG_NAME[r];
-          // 1D x (mask x valid), 1D y (mask y valid), 2D pair (mask both valid).
-          df = df.Define(base + "_x", [inReg, ox](const RVd &p) {
-            RVd r; for (size_t h = 0; h + 4 < p.size(); h += 5) if (inReg(p[h]) && p[h + ox] > -999.) r.push_back(p[h + ox]); return r; }, {pk});
-          df = df.Define(base + "_y", [inReg, oy](const RVd &p) {
-            RVd r; for (size_t h = 0; h + 4 < p.size(); h += 5) if (inReg(p[h]) && p[h + oy] > -999.) r.push_back(p[h + oy]); return r; }, {pk});
-          df = df.Define(base + "_x2", [inReg, ox, oy](const RVd &p) {
-            RVd r; for (size_t h = 0; h + 4 < p.size(); h += 5) if (inReg(p[h]) && p[h + ox] > -999. && p[h + oy] > -999.) r.push_back(p[h + ox]); return r; }, {pk});
-          df = df.Define(base + "_y2", [inReg, ox, oy](const RVd &p) {
-            RVd r; for (size_t h = 0; h + 4 < p.size(); h += 5) if (inReg(p[h]) && p[h + ox] > -999. && p[h + oy] > -999.) r.push_back(p[h + oy]); return r; }, {pk});
+          for (int gp = 0; gp < N_GGRP; ++gp) {
+            auto sel = [ivals, gp](const RVd &p, size_t h) {
+              if ((int)std::round(p[h + 1]) != gp)
+                return false;
+              for (const auto &iv : ivals)
+                if (p[h] >= iv[0] && p[h] < iv[1])
+                  return true;
+              return false;
+            };
+            const std::string base =
+                sp + "_gem_" + tk.dir + cc + "_g" + std::to_string(g) + "_" + GREG_NAME[r] + "_" + GGRP_NAME[gp];
+            // 1D x (mask x valid), 1D y (mask y valid), 2D pair (mask both valid).
+            df = df.Define(base + "_x", [sel, ox](const RVd &p) {
+              RVd r; for (size_t h = 0; h + 5 < p.size(); h += 6) if (sel(p, h) && p[h + ox] > -999.) r.push_back(p[h + ox]); return r; }, {pk});
+            df = df.Define(base + "_y", [sel, oy](const RVd &p) {
+              RVd r; for (size_t h = 0; h + 5 < p.size(); h += 6) if (sel(p, h) && p[h + oy] > -999.) r.push_back(p[h + oy]); return r; }, {pk});
+            df = df.Define(base + "_x2", [sel, ox, oy](const RVd &p) {
+              RVd r; for (size_t h = 0; h + 5 < p.size(); h += 6) if (sel(p, h) && p[h + ox] > -999. && p[h + oy] > -999.) r.push_back(p[h + ox]); return r; }, {pk});
+            df = df.Define(base + "_y2", [sel, ox, oy](const RVd &p) {
+              RVd r; for (size_t h = 0; h + 5 < p.size(); h += 6) if (sel(p, h) && p[h + ox] > -999. && p[h + oy] > -999.) r.push_back(p[h + oy]); return r; }, {pk});
+          }
         }
       }
       } // end cut loop
+    }
+
+    // -----------------------------------------------------------------
+    // Punchthrough paddle-vs-ypos columns (one set per variant and cut, for
+    // EVERY variant). A tracked proton hit in plane 001/101 is a punchthrough,
+    // so the selection is identical to the GEM position plots (isProton_1==1,
+    // plane 001/101, chiSquare in the cut window) -- no GEM branches needed. A
+    // packed column stores {plane group, paddle, ypos} per selected hit; per
+    // plane-group paddle/ypos columns are then unpacked from it (stride 3).
+    for (int it = 0; it < ntracks; ++it) {
+      const Track &tk = tracks[it];
+      const std::string &tu = tk.tsuf;
+      for (int ic = 0; ic < N_CUTS; ++ic) {
+        const std::string cc = "_cut" + std::to_string(ic);
+        const std::string pp = sp + "_ptpack_" + tk.dir + cc;
+        const double clo = tk.chi_lo, chi = tk.chi_hi * CHI_CUT_SCALES[ic];
+        df = df.Define(
+            pp,
+            [clo, chi](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &ip1, const RVd &cs) {
+              RVd r;
+              for (size_t i = 0; i < pl1.size(); ++i) {
+                if (ip1[i] != 1.)
+                  continue;
+                int pi = (int)std::round(pl1[i]);
+                if (pi != 1 && pi != 3)
+                  continue;
+                if (!(cs[i] >= clo && cs[i] < chi))
+                  continue;
+                r.push_back((pi == 1) ? 0. : 1.); // plane group: 001 -> 0, 101 -> 1
+                r.push_back(pd1[i]);
+                r.push_back(yp[i]);
+              }
+              return r;
+            },
+            {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_isProton_1", sp + "_chiSquare" + tu});
+        for (int gp = 0; gp < N_GGRP; ++gp) {
+          const std::string base = sp + "_pt_" + tk.dir + cc + "_" + GGRP_NAME[gp];
+          // paddle (x) and ypos (y), aligned, for this plane group. Unset ypos
+          // (1e30 sentinel) is dropped so both vectors stay the same length.
+          df = df.Define(base + "_pd", [gp](const RVd &p) {
+            RVd r; for (size_t h = 0; h + 2 < p.size(); h += 3) if ((int)std::round(p[h]) == gp && std::fabs(p[h + 2]) < 1e29) r.push_back(p[h + 1]); return r; }, {pp});
+          df = df.Define(base + "_yp", [gp](const RVd &p) {
+            RVd r; for (size_t h = 0; h + 2 < p.size(); h += 3) if ((int)std::round(p[h]) == gp && std::fabs(p[h + 2]) < 1e29) r.push_back(p[h + 2]); return r; }, {pp});
+        }
+      }
+    }
+
+    // No-track punchthrough paddle-vs-ypos columns (variant/cut independent):
+    // the SAME selection as the punchthrough plots above but WITHOUT the track
+    // cut (isProton_1==1, plane 001/101 only). Packed {plane group, paddle,
+    // ypos}; per-plane-group paddle/ypos columns are unpacked from it (stride 3).
+    {
+      const std::string pp = sp + "_ptpack_notrack";
+      df = df.Define(
+          pp,
+          [](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &ip1) {
+            RVd r;
+            for (size_t i = 0; i < pl1.size(); ++i) {
+              if (ip1[i] != 1.)
+                continue;
+              int pi = (int)std::round(pl1[i]);
+              if (pi != 1 && pi != 3)
+                continue;
+              r.push_back((pi == 1) ? 0. : 1.); // plane group: 001 -> 0, 101 -> 1
+              r.push_back(pd1[i]);
+              r.push_back(yp[i]);
+            }
+            return r;
+          },
+          {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_isProton_1"});
+      for (int gp = 0; gp < N_GGRP; ++gp) {
+        const std::string base = sp + "_pt_notrack_" + GGRP_NAME[gp];
+        df = df.Define(base + "_pd", [gp](const RVd &p) {
+          RVd r; for (size_t h = 0; h + 2 < p.size(); h += 3) if ((int)std::round(p[h]) == gp && std::fabs(p[h + 2]) < 1e29) r.push_back(p[h + 1]); return r; }, {pp});
+        df = df.Define(base + "_yp", [gp](const RVd &p) {
+          RVd r; for (size_t h = 0; h + 2 < p.size(); h += 3) if ((int)std::round(p[h]) == gp && std::fabs(p[h + 2]) < 1e29) r.push_back(p[h + 2]); return r; }, {pp});
+      }
+    }
+
+    // -----------------------------------------------------------------
+    // Cluster-ADC-amplitude columns.
+    //   Panel 1 (all clusters, no track): the full clust.adc list split by strip
+    //   axis (x -> V/clust.axis==1, y -> U/clust.axis==0). Variant/cut independent.
+    //   With-track panels: one packed column per variant+cut over the selected
+    //   proton-hodo tracked hits (isProton==1, plane 001/101, chiSquare in the cut
+    //   window), stride 5 = {corrected tof, adc_x GEM0, adc_x GEM1, adc_y GEM0,
+    //   adc_y GEM1}. 2D variants read the per-spacepoint ADC mean+asym from the
+    //   track (ADCsum_U = mean*(1+asym) = y, ADCsum_V = mean*(1-asym) = x); 1D
+    //   variants read the winning-cluster ADC from the goodhit_trk1D_adc* branches.
+    //   Per-axis, per-tof-region ADC lists (both GEM layers pooled) unpack from it.
+    if (clust_ok) {
+      for (int la = 0; la < CADC_NAX; ++la) {
+        const int axval = CADC_AXVAL[la];
+        df = df.Define(sp + "_cadc_all_" + CADC_LAXNAME[la],
+                       [axval](const RVd &adc, const RVd &axis) {
+                         RVd r;
+                         for (size_t i = 0; i < adc.size() && i < axis.size(); ++i)
+                           if ((int)std::round(axis[i]) == axval)
+                             r.push_back(adc[i]);
+                         return r;
+                       },
+                       {sp + ".gem.clust.adc", sp + ".gem.clust.axis"});
+      }
+    }
+    for (int it = 0; it < ntracks; ++it) {
+      if (!cadc_ok[it])
+        continue;
+      const Track &tk = tracks[it];
+      const std::string &tu = tk.tsuf;
+      for (int ic = 0; ic < N_CUTS; ++ic) {
+        const std::string cc = "_cut" + std::to_string(ic);
+        const std::string pk = sp + "_cadcpack_" + tk.dir + cc;
+        const double clo = tk.chi_lo, chi = tk.chi_hi * CHI_CUT_SCALES[ic];
+        if (is1D_of(tk)) {
+          df = df.Define(
+              pk,
+              [clo, chi](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &t1, const RVd &ip1, const RVd &cs,
+                         const RVd &ax0, const RVd &ax1, const RVd &ay0, const RVd &ay1) {
+                RVd r;
+                for (size_t i = 0; i < pl1.size(); ++i) {
+                  if (ip1[i] != 1.)
+                    continue;
+                  int pi = (int)std::round(pl1[i]);
+                  if (pi != 1 && pi != 3)
+                    continue;
+                  if (!(cs[i] >= clo && cs[i] < chi))
+                    continue;
+                  double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                  double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
+                  r.push_back(tofc);
+                  r.push_back(i < ax0.size() ? ax0[i] : -1000.);
+                  r.push_back(i < ax1.size() ? ax1[i] : -1000.);
+                  r.push_back(i < ay0.size() ? ay0[i] : -1000.);
+                  r.push_back(i < ay1.size() ? ay1[i] : -1000.);
+                }
+                return r;
+              },
+              {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_tof_1", sp + "_isProton_1",
+               sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trk1D_adcx0", sp + ".ladhod.goodhit_trk1D_adcx1",
+               sp + ".ladhod.goodhit_trk1D_adcy0", sp + ".ladhod.goodhit_trk1D_adcy1"});
+        } else {
+          df = df.Define(
+              pk,
+              [clo, chi](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &t1, const RVd &ip1, const RVd &cs,
+                         const RVd &tid, const RVd &a1, const RVd &s1, const RVd &a2, const RVd &s2) {
+                RVd r;
+                for (size_t i = 0; i < pl1.size(); ++i) {
+                  if (ip1[i] != 1.)
+                    continue;
+                  int pi = (int)std::round(pl1[i]);
+                  if (pi != 1 && pi != 3)
+                    continue;
+                  if (!(cs[i] >= clo && cs[i] < chi))
+                    continue;
+                  double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                  double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
+                  int k = (i < tid.size()) ? (int)std::round(tid[i]) : -1;
+                  double adcx0 = -1000., adcx1 = -1000., adcy0 = -1000., adcy1 = -1000.;
+                  if (k >= 0 && k < (int)a1.size() && k < (int)a2.size()) {
+                    adcx0 = a1[k] * (1. - s1[k]); // ADCsum_V (x) = mean*(1-asym)
+                    adcy0 = a1[k] * (1. + s1[k]); // ADCsum_U (y) = mean*(1+asym)
+                    adcx1 = a2[k] * (1. - s2[k]);
+                    adcy1 = a2[k] * (1. + s2[k]);
+                  }
+                  r.push_back(tofc);
+                  r.push_back(adcx0);
+                  r.push_back(adcx1);
+                  r.push_back(adcy0);
+                  r.push_back(adcy1);
+                }
+                return r;
+              },
+              {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_tof_1", sp + "_isProton_1",
+               sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trackid" + tu, sp + ".gem.trk.adc1", sp + ".gem.trk.asy1",
+               sp + ".gem.trk.adc2", sp + ".gem.trk.asy2"});
+        }
+        // Per-axis, per-tof-region ADC lists (both GEM layers pooled). Stride 5:
+        // offset 0 = tof; x -> offsets {1,2}, y -> offsets {3,4}. -1000 dropped.
+        for (int la = 0; la < CADC_NAX; ++la) {
+          const int o0 = (la == 0) ? 1 : 3, o1 = (la == 0) ? 2 : 4;
+          for (int rg = 0; rg < N_GREG; ++rg) {
+            const auto ivals = GREG_INT[rg];
+            const std::string col = sp + "_cadc_" + tk.dir + cc + "_" + CADC_LAXNAME[la] + "_" + GREG_NAME[rg];
+            df = df.Define(col, [ivals, o0, o1](const RVd &p) {
+              RVd r; for (size_t h = 0; h + 4 < p.size(); h += 5) { bool in = false; for (const auto &iv : ivals) if (p[h] >= iv[0] && p[h] < iv[1]) { in = true; break; } if (!in) continue; if (p[h + o0] > -999.) r.push_back(p[h + o0]); if (p[h + o1] > -999.) r.push_back(p[h + o1]); } return r; }, {pk});
+          }
+        }
+      }
     }
   }
   } // end if(!load): RDF alias/define setup
@@ -710,13 +1002,25 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   // edep-vs-tof 2D panels: proton-only (variant-independent) and proton+track.
   std::array<TH2D *, N_SPECS> h_pid_ef_pro{}, h_pid_eb_pro{};                            // front/back, proton cut
   std::array<std::array<std::array<TH2D *, N_TRACKS>, N_CUTS>, N_SPECS> h_pid_ef_trk{}, h_pid_eb_trk{}; // proton+track
-  // GEM hit-position histograms. Indices [spec][cut][variant][gem][region].
-  std::array<std::array<std::array<std::array<std::array<TH2D *, N_GREG>, 2>, N_TRACKS>, N_CUTS>, N_SPECS>
+  // GEM hit-position histograms. Indices [spec][cut][variant][gem][region][plane group].
+  std::array<std::array<std::array<std::array<std::array<std::array<TH2D *, N_GGRP>, N_GREG>, 2>, N_TRACKS>, N_CUTS>,
+             N_SPECS>
       h_gem_xy{}; // x-vs-y 2D
-  std::array<std::array<std::array<std::array<std::array<TH1D *, N_GREG>, 2>, N_TRACKS>, N_CUTS>, N_SPECS>
+  std::array<std::array<std::array<std::array<std::array<std::array<TH1D *, N_GGRP>, N_GREG>, 2>, N_TRACKS>, N_CUTS>,
+             N_SPECS>
       h_gem_x{}; // x projection
-  std::array<std::array<std::array<std::array<std::array<TH1D *, N_GREG>, 2>, N_TRACKS>, N_CUTS>, N_SPECS>
+  std::array<std::array<std::array<std::array<std::array<std::array<TH1D *, N_GGRP>, N_GREG>, 2>, N_TRACKS>, N_CUTS>,
+             N_SPECS>
       h_gem_y{}; // y projection
+  // Punchthrough paddle-vs-ypos 2D histograms. Indices [spec][cut][variant][plane group].
+  std::array<std::array<std::array<std::array<TH2D *, N_GGRP>, N_TRACKS>, N_CUTS>, N_SPECS> h_pt_xy{};
+  // No-track punchthrough paddle-vs-ypos 2D histograms. Indices [spec][plane group].
+  std::array<std::array<TH2D *, N_GGRP>, N_SPECS> h_pt_xy_notrack{};
+  // Cluster-ADC histograms. Panel 1 (all clusters, no track): [spec][axis].
+  std::array<std::array<TH1D *, CADC_NAX>, N_SPECS> h_cadc_all{};
+  // With-track cluster ADC: [spec][cut][variant][axis][tof region].
+  std::array<std::array<std::array<std::array<std::array<TH1D *, N_GREG>, CADC_NAX>, N_TRACKS>, N_CUTS>, N_SPECS>
+      h_cadc_reg{};
 
   for (int is = 0; is < N_SPECS; ++is) {
     const std::string sp(1, specs[is]);
@@ -791,15 +1095,59 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
         const std::string cc = "_cut" + std::to_string(ic);
         for (int g = 0; g < 2; ++g) {
           const std::string gl = (g == 0) ? "GEM0" : "GEM1";
-          for (int r = 0; r < N_GREG; ++r) {
-            const std::string base = sp + "_gem_" + td + cc + "_g" + std::to_string(g) + "_" + GREG_NAME[r];
-            const std::string ttl = sp + " " + td + " " + gl + " [" + GREG_NAME[r] + "]";
-            BKG2(h_gem_xy[is][ic][it][g][r], base + "_x2", base + "_y2", base + "_xy",
-                 ttl + " x vs y;x (cm);y (cm)");
-            BKG1(h_gem_x[is][ic][it][g][r], base + "_x", base + "_xh", ttl + " x;x (cm);Counts", true);
-            BKG1(h_gem_y[is][ic][it][g][r], base + "_y", base + "_yh", ttl + " y;y (cm);Counts", false);
-          }
+          for (int r = 0; r < N_GREG; ++r)
+            for (int gp = 0; gp < N_GGRP; ++gp) {
+              const std::string base =
+                  sp + "_gem_" + td + cc + "_g" + std::to_string(g) + "_" + GREG_NAME[r] + "_" + GGRP_NAME[gp];
+              const std::string ttl =
+                  sp + " " + td + " " + gl + " [" + GREG_NAME[r] + "] " + GGRP_TITLE[gp];
+              BKG2(h_gem_xy[is][ic][it][g][r][gp], base + "_x2", base + "_y2", base + "_xy",
+                   ttl + " x vs y;x (cm);y (cm)");
+              BKG1(h_gem_x[is][ic][it][g][r][gp], base + "_x", base + "_xh", ttl + " x;x (cm);Counts", true);
+              BKG1(h_gem_y[is][ic][it][g][r][gp], base + "_y", base + "_yh", ttl + " y;y (cm);Counts", false);
+            }
         }
+      }
+
+    // Punchthrough paddle-vs-ypos 2D histograms (every variant, every cut).
+    for (int ic = 0; ic < N_CUTS; ++ic)
+      for (int it = 0; it < ntracks; ++it) {
+        const std::string &td = tracks[it].dir;
+        const std::string cc = "_cut" + std::to_string(ic);
+        for (int gp = 0; gp < N_GGRP; ++gp) {
+          const std::string base = sp + "_pt_" + td + cc + "_" + GGRP_NAME[gp];
+          const std::string plab = (gp == 0) ? "001" : "101";
+          BKP2(h_pt_xy[is][ic][it][gp], base + "_pd", base + "_yp", base + "_xy",
+               sp + " punchthrough " + td + " " + plab + " paddle vs y;paddle;y (cm)");
+        }
+      }
+
+    // No-track punchthrough paddle-vs-ypos (variant/cut independent).
+    for (int gp = 0; gp < N_GGRP; ++gp) {
+      const std::string base = sp + "_pt_notrack_" + GGRP_NAME[gp];
+      const std::string plab = (gp == 0) ? "001" : "101";
+      BKP2(h_pt_xy_notrack[is][gp], base + "_pd", base + "_yp", base + "_xy",
+           sp + " punchthrough (no track) " + plab + " paddle vs y;paddle;y (cm)");
+    }
+
+    // Cluster-ADC histograms. Panel 1 (all clusters, no track), per strip axis.
+    if (clust_ok)
+      for (int la = 0; la < CADC_NAX; ++la)
+        BKA1(h_cadc_all[is][la], sp + "_cadc_all_" + CADC_LAXNAME[la], sp + "_cadc_all_" + CADC_LAXNAME[la] + "_h",
+             sp + " cluster ADC " + CADC_LAXNAME[la] + " strips (all clusters, no track);ADC sum;Counts");
+    // With-track cluster ADC per variant/cut/axis/tof-region.
+    for (int ic = 0; ic < N_CUTS; ++ic)
+      for (int it = 0; it < ntracks; ++it) {
+        if (!cadc_ok[it])
+          continue;
+        const std::string &td = tracks[it].dir;
+        const std::string cc = "_cut" + std::to_string(ic);
+        for (int la = 0; la < CADC_NAX; ++la)
+          for (int rg = 0; rg < N_GREG; ++rg) {
+            const std::string col = sp + "_cadc_" + td + cc + "_" + CADC_LAXNAME[la] + "_" + GREG_NAME[rg];
+            BKA1(h_cadc_reg[is][ic][it][la][rg], col, col + "_h",
+                 sp + " cluster ADC " + CADC_LAXNAME[la] + " strips [" + td + "] " + GREG_NAME[rg] + ";ADC sum;Counts");
+          }
       }
   }
 
@@ -1011,7 +1359,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       const int kPk = kRed;       // peak hatch color
       const int fsSB = 3004;      // sideband fill: diagonal hatch  ///
       const int fsPk = 3005;      // peak fill:     anti-diagonal hatch  \\\
-      // Fits for pads 1 & 2, over (-150,150). Pad 2 (proton+track) = flat line +
+      // Fits for pads 1 & 2, over (-150,157). Pad 2 (proton+track) = flat line +
       // a fixed-corner trapezoid (corners at x = -75,-25,50,125) + a gaussian;
       // pad 1 (proton total) = flat line + gaussian whose width is FIXED to the
       // pad-2 gaussian width ("same width"). Both display the gaussian integral
@@ -1064,7 +1412,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
 
       // Fit pad-2 histogram FIRST so its gaussian width can be reused for pad 1.
       TH1D *ht2 = (TH1D *)h_proton_track_tof[is][ic][it]->Clone((sp + "_proton_track_tof_p2" + tu).c_str());
-      TF1 *f2 = new TF1((sp + "_fit_trapgaus" + tu + cc).c_str(), trapgaus, -150., 150., 5);
+      TF1 *f2 = new TF1((sp + "_fit_trapgaus" + tu + cc).c_str(), trapgaus, -150., 157., 5);
       f2->SetParNames("flat", "trap_top", "gaus_h", "gaus_mean", "gaus_sigma");
       f2->SetParameters(50., 70., 100., 41., 5.);
       f2->FixParameter(3, 41.); // gaussian center fixed at 41 ns
@@ -1081,7 +1429,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       // Fit = flat + gaussian, gaussian width fixed to the pad-2 gaussian width.
       c->cd(1);
       TH1D *hp1 = (TH1D *)h_proton_tof[is]->Clone((sp + "_proton_tof_p1" + tu).c_str());
-      TF1 *f1 = new TF1((sp + "_fit_flatgaus" + tu + cc).c_str(), flatgaus, -150., 150., 4);
+      TF1 *f1 = new TF1((sp + "_fit_flatgaus" + tu + cc).c_str(), flatgaus, -150., 157., 4);
       f1->SetParNames("flat", "gaus_h", "gaus_mean", "gaus_sigma");
       f1->SetParameters(50., 100., 41., sig2);
       f1->FixParameter(2, 41.);  // gaussian center fixed at 41 ns
@@ -1128,7 +1476,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                              hpt->Integral(hpt->FindBin(SB_LO2 + 1e-6), hpt->FindBin(SB_HI2 - 1e-6));
       const double oob_ev = (w_sb > 0.) ? oob_raw * w_sig / w_sb : 0.;
       const double trap_amp = f2->GetParameter(1) - f2->GetParameter(0);
-      TF1 ftrap((sp + "_trap_only" + tu + cc).c_str(), trapgaus, -150., 150., 5);
+      TF1 ftrap((sp + "_trap_only" + tu + cc).c_str(), trapgaus, -150., 157., 5);
       ftrap.SetParameters(0., trap_amp, 0., f2->GetParameter(3), f2->GetParameter(4)); // flat=0, gaus off
       const double w_trap = 170. - (-25.);
       const double itb_raw = (p2binw > 0.) ? ftrap.Integral(-25., 170.) / p2binw : 0.;
@@ -1152,13 +1500,13 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       // so the Rebin scale factor cancels in the ratio (no extra /5 needed). The
       // background subtracted from each is now the NON-GAUSSIAN part of the pad
       // 1 & 2 fits (track: flat+trapezoid; total: flat), so only the gaussian
-      // peak survives. Fixed to x in [-50,150], y in [0,3]; peak region shaded.
+      // peak survives. Fixed to x in [-50,175], y in [0,3]; peak region shaded.
       c->cd(3);
       const double orig_binw = h_proton_track_tof[is][ic][it]->GetXaxis()->GetBinWidth(1);
       // background models = the fits with the gaussian height set to zero.
-      TF1 *fbg_trk = new TF1((sp + "_bg_trk" + tu + cc).c_str(), trapgaus, -150., 150., 5);
+      TF1 *fbg_trk = new TF1((sp + "_bg_trk" + tu + cc).c_str(), trapgaus, -150., 157., 5);
       fbg_trk->SetParameters(f2->GetParameter(0), f2->GetParameter(1), 0., f2->GetParameter(3), f2->GetParameter(4));
-      TF1 *fbg_tot = new TF1((sp + "_bg_tot" + tu + cc).c_str(), flatgaus, -150., 150., 4);
+      TF1 *fbg_tot = new TF1((sp + "_bg_tot" + tu + cc).c_str(), flatgaus, -150., 157., 4);
       fbg_tot->SetParameters(f1->GetParameter(0), 0., f1->GetParameter(2), f1->GetParameter(3));
       TH1D *ht_rb5r = (TH1D *)h_proton_track_tof[is][ic][it]->Clone((sp + "_proton_track_ratio_trk_rb5" + tu).c_str());
       ht_rb5r->Rebin(5);
@@ -1176,7 +1524,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       // event-weighted peak-region efficiency: weight each ratio bin by its
       // numerator+denominator event counts (rebinned, pre-bg-sub).
       region_wstats(hratio, ht_rb5r, hp_rb5r, {{30., 50.}}, eff_m, eff_e);
-      hratio->GetXaxis()->SetRangeUser(-50., 150.);
+      hratio->GetXaxis()->SetRangeUser(-50., 175.);
       hratio->GetYaxis()->SetRangeUser(0., 3);
       draw_shaded(hratio, {{30., 50., (double)kPk, (double)fsPk}});
       delete hratio;
@@ -1347,49 +1695,290 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       h_pid_eb_trk[is][ic][it]->DrawCopy("COLZ");
       wc(cpid);
 
-      // GEM hit-position plots (this chi-square cut). Three canvases per variant:
-      // x-vs-y (2D), x projection, y projection; each a 2-row (GEM0 top / GEM1
-      // bottom) by N_GREG-column (all / oot / it / peak) grid. Written into the
-      // current cut's variant folder.
+      // Punchthrough paddle-vs-y: a tracked proton hit in 001/101 is a
+      // punchthrough (same selection as the GEM plots). 2x2 canvas: top row =
+      // 2D paddle(x) vs y(y) for plane 001 (left) and 101 (right); bottom row =
+      // that 2D projected onto the paddle axis (counts vs paddle #).
+      {
+        TCanvas *cpt = new TCanvas((sp + "_c_punchthrough_paddle_ypos").c_str(),
+                                   (sp + " punchthrough paddle vs y [" + tracks[it].dir + ", chi2<" + cutstr + "]").c_str(),
+                                   1400, 1000);
+        cpt->Divide(2, 2);
+        const char *plab[2] = {"001", "101"};
+        for (int gp = 0; gp < 2; ++gp) {
+          TH2D *h2 = h_pt_xy[is][ic][it][gp];
+          cpt->cd(gp + 1); // top row: 2D paddle vs y
+          h2->DrawCopy("COLZ");
+          cpt->cd(gp + 3); // bottom row: projection onto paddle axis (matches the
+                           // displayed 2D: y bins 1..Ny, excluding under/overflow)
+          TH1D *hpx = h2->ProjectionX((std::string(h2->GetName()) + "_px").c_str(), 1, h2->GetNbinsY());
+          hpx->SetTitle((sp + " punchthrough " + plab[gp] + " paddle;paddle;Counts").c_str());
+          hpx->SetStats(0);
+          hpx->DrawCopy();
+          delete hpx;
+        }
+        wc(cpt);
+      }
+
+      // No-track version of the punchthrough paddle-vs-y canvas: same 2x2 layout
+      // but with NO track requirement (variant/cut-independent histograms, drawn
+      // in every variant/cut folder for convenience).
+      {
+        TCanvas *cptn = new TCanvas((sp + "_c_punchthrough_paddle_ypos_notrack").c_str(),
+                                    (sp + " punchthrough paddle vs y (no track)").c_str(), 1400, 1000);
+        cptn->Divide(2, 2);
+        const char *plab[2] = {"001", "101"};
+        for (int gp = 0; gp < 2; ++gp) {
+          TH2D *h2 = h_pt_xy_notrack[is][gp];
+          cptn->cd(gp + 1); // top row: 2D paddle vs y
+          h2->DrawCopy("COLZ");
+          cptn->cd(gp + 3); // bottom row: projection onto paddle axis
+          TH1D *hpx = h2->ProjectionX((std::string(h2->GetName()) + "_ntpx").c_str(), 1, h2->GetNbinsY());
+          hpx->SetTitle((sp + " punchthrough (no track) " + plab[gp] + " paddle;paddle;Counts").c_str());
+          hpx->SetStats(0);
+          hpx->DrawCopy();
+          delete hpx;
+        }
+        wc(cptn);
+      }
+
+      // Cluster-ADC-amplitude canvases (one per strip axis: x = V strips, y = U
+      // strips). 7 panels: all clusters (no track), with-track+proton-hodo (all
+      // tof), oot, it, peak, IT-OOT, peak-IT-OOT. The last two reuse the pad-2
+      // fit's tof-window scale factors (flat ~ window width, trapezoid ~ its
+      // fitted integral) -- identical to the GEM position background subtraction.
+      if (clust_ok || cadc_ok[it]) {
+        auto regW = [](int r) { double w = 0.; for (const auto &iv : GREG_INT[r]) w += iv[1] - iv[0]; return w; };
+        const double wOOT = regW(1), wIT = regW(2), wPK = regW(3);
+        const double sflat_it = (wOOT > 0.) ? wIT / wOOT : 0.;
+        const double sflat_pk = (wOOT > 0.) ? wPK / wOOT : 0.;
+        TF1 ftrq((sp + "_cadc_trap" + tu + cc).c_str(), trapgaus, -150., 157., 5);
+        ftrq.SetParameters(0., f2->GetParameter(1) - f2->GetParameter(0), 0., f2->GetParameter(3), f2->GetParameter(4));
+        auto Itr = [&](int r) { double s = 0.; for (const auto &iv : GREG_INT[r]) s += ftrq.Integral(iv[0], iv[1]); return s; };
+        const double itrIT = Itr(2), itrPK = Itr(3);
+        const double strap = (itrIT != 0.) ? itrPK / itrIT : 0.;
+        int subN = 0;
+        auto uq = [&subN]() { return std::string("cadcsub_") + std::to_string(subN++); };
+        auto mkIO = [&](TH1D *hit, TH1D *hoot) -> TH1D * {
+          if (!hit) return nullptr;
+          TH1D *r = (TH1D *)hit->Clone(uq().c_str());
+          if (hoot) r->Add(hoot, -sflat_it);
+          return r;
+        };
+        auto mkPB = [&](TH1D *hpk, TH1D *hit, TH1D *hoot) -> TH1D * {
+          if (!hpk) return nullptr;
+          TH1D *r = (TH1D *)hpk->Clone(uq().c_str());
+          if (hoot) r->Add(hoot, -sflat_pk);
+          if (hit) {
+            TH1D *t = (TH1D *)hit->Clone(uq().c_str());
+            if (hoot) t->Add(hoot, -sflat_it);
+            r->Add(t, -strap);
+            delete t;
+          }
+          return r;
+        };
+        for (int la = 0; la < CADC_NAX; ++la) {
+          const std::string ax = CADC_LAXNAME[la];
+          TCanvas *cca = new TCanvas(
+              (sp + "_c_cluster_adc_" + ax).c_str(),
+              (sp + " cluster ADC " + ax + " strips [" + tracks[it].dir + ", chi2<" + cutstr + "]").c_str(), 1800, 900);
+          cca->Divide(4, 2);
+          cca->cd(1); // panel 1: all clusters (no track)
+          if (h_cadc_all[is][la]) {
+            h_cadc_all[is][la]->SetStats(0);
+            h_cadc_all[is][la]->DrawCopy();
+          }
+          for (int rg = 0; rg < N_GREG; ++rg) { // panels 2-5: with-track all/oot/it/peak
+            cca->cd(rg + 2);
+            TH1D *h = h_cadc_reg[is][ic][it][la][rg];
+            if (h) {
+              h->SetStats(0);
+              h->DrawCopy();
+            }
+          }
+          cca->cd(6); // panel 6: IT-OOT
+          {
+            TH1D *d = mkIO(h_cadc_reg[is][ic][it][la][2], h_cadc_reg[is][ic][it][la][1]);
+            if (d) {
+              d->SetTitle((sp + " cluster ADC " + ax + " strips IT-OOT;ADC sum;Counts").c_str());
+              d->SetStats(0);
+              d->DrawCopy();
+              delete d;
+            }
+          }
+          cca->cd(7); // panel 7: peak-IT-OOT
+          {
+            TH1D *d = mkPB(h_cadc_reg[is][ic][it][la][3], h_cadc_reg[is][ic][it][la][2], h_cadc_reg[is][ic][it][la][1]);
+            if (d) {
+              d->SetTitle((sp + " cluster ADC " + ax + " strips peak-IT-OOT;ADC sum;Counts").c_str());
+              d->SetStats(0);
+              d->DrawCopy();
+              delete d;
+            }
+          }
+          wc(cca);
+        }
+      }
+
+      // GEM hit-position plots (this chi-square cut), one canvas per GEM layer.
+      // Each canvas is a 3x2 grid of 6 panels: the 4 tof regions (all / oot / it /
+      // peak) plus 2 fit-scaled background-subtracted panels:
+      //   IT-OOT       = it - (|IT|/|OOT|) oot         [in-time bkg, flat removed]
+      //   peak-IT-OOT  = peak - (|pk|/|OOT|) oot - (Itrap_pk/Itrap_it)(IT-OOT)
+      //                                                 [signal, flat+in-time removed]
+      // Scale factors come from the pad-2 flat+trapezoid+gaussian fit: the flat
+      // component is constant so its region ratio = the tof-width ratio; the
+      // trapezoid ratio is the fitted trapezoid integrated over each region. The
+      // 1D x/y canvases overlay the two plane groups (000/001, 100/101) in distinct
+      // colors; the 2D x-vs-y canvas sums both plane groups into one standard COLZ
+      // heatmap. Six canvases per variant/cut: x/y/xy each for GEM0 and GEM1.
       if (gem_ok[it]) {
         td->cd();
         const std::string gt = tracks[it].dir;
-        // 2D x-vs-y
-        TCanvas *cgxy = new TCanvas((sp + "_c_gem_xy").c_str(),
-                                    (sp + " GEM x-vs-y [" + gt + ", chi2<" + cutstr + "] (all/oot/it/peak)").c_str(),
-                                    1600, 800);
-        cgxy->Divide(N_GREG, 2);
-        for (int g = 0; g < 2; ++g)
-          for (int r = 0; r < N_GREG; ++r) {
-            cgxy->cd(g * N_GREG + r + 1);
-            if (h_gem_xy[is][ic][it][g][r])
-              h_gem_xy[is][ic][it][g][r]->DrawCopy("COLZ");
+        const std::string cinfo = " [" + gt + ", chi2<" + cutstr + "]";
+        // ---- background-subtraction scale factors from the pad-2 fit ----
+        auto regW = [](int r) { double w = 0.; for (const auto &iv : GREG_INT[r]) w += iv[1] - iv[0]; return w; };
+        const double wOOT = regW(1), wIT = regW(2), wPK = regW(3);
+        const double sflat_it = (wOOT > 0.) ? wIT / wOOT : 0.; // flat: |IT|/|OOT|
+        const double sflat_pk = (wOOT > 0.) ? wPK / wOOT : 0.; // flat: |peak|/|OOT|
+        TF1 ftr((sp + "_gem_trap" + tu + cc).c_str(), trapgaus, -150., 157., 5);
+        ftr.SetParameters(0., f2->GetParameter(1) - f2->GetParameter(0), 0., f2->GetParameter(3), f2->GetParameter(4));
+        auto Itrap = [&](int r) { double s = 0.; for (const auto &iv : GREG_INT[r]) s += ftr.Integral(iv[0], iv[1]); return s; };
+        const double itrIT = Itrap(2), itrPK = Itrap(3);
+        const double strap = (itrIT != 0.) ? itrPK / itrIT : 0.; // trapezoid: Itrap_pk/Itrap_it
+        // Unique-name counter for the (leaked-free) derived-histogram clones.
+        int subN = 0;
+        auto uniq = [&subN]() { return std::string("gsub_") + std::to_string(subN++); };
+        // Derived (background-subtracted) histograms; work on TH1* so TH1D/TH2D
+        // share the code. Caller owns the result and must delete it after drawing.
+        auto mkITmOOT = [&](TH1 *hit, TH1 *hoot) -> TH1 * {
+          if (!hit) return nullptr;
+          TH1 *r = (TH1 *)hit->Clone(uniq().c_str());
+          if (hoot) r->Add(hoot, -sflat_it);
+          return r;
+        };
+        auto mkPeakBS = [&](TH1 *hpk, TH1 *hit, TH1 *hoot) -> TH1 * {
+          if (!hpk) return nullptr;
+          TH1 *r = (TH1 *)hpk->Clone(uniq().c_str());
+          if (hoot) r->Add(hoot, -sflat_pk);
+          if (hit) {
+            TH1 *tmp = (TH1 *)hit->Clone(uniq().c_str());
+            if (hoot) tmp->Add(hoot, -sflat_it);
+            r->Add(tmp, -strap);
+            delete tmp;
           }
-        wc(cgxy);
-        // 1D x projection
-        TCanvas *cgx = new TCanvas((sp + "_c_gem_x").c_str(),
-                                   (sp + " GEM x [" + gt + ", chi2<" + cutstr + "] (all/oot/it/peak)").c_str(), 1600,
-                                   800);
-        cgx->Divide(N_GREG, 2);
-        for (int g = 0; g < 2; ++g)
-          for (int r = 0; r < N_GREG; ++r) {
-            cgx->cd(g * N_GREG + r + 1);
-            if (h_gem_x[is][ic][it][g][r])
-              h_gem_x[is][ic][it][g][r]->DrawCopy();
+          return r;
+        };
+        const char *pname[6] = {"all", "oot", "it", "peak", "IT-OOT", "peak-IT-OOT"};
+        // Overlay the two plane groups of a 1D histogram set on the current pad.
+        // Legend references the drawn (pad-owned) copies, so the passed histograms
+        // may be deleted by the caller right after this returns.
+        auto overlay1D = [&](TH1D *h0, TH1D *h1, const std::string &ptitle) {
+          double mx = 0., mn = 0.;
+          TH1D *hh[N_GGRP] = {h0, h1}, *cc[N_GGRP] = {nullptr, nullptr};
+          for (int gp = 0; gp < N_GGRP; ++gp)
+            if (hh[gp]) {
+              mx = std::max(mx, hh[gp]->GetMaximum());
+              mn = std::min(mn, hh[gp]->GetMinimum());
+            }
+          bool drew = false;
+          for (int gp = 0; gp < N_GGRP; ++gp) {
+            if (!hh[gp]) continue;
+            hh[gp]->SetTitle(ptitle.c_str());
+            hh[gp]->SetLineColor(GGRP_COLOR[gp]);
+            hh[gp]->SetLineWidth(2);
+            hh[gp]->SetStats(0);
+            TH1D *c = (TH1D *)hh[gp]->DrawCopy(drew ? "HIST SAME" : "HIST");
+            if (!drew) {
+              c->SetMaximum(mx > 0. ? mx * 1.15 : 1.);
+              if (mn < 0.) c->SetMinimum(mn * 1.15);
+            }
+            cc[gp] = c;
+            drew = true;
           }
-        wc(cgx);
-        // 1D y projection
-        TCanvas *cgy = new TCanvas((sp + "_c_gem_y").c_str(),
-                                   (sp + " GEM y [" + gt + ", chi2<" + cutstr + "] (all/oot/it/peak)").c_str(), 1600,
-                                   800);
-        cgy->Divide(N_GREG, 2);
-        for (int g = 0; g < 2; ++g)
-          for (int r = 0; r < N_GREG; ++r) {
-            cgy->cd(g * N_GREG + r + 1);
-            if (h_gem_y[is][ic][it][g][r])
-              h_gem_y[is][ic][it][g][r]->DrawCopy();
+          TLegend *lg = new TLegend(0.60, 0.78, 0.98, 0.93); // leaked (canvas primitive)
+          lg->SetBorderSize(0);
+          lg->SetFillStyle(0);
+          lg->SetTextSize(0.05);
+          for (int gp = 0; gp < N_GGRP; ++gp)
+            if (cc[gp]) lg->AddEntry(cc[gp], GGRP_TITLE[gp], "l");
+          lg->Draw();
+        };
+        for (int g = 0; g < 2; ++g) {
+          const std::string gG = "GEM" + std::to_string(g);
+          const std::string ptag = sp + " " + gt + " " + gG + cinfo;
+          // ---- 1D x and y: 6-panel canvas, plane groups overlaid ----
+          auto draw1D = [&](const std::string &cname, const std::string &axis, auto getH) {
+            TCanvas *c = new TCanvas(cname.c_str(), (ptag + " " + axis).c_str(), 1800, 900);
+            c->Divide(3, 2);
+            for (int p = 0; p < 6; ++p) {
+              c->cd(p + 1);
+              const std::string ptitle = pname[p] + std::string(" ") + axis + " " + ptag + ";" + axis + " (cm);Counts";
+              TH1D *a0 = nullptr, *a1 = nullptr;
+              bool del = false;
+              if (p < 4) {
+                a0 = getH(p, 0);
+                a1 = getH(p, 1);
+              } else if (p == 4) {
+                a0 = (TH1D *)mkITmOOT(getH(2, 0), getH(1, 0));
+                a1 = (TH1D *)mkITmOOT(getH(2, 1), getH(1, 1));
+                del = true;
+              } else {
+                a0 = (TH1D *)mkPeakBS(getH(3, 0), getH(2, 0), getH(1, 0));
+                a1 = (TH1D *)mkPeakBS(getH(3, 1), getH(2, 1), getH(1, 1));
+                del = true;
+              }
+              overlay1D(a0, a1, ptitle);
+              if (del) {
+                delete a0;
+                delete a1;
+              }
+            }
+            wc(c);
+          };
+          draw1D(sp + "_c_gem_x_" + gG, "x", [&](int r, int gp) { return h_gem_x[is][ic][it][g][r][gp]; });
+          draw1D(sp + "_c_gem_y_" + gG, "y", [&](int r, int gp) { return h_gem_y[is][ic][it][g][r][gp]; });
+          // ---- 2D x-vs-y: 6-panel canvas, the two plane groups overlaid in
+          //      color (scatter). Same panel logic as the 1D canvases. ----
+          {
+            const std::string cname = sp + "_c_gem_xy_" + gG;
+            TCanvas *c = new TCanvas(cname.c_str(), (ptag + " x-vs-y").c_str(), 1800, 900);
+            c->Divide(3, 2);
+            // Combined (both plane groups 000/001 + 100/101 summed) region
+            // histogram -- drawn as a single standard COLZ heatmap, not a
+            // two-color overlay. Caller owns the returned clone.
+            auto combH = [&](int r) -> TH2D * {
+              TH2D *h0 = h_gem_xy[is][ic][it][g][r][0], *h1 = h_gem_xy[is][ic][it][g][r][1];
+              TH2D *o = nullptr;
+              if (h0) { o = (TH2D *)h0->Clone(uniq().c_str()); if (h1) o->Add(h1); }
+              else if (h1) { o = (TH2D *)h1->Clone(uniq().c_str()); }
+              return o;
+            };
+            for (int p = 0; p < 6; ++p) {
+              c->cd(p + 1);
+              const std::string ptitle = pname[p] + std::string(" ") + ptag + ";x (cm);y (cm)";
+              TH2D *draw = nullptr;
+              if (p < 4) {
+                draw = combH(p);
+              } else if (p == 4) {
+                TH2D *cit = combH(2), *coot = combH(1);
+                draw = (TH2D *)mkITmOOT(cit, coot);
+                delete cit; delete coot;
+              } else {
+                TH2D *cpk = combH(3), *cit = combH(2), *coot = combH(1);
+                draw = (TH2D *)mkPeakBS(cpk, cit, coot);
+                delete cpk; delete cit; delete coot;
+              }
+              if (draw) {
+                draw->SetTitle(ptitle.c_str());
+                draw->SetStats(0);
+                draw->DrawCopy("COLZ");
+                delete draw;
+              }
+            }
+            wc(c);
           }
-        wc(cgy);
+        }
       }
       } // end tracking-variant loop
     } // end chi-square-cut loop
