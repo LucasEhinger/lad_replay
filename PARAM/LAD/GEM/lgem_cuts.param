@@ -9,7 +9,7 @@ lgem_pedsub_online = 0 ; 1: Ped Subtraction is being done at the MPD's
 lgem_max2Dhits = 10000000 ;changed
 
 ; place holder for flags, parameters
-lgem_pededstal_mode = 0 ; Not sure what this does
+lgem_pedestal_mode = 0 ; 1: do GEM ped and CM calculation, should be off for production run 
 ;lgem_do_neg_signal_study = 0
 ;lgem_commonmode_online_flag = 3
 lgem_commonmode_nstriphi = 20
