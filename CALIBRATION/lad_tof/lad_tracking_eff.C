@@ -109,8 +109,9 @@ const double EMIN_B = 0., EMAX_B = 150.; // back-plane  edep (MeV)
 // GEM hit-position (x,y) plots for tracked proton hits. Position source:
 //   2D variants  -> <sp>.gem.trk.x1/y1 (GEM0) and .x2/y2 (GEM1), indexed by the
 //                   variant's goodhit_trackid<suf> (track id == trk array index).
-//   1D variants  -> <sp>.ladhod.goodhit_trk1D_x0/y0 (GEM0) and _x1/y1 (GEM1),
-//                   the winning 1D-cluster lab position (-1000 = none).
+//   1D variants  -> goodhit_trk1D_clidx_{x0,x1,y0,y1} give the winning cluster's
+//                   CLIndex per layer/axis; lab (x,y) is looked up from
+//                   <sp>.gem.clust.labx/laby (V=x, U=y) at that clust.* row.
 // These branches are optional; a variant/spectrometer without them is skipped.
 // Binning (lab cm): x ~ [36,102], y ~ [-26,24] in data -> framed generously.
 const int GEM_NX1 = 130, GEM_NY1 = 100;             // 1D projections (1 cm bins)
@@ -152,16 +153,21 @@ const double PT_YLO = -240., PT_YHI = 240.;                // ypos range (cm); b
 // V strips (LADGEM::kVaxis == 1) form the x-z projection -> "x strips"; the U
 // strips (LADGEM::kUaxis == 0) form the y projection -> "y strips". (Some
 // commented DEF-file histogram titles label these the other way; that mislabel
-// is NOT followed here.) Cluster ADC sum ~ [0,3000] (cf. the commented
-// h1_gem_clustADCSum* in gem_histos.def). Each canvas has 7 panels: all clusters
-// (no track), with-track+proton-hodo (all tof), oot, it, peak, IT-OOT, and
-// peak-IT-OOT (the last two use the same tof-window scale factors as the GEM
-// position background subtraction).
-const int CADC_NBINS = 150;
-const double CADC_LO = 0., CADC_HI = 3000.;                    // cluster ADC sum
+// is NOT followed here.) Cluster ADC sum spans ~[400, 1e5] in data (median ~3k,
+// 99% < 40k; the winning/tracked clusters skew high), so the axis runs to 50k.
+// Each canvas has 7 panels: all clusters (no track), with-track+proton-hodo (all
+// tof), oot, it, peak, IT-OOT, and peak-IT-OOT (the last two use the same
+// tof-window scale factors as the GEM position background subtraction).
+const int CADC_NBINS = 250;
+const double CADC_LO = 0., CADC_HI = 50000.;                   // cluster ADC sum (200/bin)
 const int CADC_NAX = 2;                                        // logical axes: 0 = x (V), 1 = y (U)
 const char *const CADC_LAXNAME[CADC_NAX] = {"x", "y"};         // canvas/hist label per logical axis
 const int CADC_AXVAL[CADC_NAX] = {1, 0};                       // clust.axis value: x -> V(1), y -> U(0)
+// clust.axis values used to match a winning cluster to its clust.* row (from the
+// tracking code): x is measured by the V strips (kVaxis==1), y by the U strips
+// (kUaxis==0). GEM0 = clust.layer 0 (front), GEM1 = clust.layer 1 (back).
+const int CLUST_AXIS_X = 1; // kVaxis
+const int CLUST_AXIS_Y = 0; // kUaxis
 
 const double hodo_radii[N_PLANES] = {615., 655.6, 523., 563.6, 615.}; // cm
 const char *const plane_names[N_PLANES] = {"000", "001", "100", "101", "200"};
@@ -208,6 +214,24 @@ TH1D *flat_bgsub2(const TH1D *h, double lo1, double hi1, double lo2, double hi2)
   for (int b = 1; b <= h->GetNbinsX(); ++b)
     out->SetBinContent(b, h->GetBinContent(b) - bg);
   return out;
+}
+
+// Look up a clust.* value for the winning cluster identified by its CLIndex at
+// (layer, axis). clust.index is unique within a layer (one GEM module per layer,
+// with a single U/V cluster counter), so (layer, axis, index) selects exactly one
+// clust.* row. Returns the sentinel when clidx < 0 (no cluster) or no row matches.
+// All clust.* branches are read as RVec<double> (hall-C stores the per-cluster
+// Int_t vectors as doubles too) and rounded where they are integral.
+static double clust_lookup(const ROOT::VecOps::RVec<double> &cl_layer, const ROOT::VecOps::RVec<double> &cl_axis,
+                           const ROOT::VecOps::RVec<double> &cl_index, const ROOT::VecOps::RVec<double> &cl_val,
+                           int layer, int axis, int clidx, double sentinel = -1000.) {
+  if (clidx < 0)
+    return sentinel;
+  for (size_t j = 0; j < cl_index.size(); ++j)
+    if ((int)std::llround(cl_index[j]) == clidx && (int)std::llround(cl_layer[j]) == layer &&
+        (int)std::llround(cl_axis[j]) == axis)
+      return (j < cl_val.size()) ? cl_val[j] : sentinel;
+  return sentinel;
 }
 
 // A tracking variant: 'dir' is its output sub-directory; 'tsuf' is the suffix
@@ -309,8 +333,9 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
 
   // Per-variant GEM hit-position availability (needs the position branches on
   // BOTH spectrometers). 2D variants use <sp>.gem.trk.x1 + goodhit_trackid<suf>;
-  // 1D variants use the per-hit goodhit_trk1D_* branches. Absent -> no GEM plots
-  // for that variant (graceful on files replayed before these branches existed).
+  // 1D variants recover the winning-cluster lab (x,y) from the clust.* row named
+  // by goodhit_trk1D_clidx_* (so they also need clust.layer/axis/index/labx/laby).
+  // Absent -> no GEM plots for that variant.
   auto is1D_of = [](const Track &t) { return t.dir.rfind("1D_", 0) == 0; };
   std::vector<bool> gem_ok(ntracks, false);
   for (int it = 0; it < ntracks; ++it) {
@@ -318,8 +343,11 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     for (int is = 0; is < N_SPECS && ok; ++is) {
       const std::string sp(1, specs[is]);
       if (is1D_of(tracks[it])) {
-        ok = has_branch(sp + ".ladhod.goodhit_trk1D_x0") && has_branch(sp + ".ladhod.goodhit_trk1D_y0") &&
-             has_branch(sp + ".ladhod.goodhit_trk1D_x1") && has_branch(sp + ".ladhod.goodhit_trk1D_y1");
+        ok = has_branch(sp + ".ladhod.goodhit_trk1D_clidx_x0") && has_branch(sp + ".ladhod.goodhit_trk1D_clidx_x1") &&
+             has_branch(sp + ".ladhod.goodhit_trk1D_clidx_y0") && has_branch(sp + ".ladhod.goodhit_trk1D_clidx_y1") &&
+             has_branch(sp + ".gem.clust.layer") && has_branch(sp + ".gem.clust.axis") &&
+             has_branch(sp + ".gem.clust.index") && has_branch(sp + ".gem.clust.labx") &&
+             has_branch(sp + ".gem.clust.laby");
       } else {
         ok = has_branch(sp + ".gem.trk.x1") && has_branch(sp + ".gem.trk.y1") && has_branch(sp + ".gem.trk.x2") &&
              has_branch(sp + ".gem.trk.y2") && has_branch(sp + ".ladhod.goodhit_trackid" + tracks[it].tsuf);
@@ -339,10 +367,11 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   // canvases per cut, in each cut's variant folder).
 
   // Cluster-ADC plot availability. Panel 1 (all clusters, no track) needs the GEM
-  // cluster branches on both spectrometers. The with-track panels need, per
-  // variant, either the 2D per-spacepoint track ADC branches (+ that variant's
-  // trackid) or the new 1D winning-cluster ADC branches (goodhit_trk1D_adc*,
-  // present only after a re-replay with the extended LADlib).
+  // cluster branches on both spectrometers. The with-track panels look each
+  // cluster's ADC up from clust.* by cluster index: 2D variants via the track's
+  // spID_0u/0v/1u/1v (+ trackid), 1D variants via goodhit_trk1D_clidx_* (present
+  // only after a re-replay with the extended LADlib). Both need the clust.* index
+  // branches.
   bool clust_ok = true;
   for (int is = 0; is < N_SPECS; ++is) {
     const std::string sp(1, specs[is]);
@@ -355,13 +384,16 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     for (int is = 0; is < N_SPECS && ok; ++is) {
       const std::string sp(1, specs[is]);
       if (is1D_of(tracks[it])) {
-        ok = has_branch(sp + ".ladhod.goodhit_trk1D_adcx0") && has_branch(sp + ".ladhod.goodhit_trk1D_adcy0") &&
-             has_branch(sp + ".ladhod.goodhit_trk1D_adcx1") && has_branch(sp + ".ladhod.goodhit_trk1D_adcy1");
+        ok = has_branch(sp + ".ladhod.goodhit_trk1D_clidx_x0") && has_branch(sp + ".ladhod.goodhit_trk1D_clidx_x1") &&
+             has_branch(sp + ".ladhod.goodhit_trk1D_clidx_y0") && has_branch(sp + ".ladhod.goodhit_trk1D_clidx_y1");
       } else {
-        ok = has_branch(sp + ".gem.trk.adc1") && has_branch(sp + ".gem.trk.asy1") &&
-             has_branch(sp + ".gem.trk.adc2") && has_branch(sp + ".gem.trk.asy2") &&
+        ok = has_branch(sp + ".gem.trk.spID_0u") && has_branch(sp + ".gem.trk.spID_0v") &&
+             has_branch(sp + ".gem.trk.spID_1u") && has_branch(sp + ".gem.trk.spID_1v") &&
              has_branch(sp + ".ladhod.goodhit_trackid" + tracks[it].tsuf);
       }
+      // Both paths look the ADC up from clust.* by cluster index.
+      ok = ok && has_branch(sp + ".gem.clust.layer") && has_branch(sp + ".gem.clust.axis") &&
+           has_branch(sp + ".gem.clust.index") && has_branch(sp + ".gem.clust.adc");
     }
     cadc_ok[it] = ok;
   }
@@ -379,7 +411,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   //     skip the (expensive) event loop. Bump CACHE_VERSION whenever the set of
   //     booked histograms changes so old caches are rejected.
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "v7"; // v7: cluster-ADC amplitude histograms (all/with-track per axis+region)
+  const char *CACHE_VERSION = "v8"; // v8: 1D/2D cluster info via CLIndex lookup into clust.* (labx/laby/adc)
   std::string sig = std::string("lad_tracking_eff;") + CACHE_VERSION + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";dt=" + std::to_string(NBINS_DT) + "," + std::to_string(XMIN_DT) + "," + std::to_string(XMAX_DT) +
@@ -703,7 +735,8 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
         df = df.Define(
             pk,
             [clo, chi](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &t1, const RVd &ip1, const RVd &cs,
-                       const RVd &x0, const RVd &y0, const RVd &x1, const RVd &y1) {
+                       const RVd &cix0, const RVd &cix1, const RVd &ciy0, const RVd &ciy1, const RVd &clay,
+                       const RVd &cax, const RVd &cidx, const RVd &clabx, const RVd &claby) {
               RVd r;
               for (size_t i = 0; i < pl1.size(); ++i) {
                 if (ip1[i] != 1.)
@@ -715,18 +748,24 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                   continue;
                 double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                 double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
+                // Winning-cluster CLIndex per layer/axis -> lab (x,y) from clust.*.
+                int kx0 = i < cix0.size() ? (int)std::round(cix0[i]) : -1;
+                int kx1 = i < cix1.size() ? (int)std::round(cix1[i]) : -1;
+                int ky0 = i < ciy0.size() ? (int)std::round(ciy0[i]) : -1;
+                int ky1 = i < ciy1.size() ? (int)std::round(ciy1[i]) : -1;
                 r.push_back(tofc);
                 r.push_back((pi == 1) ? 0. : 1.); // plane group: 001 -> 0, 101 -> 1
-                r.push_back(i < x0.size() ? x0[i] : -1000.);
-                r.push_back(i < y0.size() ? y0[i] : -1000.);
-                r.push_back(i < x1.size() ? x1[i] : -1000.);
-                r.push_back(i < y1.size() ? y1[i] : -1000.);
+                r.push_back(clust_lookup(clay, cax, cidx, clabx, 0, CLUST_AXIS_X, kx0)); // GEM0 x (V, layer 0)
+                r.push_back(clust_lookup(clay, cax, cidx, claby, 0, CLUST_AXIS_Y, ky0)); // GEM0 y (U, layer 0)
+                r.push_back(clust_lookup(clay, cax, cidx, clabx, 1, CLUST_AXIS_X, kx1)); // GEM1 x (V, layer 1)
+                r.push_back(clust_lookup(clay, cax, cidx, claby, 1, CLUST_AXIS_Y, ky1)); // GEM1 y (U, layer 1)
               }
               return r;
             },
             {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_tof_1", sp + "_isProton_1",
-             sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trk1D_x0", sp + ".ladhod.goodhit_trk1D_y0",
-             sp + ".ladhod.goodhit_trk1D_x1", sp + ".ladhod.goodhit_trk1D_y1"});
+             sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trk1D_clidx_x0", sp + ".ladhod.goodhit_trk1D_clidx_x1",
+             sp + ".ladhod.goodhit_trk1D_clidx_y0", sp + ".ladhod.goodhit_trk1D_clidx_y1", sp + ".gem.clust.layer",
+             sp + ".gem.clust.axis", sp + ".gem.clust.index", sp + ".gem.clust.labx", sp + ".gem.clust.laby"});
       } else {
         df = df.Define(
             pk,
@@ -881,9 +920,9 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     //   With-track panels: one packed column per variant+cut over the selected
     //   proton-hodo tracked hits (isProton==1, plane 001/101, chiSquare in the cut
     //   window), stride 5 = {corrected tof, adc_x GEM0, adc_x GEM1, adc_y GEM0,
-    //   adc_y GEM1}. 2D variants read the per-spacepoint ADC mean+asym from the
-    //   track (ADCsum_U = mean*(1+asym) = y, ADCsum_V = mean*(1-asym) = x); 1D
-    //   variants read the winning-cluster ADC from the goodhit_trk1D_adc* branches.
+    //   adc_y GEM1}. Each ADC is looked up from clust.adc by the winning cluster's
+    //   CLIndex: 2D variants via the track's spID_0u/0v/1u/1v (V=x, U=y), 1D
+    //   variants via goodhit_trk1D_clidx_{x0,x1,y0,y1}.
     //   Per-axis, per-tof-region ADC lists (both GEM layers pooled) unpack from it.
     if (clust_ok) {
       for (int la = 0; la < CADC_NAX; ++la) {
@@ -912,7 +951,8 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
           df = df.Define(
               pk,
               [clo, chi](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &t1, const RVd &ip1, const RVd &cs,
-                         const RVd &ax0, const RVd &ax1, const RVd &ay0, const RVd &ay1) {
+                         const RVd &cix0, const RVd &cix1, const RVd &ciy0, const RVd &ciy1, const RVd &clay,
+                         const RVd &cax, const RVd &cidx, const RVd &cadc) {
                 RVd r;
                 for (size_t i = 0; i < pl1.size(); ++i) {
                   if (ip1[i] != 1.)
@@ -924,22 +964,28 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                     continue;
                   double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                   double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
+                  int kx0 = i < cix0.size() ? (int)std::round(cix0[i]) : -1;
+                  int kx1 = i < cix1.size() ? (int)std::round(cix1[i]) : -1;
+                  int ky0 = i < ciy0.size() ? (int)std::round(ciy0[i]) : -1;
+                  int ky1 = i < ciy1.size() ? (int)std::round(ciy1[i]) : -1;
                   r.push_back(tofc);
-                  r.push_back(i < ax0.size() ? ax0[i] : -1000.);
-                  r.push_back(i < ax1.size() ? ax1[i] : -1000.);
-                  r.push_back(i < ay0.size() ? ay0[i] : -1000.);
-                  r.push_back(i < ay1.size() ? ay1[i] : -1000.);
+                  r.push_back(clust_lookup(clay, cax, cidx, cadc, 0, CLUST_AXIS_X, kx0)); // x GEM0 (V, layer 0)
+                  r.push_back(clust_lookup(clay, cax, cidx, cadc, 1, CLUST_AXIS_X, kx1)); // x GEM1 (V, layer 1)
+                  r.push_back(clust_lookup(clay, cax, cidx, cadc, 0, CLUST_AXIS_Y, ky0)); // y GEM0 (U, layer 0)
+                  r.push_back(clust_lookup(clay, cax, cidx, cadc, 1, CLUST_AXIS_Y, ky1)); // y GEM1 (U, layer 1)
                 }
                 return r;
               },
               {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_tof_1", sp + "_isProton_1",
-               sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trk1D_adcx0", sp + ".ladhod.goodhit_trk1D_adcx1",
-               sp + ".ladhod.goodhit_trk1D_adcy0", sp + ".ladhod.goodhit_trk1D_adcy1"});
+               sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trk1D_clidx_x0", sp + ".ladhod.goodhit_trk1D_clidx_x1",
+               sp + ".ladhod.goodhit_trk1D_clidx_y0", sp + ".ladhod.goodhit_trk1D_clidx_y1", sp + ".gem.clust.layer",
+               sp + ".gem.clust.axis", sp + ".gem.clust.index", sp + ".gem.clust.adc"});
         } else {
           df = df.Define(
               pk,
               [clo, chi](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &t1, const RVd &ip1, const RVd &cs,
-                         const RVd &tid, const RVd &a1, const RVd &s1, const RVd &a2, const RVd &s2) {
+                         const RVd &tid, const RVd &sp0u, const RVd &sp0v, const RVd &sp1u, const RVd &sp1v,
+                         const RVd &clay, const RVd &cax, const RVd &cidx, const RVd &cadc) {
                 RVd r;
                 for (size_t i = 0; i < pl1.size(); ++i) {
                   if (ip1[i] != 1.)
@@ -952,24 +998,24 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                   double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                   double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
                   int k = (i < tid.size()) ? (int)std::round(tid[i]) : -1;
-                  double adcx0 = -1000., adcx1 = -1000., adcy0 = -1000., adcy1 = -1000.;
-                  if (k >= 0 && k < (int)a1.size() && k < (int)a2.size()) {
-                    adcx0 = a1[k] * (1. - s1[k]); // ADCsum_V (x) = mean*(1-asym)
-                    adcy0 = a1[k] * (1. + s1[k]); // ADCsum_U (y) = mean*(1+asym)
-                    adcx1 = a2[k] * (1. - s2[k]);
-                    adcy1 = a2[k] * (1. + s2[k]);
-                  }
+                  // The track's space-point cluster CLIndex per layer/axis
+                  // (spID_?u = U/y cluster, spID_?v = V/x cluster) -> clust.adc.
+                  int kx0 = (k >= 0 && k < (int)sp0v.size()) ? (int)std::round(sp0v[k]) : -1;
+                  int kx1 = (k >= 0 && k < (int)sp1v.size()) ? (int)std::round(sp1v[k]) : -1;
+                  int ky0 = (k >= 0 && k < (int)sp0u.size()) ? (int)std::round(sp0u[k]) : -1;
+                  int ky1 = (k >= 0 && k < (int)sp1u.size()) ? (int)std::round(sp1u[k]) : -1;
                   r.push_back(tofc);
-                  r.push_back(adcx0);
-                  r.push_back(adcx1);
-                  r.push_back(adcy0);
-                  r.push_back(adcy1);
+                  r.push_back(clust_lookup(clay, cax, cidx, cadc, 0, CLUST_AXIS_X, kx0)); // x GEM0 (V, layer 0)
+                  r.push_back(clust_lookup(clay, cax, cidx, cadc, 1, CLUST_AXIS_X, kx1)); // x GEM1 (V, layer 1)
+                  r.push_back(clust_lookup(clay, cax, cidx, cadc, 0, CLUST_AXIS_Y, ky0)); // y GEM0 (U, layer 0)
+                  r.push_back(clust_lookup(clay, cax, cidx, cadc, 1, CLUST_AXIS_Y, ky1)); // y GEM1 (U, layer 1)
                 }
                 return r;
               },
               {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_tof_1", sp + "_isProton_1",
-               sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trackid" + tu, sp + ".gem.trk.adc1", sp + ".gem.trk.asy1",
-               sp + ".gem.trk.adc2", sp + ".gem.trk.asy2"});
+               sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trackid" + tu, sp + ".gem.trk.spID_0u",
+               sp + ".gem.trk.spID_0v", sp + ".gem.trk.spID_1u", sp + ".gem.trk.spID_1v", sp + ".gem.clust.layer",
+               sp + ".gem.clust.axis", sp + ".gem.clust.index", sp + ".gem.clust.adc"});
         }
         // Per-axis, per-tof-region ADC lists (both GEM layers pooled). Stride 5:
         // offset 0 = tof; x -> offsets {1,2}, y -> offsets {3,4}. -1000 dropped.
