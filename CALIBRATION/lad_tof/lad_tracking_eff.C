@@ -169,6 +169,29 @@ const int CADC_AXVAL[CADC_NAX] = {1, 0};                       // clust.axis val
 const int CLUST_AXIS_X = 1; // kVaxis
 const int CLUST_AXIS_Y = 0; // kUaxis
 
+// Per-APV breakdown of the cluster-ADC plots. Each strip axis is read out by a
+// row of APV25 cards (128 strips each): the V/x axis has 3072/128 = 24 cards,
+// the U/y axis has 1536/128 = 12, per GEM layer. A cluster's APV card is its
+// max-strip position, maxstrip/128 (an APV *position* 0..N-1 within the axis).
+// This is derived from clust.maxstrip so the plots work on existing replays; it
+// is the same physical card the clust.apv branch (raw ADC id, newer LADlib)
+// labels. APV positions repeat across the two GEM layers, so a per-APV canvas is
+// keyed by (layer, axis, position). To avoid a histogram-per-APV explosion the
+// event loop fills one TH2D (APV position x ADC sum) per (layer, axis[, cut,
+// variant, tof-region]); each per-APV canvas is a ProjectionY of one APV column.
+const int APV_NCHAN = 128;                          // strips per APV25 card
+const int CADC_NLAYER = 2;                           // GEM layers 0 (front) / 1 (back)
+const char *const CADC_LAYNAME[CADC_NLAYER] = {"GEM0", "GEM1"};
+const int CADC_NAPV_LA[CADC_NAX] = {24, 12};         // #APV per logical axis: x->V(24), y->U(12)
+const int CADC_NAPV = 24;                            // TH2D APV-axis size (max over axes)
+const double CADC_APV_LO = -0.5, CADC_APV_HI = CADC_NAPV - 0.5;
+// Per-APV banks run the ADC axis ~2x wider than the pooled plots (which cap at
+// CADC_HI=50k): the cluster ADC sum tail reaches ~100k in data, so 50k clips the
+// distribution and biases the per-APV mean. The wider range keeps the mean (and
+// the per-card distributions) from being cut off; bin count is held so memory is
+// unchanged (coarser 400/bin). The pooled all-APV canvases are left untouched.
+const double CADC_HI_APV = 100000.;
+
 const double hodo_radii[N_PLANES] = {615., 655.6, 523., 563.6, 615.}; // cm
 const char *const plane_names[N_PLANES] = {"000", "001", "100", "101", "200"};
 const std::array<char, N_SPECS> specs = {'P', 'H'};
@@ -232,6 +255,21 @@ static double clust_lookup(const ROOT::VecOps::RVec<double> &cl_layer, const ROO
         (int)std::llround(cl_axis[j]) == axis)
       return (j < cl_val.size()) ? cl_val[j] : sentinel;
   return sentinel;
+}
+
+// Row index (into the clust.* vectors) of the winning cluster identified by its
+// CLIndex at (layer, axis), or -1 if clidx < 0 or no row matches. Same match as
+// clust_lookup, but returns the row so several clust.* values (adc AND maxstrip)
+// can be read with a single search.
+static int clust_find_row(const ROOT::VecOps::RVec<double> &cl_layer, const ROOT::VecOps::RVec<double> &cl_axis,
+                          const ROOT::VecOps::RVec<double> &cl_index, int layer, int axis, int clidx) {
+  if (clidx < 0)
+    return -1;
+  for (size_t j = 0; j < cl_index.size(); ++j)
+    if ((int)std::llround(cl_index[j]) == clidx && (int)std::llround(cl_layer[j]) == layer &&
+        (int)std::llround(cl_axis[j]) == axis)
+      return (int)j;
+  return -1;
 }
 
 // A tracking variant: 'dir' is its output sub-directory; 'tsuf' is the suffix
@@ -405,13 +443,37 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       std::cout << " " << tracks[it].dir;
   std::cout << "\n";
 
+  // Per-APV cluster-ADC plots additionally need clust.maxstrip (-> APV position)
+  // and clust.layer (per-APV canvases are keyed by GEM layer). This mirrors the
+  // all-APVs availability but with the extra maxstrip requirement, so it can turn
+  // on/off independently of the pooled cluster-ADC plots.
+  bool capv_ok = clust_ok;
+  for (int is = 0; is < N_SPECS; ++is) {
+    const std::string sp(1, specs[is]);
+    if (!has_branch(sp + ".gem.clust.maxstrip") || !has_branch(sp + ".gem.clust.layer"))
+      capv_ok = false;
+  }
+  std::vector<bool> capv_trk_ok(ntracks, false);
+  for (int it = 0; it < ntracks; ++it) {
+    bool ok = cadc_ok[it]; // cadc_ok already requires clust.layer/axis/index/adc
+    for (int is = 0; is < N_SPECS && ok; ++is)
+      ok = has_branch(std::string(1, specs[is]) + ".gem.clust.maxstrip");
+    capv_trk_ok[it] = ok;
+  }
+  std::cout << "[lad_tracking_eff] per-APV cluster-ADC plots: all-clusters(no-track)="
+            << (capv_ok ? "on" : "off") << "; with-track for variants:";
+  for (int it = 0; it < ntracks; ++it)
+    if (capv_trk_ok[it])
+      std::cout << " " << tracks[it].dir;
+  std::cout << "\n";
+
   // ---------------------------------------------------------------
   // 1c. Histogram cache decision. Build a configuration signature; if a cache
   //     file exists with a matching signature we load histograms from it and
   //     skip the (expensive) event loop. Bump CACHE_VERSION whenever the set of
   //     booked histograms changes so old caches are rejected.
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "v8"; // v8: 1D/2D cluster info via CLIndex lookup into clust.* (labx/laby/adc)
+  const char *CACHE_VERSION = "v10"; // v10: per-APV cluster-ADC banks (wider ADC range) + mean-vs-APV summary
   std::string sig = std::string("lad_tracking_eff;") + CACHE_VERSION + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";dt=" + std::to_string(NBINS_DT) + "," + std::to_string(XMIN_DT) + "," + std::to_string(XMAX_DT) +
@@ -423,6 +485,8 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
          ";pt=" + std::to_string(PT_NPAD) + "," + std::to_string(PT_PADLO) + "," + std::to_string(PT_PADHI) + "," +
          std::to_string(PT_NY) + "," + std::to_string(PT_YLO) + "," + std::to_string(PT_YHI) +
          ";cadc=" + std::to_string(CADC_NBINS) + "," + std::to_string(CADC_LO) + "," + std::to_string(CADC_HI) +
+         ";capv=" + std::to_string(CADC_NAPV) + "," + std::to_string(CADC_NLAYER) + "," +
+         std::to_string(CADC_HI_APV) +
          ";cuts=";
   for (int ic = 0; ic < N_CUTS; ++ic)
     sig += std::to_string(CHI_CUT_SCALES[ic]) + ",";
@@ -527,6 +591,18 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       return;
     }
     bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), CADC_NBINS, CADC_LO, CADC_HI}, col)});
+  };
+  // Per-APV booking: BKA2 books a TH2D(APV position x ADC). apvcol -> x, adccol
+  // -> y; each per-APV canvas is a ProjectionY over one APV x-bin at plot time.
+  auto BKA2 = [&](TH2D *&slot, const std::string &apvcol, const std::string &adccol, const std::string &nm,
+                  const std::string &tt) {
+    if (load) {
+      slot = dynamic_cast<TH2D *>(fcache->Get(nm.c_str()));
+      return;
+    }
+    bind2.push_back({&slot, df.Histo2D({nm.c_str(), tt.c_str(), CADC_NAPV, CADC_APV_LO, CADC_APV_HI, CADC_NBINS,
+                                        CADC_LO, CADC_HI_APV},
+                                       apvcol, adccol)});
   };
 
   if (!load) { // sections 2-3 (aliases + column definitions) are only needed to fill
@@ -938,6 +1014,36 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                        {sp + ".gem.clust.adc", sp + ".gem.clust.axis"});
       }
     }
+    // Per-APV all-clusters (no track): aligned (APV position, ADC) lists per
+    // strip axis and GEM layer. APV position = clust.maxstrip / 128. Both columns
+    // apply the identical (axis, layer) predicate so they stay row-aligned for the
+    // TH2D(APV x ADC) fill.
+    if (capv_ok) {
+      for (int la = 0; la < CADC_NAX; ++la) {
+        const int axval = CADC_AXVAL[la];
+        for (int L = 0; L < CADC_NLAYER; ++L) {
+          const std::string tag = std::string(CADC_LAXNAME[la]) + "_" + CADC_LAYNAME[L];
+          df = df.Define(sp + "_cadcADCall_" + tag,
+                         [axval, L](const RVd &adc, const RVd &axis, const RVd &layer) {
+                           RVd r;
+                           for (size_t i = 0; i < adc.size() && i < axis.size() && i < layer.size(); ++i)
+                             if ((int)std::round(axis[i]) == axval && (int)std::round(layer[i]) == L)
+                               r.push_back(adc[i]);
+                           return r;
+                         },
+                         {sp + ".gem.clust.adc", sp + ".gem.clust.axis", sp + ".gem.clust.layer"});
+          df = df.Define(sp + "_cadcAPVall_" + tag,
+                         [axval, L](const RVd &ms, const RVd &axis, const RVd &layer) {
+                           RVd r;
+                           for (size_t i = 0; i < ms.size() && i < axis.size() && i < layer.size(); ++i)
+                             if ((int)std::round(axis[i]) == axval && (int)std::round(layer[i]) == L)
+                               r.push_back(std::floor(ms[i] / (double)APV_NCHAN));
+                           return r;
+                         },
+                         {sp + ".gem.clust.maxstrip", sp + ".gem.clust.axis", sp + ".gem.clust.layer"});
+        }
+      }
+    }
     for (int it = 0; it < ntracks; ++it) {
       if (!cadc_ok[it])
         continue;
@@ -1030,6 +1136,119 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
         }
       }
     }
+    // Per-APV with-track cluster ADC. A separate pack from the pooled one above,
+    // carrying (ADC, APV position) per (strip axis, GEM layer) slot so each APV
+    // can be projected out. Slot order matches the unpack offsets below:
+    // 0=(x,GEM0) 1=(x,GEM1) 2=(y,GEM0) 3=(y,GEM1); stride 9 = tof + 4*(adc,apv).
+    for (int it = 0; it < ntracks; ++it) {
+      if (!capv_trk_ok[it])
+        continue;
+      const Track &tk = tracks[it];
+      const std::string &tu = tk.tsuf;
+      for (int ic = 0; ic < N_CUTS; ++ic) {
+        const std::string cc = "_cut" + std::to_string(ic);
+        const std::string pk = sp + "_capvpack_" + tk.dir + cc;
+        const double clo = tk.chi_lo, chi = tk.chi_hi * CHI_CUT_SCALES[ic];
+        if (is1D_of(tk)) {
+          df = df.Define(
+              pk,
+              [clo, chi](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &t1, const RVd &ip1, const RVd &cs,
+                         const RVd &cix0, const RVd &cix1, const RVd &ciy0, const RVd &ciy1, const RVd &clay,
+                         const RVd &cax, const RVd &cidx, const RVd &cadc, const RVd &cms) {
+                RVd r;
+                for (size_t i = 0; i < pl1.size(); ++i) {
+                  if (ip1[i] != 1.)
+                    continue;
+                  int pi = (int)std::round(pl1[i]);
+                  if (pi != 1 && pi != 3)
+                    continue;
+                  if (!(cs[i] >= clo && cs[i] < chi))
+                    continue;
+                  double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                  double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
+                  int kx0 = i < cix0.size() ? (int)std::round(cix0[i]) : -1;
+                  int kx1 = i < cix1.size() ? (int)std::round(cix1[i]) : -1;
+                  int ky0 = i < ciy0.size() ? (int)std::round(ciy0[i]) : -1;
+                  int ky1 = i < ciy1.size() ? (int)std::round(ciy1[i]) : -1;
+                  auto slot = [&](int layer, int axis, int clidx) {
+                    int j = clust_find_row(clay, cax, cidx, layer, axis, clidx);
+                    double adc = (j >= 0 && j < (int)cadc.size()) ? cadc[j] : -1000.;
+                    double apv = (j >= 0 && j < (int)cms.size()) ? std::floor(cms[j] / (double)APV_NCHAN) : -1000.;
+                    r.push_back(adc);
+                    r.push_back(apv);
+                  };
+                  r.push_back(tofc);
+                  slot(0, CLUST_AXIS_X, kx0); // x GEM0 (V, layer 0)
+                  slot(1, CLUST_AXIS_X, kx1); // x GEM1 (V, layer 1)
+                  slot(0, CLUST_AXIS_Y, ky0); // y GEM0 (U, layer 0)
+                  slot(1, CLUST_AXIS_Y, ky1); // y GEM1 (U, layer 1)
+                }
+                return r;
+              },
+              {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_tof_1", sp + "_isProton_1",
+               sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trk1D_clidx_x0", sp + ".ladhod.goodhit_trk1D_clidx_x1",
+               sp + ".ladhod.goodhit_trk1D_clidx_y0", sp + ".ladhod.goodhit_trk1D_clidx_y1", sp + ".gem.clust.layer",
+               sp + ".gem.clust.axis", sp + ".gem.clust.index", sp + ".gem.clust.adc", sp + ".gem.clust.maxstrip"});
+        } else {
+          df = df.Define(
+              pk,
+              [clo, chi](const RVd &pl1, const RVd &pd1, const RVd &yp, const RVd &t1, const RVd &ip1, const RVd &cs,
+                         const RVd &tid, const RVd &sp0u, const RVd &sp0v, const RVd &sp1u, const RVd &sp1v,
+                         const RVd &clay, const RVd &cax, const RVd &cidx, const RVd &cadc, const RVd &cms) {
+                RVd r;
+                for (size_t i = 0; i < pl1.size(); ++i) {
+                  if (ip1[i] != 1.)
+                    continue;
+                  int pi = (int)std::round(pl1[i]);
+                  if (pi != 1 && pi != 3)
+                    continue;
+                  if (!(cs[i] >= clo && cs[i] < chi))
+                    continue;
+                  double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                  double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
+                  int k = (i < tid.size()) ? (int)std::round(tid[i]) : -1;
+                  int kx0 = (k >= 0 && k < (int)sp0v.size()) ? (int)std::round(sp0v[k]) : -1;
+                  int kx1 = (k >= 0 && k < (int)sp1v.size()) ? (int)std::round(sp1v[k]) : -1;
+                  int ky0 = (k >= 0 && k < (int)sp0u.size()) ? (int)std::round(sp0u[k]) : -1;
+                  int ky1 = (k >= 0 && k < (int)sp1u.size()) ? (int)std::round(sp1u[k]) : -1;
+                  auto slot = [&](int layer, int axis, int clidx) {
+                    int j = clust_find_row(clay, cax, cidx, layer, axis, clidx);
+                    double adc = (j >= 0 && j < (int)cadc.size()) ? cadc[j] : -1000.;
+                    double apv = (j >= 0 && j < (int)cms.size()) ? std::floor(cms[j] / (double)APV_NCHAN) : -1000.;
+                    r.push_back(adc);
+                    r.push_back(apv);
+                  };
+                  r.push_back(tofc);
+                  slot(0, CLUST_AXIS_X, kx0); // x GEM0 (V, layer 0)
+                  slot(1, CLUST_AXIS_X, kx1); // x GEM1 (V, layer 1)
+                  slot(0, CLUST_AXIS_Y, ky0); // y GEM0 (U, layer 0)
+                  slot(1, CLUST_AXIS_Y, ky1); // y GEM1 (U, layer 1)
+                }
+                return r;
+              },
+              {sp + "_plane_1", sp + "_paddle_1", sp + "_ypos_1", sp + "_tof_1", sp + "_isProton_1",
+               sp + "_chiSquare" + tu, sp + ".ladhod.goodhit_trackid" + tu, sp + ".gem.trk.spID_0u",
+               sp + ".gem.trk.spID_0v", sp + ".gem.trk.spID_1u", sp + ".gem.trk.spID_1v", sp + ".gem.clust.layer",
+               sp + ".gem.clust.axis", sp + ".gem.clust.index", sp + ".gem.clust.adc", sp + ".gem.clust.maxstrip"});
+        }
+        // Per (axis, layer, tof-region) aligned (APV, ADC) lists. Slot offset in
+        // the stride-9 pack: adc at 1+4*la+2*L, apv at +1. -1000 ADC dropped; the
+        // APV list pushes on the same rows so the two columns stay aligned.
+        for (int la = 0; la < CADC_NAX; ++la)
+          for (int L = 0; L < CADC_NLAYER; ++L) {
+            const int ao = 1 + 4 * la + 2 * L, po = ao + 1;
+            const std::string tag = std::string(CADC_LAXNAME[la]) + "_" + CADC_LAYNAME[L];
+            for (int rg = 0; rg < N_GREG; ++rg) {
+              const auto ivals = GREG_INT[rg];
+              const std::string base = sp + "_capv_" + tk.dir + cc + "_" + tag + "_" + GREG_NAME[rg];
+              df = df.Define(base + "_adc", [ivals, ao](const RVd &p) {
+                RVd r; for (size_t h = 0; h + 8 < p.size(); h += 9) { bool in = false; for (const auto &iv : ivals) if (p[h] >= iv[0] && p[h] < iv[1]) { in = true; break; } if (!in) continue; if (p[h + ao] > -999.) r.push_back(p[h + ao]); } return r; }, {pk});
+              df = df.Define(base + "_apv", [ivals, ao, po](const RVd &p) {
+                RVd r; for (size_t h = 0; h + 8 < p.size(); h += 9) { bool in = false; for (const auto &iv : ivals) if (p[h] >= iv[0] && p[h] < iv[1]) { in = true; break; } if (!in) continue; if (p[h + ao] > -999.) r.push_back(p[h + po]); } return r; }, {pk});
+            }
+          }
+      }
+    }
   }
   } // end if(!load): RDF alias/define setup
 
@@ -1067,6 +1286,15 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   // With-track cluster ADC: [spec][cut][variant][axis][tof region].
   std::array<std::array<std::array<std::array<std::array<TH1D *, N_GREG>, CADC_NAX>, N_TRACKS>, N_CUTS>, N_SPECS>
       h_cadc_reg{};
+  // Per-APV cluster-ADC banks: TH2D(APV position x ADC), one APV column per card.
+  // All clusters (no track): [spec][layer][axis]. With track: adds [cut][variant]
+  // and [tof region]. Each per-APV canvas is a ProjectionY of one APV column.
+  std::array<std::array<std::array<TH2D *, CADC_NAX>, CADC_NLAYER>, N_SPECS> h_cadc_all_apv{};
+  std::array<std::array<std::array<std::array<std::array<std::array<TH2D *, N_GREG>, CADC_NAX>, CADC_NLAYER>,
+                                   N_TRACKS>,
+                        N_CUTS>,
+             N_SPECS>
+      h_cadc_reg_apv{};
 
   for (int is = 0; is < N_SPECS; ++is) {
     const std::string sp(1, specs[is]);
@@ -1194,6 +1422,33 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
             BKA1(h_cadc_reg[is][ic][it][la][rg], col, col + "_h",
                  sp + " cluster ADC " + CADC_LAXNAME[la] + " strips [" + td + "] " + GREG_NAME[rg] + ";ADC sum;Counts");
           }
+      }
+    // Per-APV cluster-ADC TH2D banks (APV position x ADC). No track: [layer][axis].
+    if (capv_ok)
+      for (int L = 0; L < CADC_NLAYER; ++L)
+        for (int la = 0; la < CADC_NAX; ++la) {
+          const std::string tag = std::string(CADC_LAXNAME[la]) + "_" + CADC_LAYNAME[L];
+          BKA2(h_cadc_all_apv[is][L][la], sp + "_cadcAPVall_" + tag, sp + "_cadcADCall_" + tag,
+               sp + "_cadc_all_apv_" + tag + "_h",
+               sp + " cluster ADC " + CADC_LAXNAME[la] + " strips " + CADC_LAYNAME[L] +
+                   " (all clusters, no track);APV position;ADC sum");
+        }
+    // Per-APV with-track cluster ADC per variant/cut/layer/axis/tof-region.
+    for (int ic = 0; ic < N_CUTS; ++ic)
+      for (int it = 0; it < ntracks; ++it) {
+        if (!capv_trk_ok[it])
+          continue;
+        const std::string &td = tracks[it].dir;
+        const std::string cc = "_cut" + std::to_string(ic);
+        for (int L = 0; L < CADC_NLAYER; ++L)
+          for (int la = 0; la < CADC_NAX; ++la)
+            for (int rg = 0; rg < N_GREG; ++rg) {
+              const std::string tag = std::string(CADC_LAXNAME[la]) + "_" + CADC_LAYNAME[L];
+              const std::string base = sp + "_capv_" + td + cc + "_" + tag + "_" + GREG_NAME[rg];
+              BKA2(h_cadc_reg_apv[is][ic][it][L][la][rg], base + "_apv", base + "_adc", base + "_h",
+                   sp + " cluster ADC " + CADC_LAXNAME[la] + " strips " + CADC_LAYNAME[L] + " [" + td + "] " +
+                       GREG_NAME[rg] + ";APV position;ADC sum");
+            }
       }
   }
 
@@ -1863,6 +2118,172 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
             }
           }
           wc(cca);
+        }
+
+        // Per-APV cluster-ADC canvases: one per (GEM layer, strip axis, APV
+        // position), same 7-panel layout as the pooled canvas above but for a
+        // single APV card. Each panel is a ProjectionY over one APV x-bin of the
+        // TH2D(APV x ADC) banks; background subtraction reuses the pooled canvas's
+        // pad-2 fit scale factors (mkIO/mkPB above). Written under a per-variant
+        // subfolder cluster_adc_by_apv/<GEMi>_<axis>/.
+        if (capv_ok || capv_trk_ok[it]) {
+          TDirectory *apvbase = mkpath(td, "cluster_adc_by_apv");
+          auto projY = [&](TH2D *h2, int apvpos) -> TH1D * {
+            if (!h2)
+              return nullptr;
+            TH1D *p = h2->ProjectionY(uq().c_str(), apvpos + 1, apvpos + 1);
+            if (p)
+              p->SetDirectory(nullptr);
+            return p;
+          };
+          for (int L = 0; L < CADC_NLAYER; ++L)
+            for (int la = 0; la < CADC_NAX; ++la) {
+              const std::string ax = CADC_LAXNAME[la];
+              const std::string lay = CADC_LAYNAME[L];
+              TDirectory *apvdir = mkpath(apvbase, lay + "_" + ax);
+              for (int ap = 0; ap < CADC_NAPV_LA[la]; ++ap) {
+                const std::string apvtag = "apv" + std::string(ap < 10 ? "0" : "") + std::to_string(ap);
+                const std::string aid = ax + " " + lay + " APV" + std::to_string(ap);
+                TCanvas *cca = new TCanvas(
+                    (sp + "_c_cluster_adc_" + ax + "_" + lay + "_" + apvtag).c_str(),
+                    (sp + " cluster ADC " + aid + " [" + tracks[it].dir + ", chi2<" + cutstr + "]").c_str(), 1800,
+                    900);
+                cca->Divide(4, 2);
+                cca->cd(1); // panel 1: all clusters (no track)
+                TH1D *pall = capv_ok ? projY(h_cadc_all_apv[is][L][la], ap) : nullptr;
+                if (pall) {
+                  pall->SetStats(0);
+                  pall->DrawCopy();
+                }
+                // panels 2-5: with-track all/oot/it/peak
+                TH1D *pr[N_GREG] = {nullptr, nullptr, nullptr, nullptr};
+                if (capv_trk_ok[it])
+                  for (int rg = 0; rg < N_GREG; ++rg)
+                    pr[rg] = projY(h_cadc_reg_apv[is][ic][it][L][la][rg], ap);
+                for (int rg = 0; rg < N_GREG; ++rg) {
+                  cca->cd(rg + 2);
+                  if (pr[rg]) {
+                    pr[rg]->SetStats(0);
+                    pr[rg]->DrawCopy();
+                  }
+                }
+                cca->cd(6); // panel 6: IT-OOT
+                {
+                  TH1D *d = mkIO(pr[2], pr[1]);
+                  if (d) {
+                    d->SetTitle((sp + " cluster ADC " + aid + " IT-OOT;ADC sum;Counts").c_str());
+                    d->SetStats(0);
+                    d->DrawCopy();
+                    delete d;
+                  }
+                }
+                cca->cd(7); // panel 7: peak-IT-OOT
+                {
+                  TH1D *d = mkPB(pr[3], pr[2], pr[1]);
+                  if (d) {
+                    d->SetTitle((sp + " cluster ADC " + aid + " peak-IT-OOT;ADC sum;Counts").c_str());
+                    d->SetStats(0);
+                    d->DrawCopy();
+                    delete d;
+                  }
+                }
+                apvdir->cd();
+                wc(cca);
+                if (pall)
+                  delete pall;
+                for (int rg = 0; rg < N_GREG; ++rg)
+                  delete pr[rg];
+              }
+            }
+
+          // Summary overview: mean ADC (average cluster ADC sum) vs APV position.
+          // One canvas per (GEM layer, strip axis), same 7-panel layout as the
+          // per-card canvases -- each panel is the per-APV mean of that region's
+          // ADC distribution (with mean-error bars), including the two background-
+          // subtracted variants. Means come from the wide-range banks so the ADC
+          // tail is not cut off. Written next to the per-card subfolders.
+          for (int L = 0; L < CADC_NLAYER; ++L)
+            for (int la = 0; la < CADC_NAX; ++la) {
+              const int nap = CADC_NAPV_LA[la];
+              const std::string ax = CADC_LAXNAME[la], lay = CADC_LAYNAME[L];
+              auto mkS = [&](const std::string &sfx, const std::string &ttl) -> TH1D * {
+                TH1D *h = new TH1D((sp + "_apvsummary_" + lay + "_" + ax + "_" + sfx).c_str(),
+                                   (sp + " mean ADC vs APV " + ax + " " + lay + " " + ttl +
+                                    ";APV position;mean ADC sum")
+                                       .c_str(),
+                                   nap, -0.5, nap - 0.5);
+                h->SetDirectory(nullptr);
+                h->SetStats(0);
+                h->SetMarkerStyle(20);
+                return h;
+              };
+              TH1D *s_ntr = capv_ok ? mkS("notrack", "(all clusters, no track)") : nullptr;
+              TH1D *s_reg[N_GREG] = {nullptr, nullptr, nullptr, nullptr};
+              TH1D *s_io = nullptr, *s_pb = nullptr;
+              if (capv_trk_ok[it]) {
+                const char *rttl[N_GREG] = {"(with track, all tof)", "OOT", "IT", "peak"};
+                for (int rg = 0; rg < N_GREG; ++rg)
+                  s_reg[rg] = mkS(std::string("reg_") + GREG_NAME[rg], rttl[rg]);
+                s_io = mkS("it_oot", "IT-OOT");
+                s_pb = mkS("peak_it_oot", "peak-IT-OOT");
+              }
+              auto setMean = [](TH1D *s, int apbin, TH1D *proj) {
+                if (!s || !proj || proj->GetEntries() <= 0)
+                  return;
+                s->SetBinContent(apbin, proj->GetMean());
+                s->SetBinError(apbin, proj->GetMeanError());
+              };
+              for (int ap = 0; ap < nap; ++ap) {
+                if (s_ntr) {
+                  TH1D *p = projY(h_cadc_all_apv[is][L][la], ap);
+                  setMean(s_ntr, ap + 1, p);
+                  delete p;
+                }
+                if (capv_trk_ok[it]) {
+                  TH1D *pr[N_GREG] = {nullptr, nullptr, nullptr, nullptr};
+                  for (int rg = 0; rg < N_GREG; ++rg) {
+                    pr[rg] = projY(h_cadc_reg_apv[is][ic][it][L][la][rg], ap);
+                    setMean(s_reg[rg], ap + 1, pr[rg]);
+                  }
+                  TH1D *dio = mkIO(pr[2], pr[1]);
+                  setMean(s_io, ap + 1, dio);
+                  delete dio;
+                  TH1D *dpb = mkPB(pr[3], pr[2], pr[1]);
+                  setMean(s_pb, ap + 1, dpb);
+                  delete dpb;
+                  for (int rg = 0; rg < N_GREG; ++rg)
+                    delete pr[rg];
+                }
+              }
+              TCanvas *cs =
+                  new TCanvas((sp + "_c_cluster_adc_apvsummary_" + lay + "_" + ax).c_str(),
+                              (sp + " mean ADC vs APV " + ax + " " + lay + " [" + tracks[it].dir + ", chi2<" +
+                               cutstr + "]")
+                                  .c_str(),
+                              1800, 900);
+              cs->Divide(4, 2);
+              cs->cd(1);
+              if (s_ntr)
+                s_ntr->DrawCopy("E1");
+              for (int rg = 0; rg < N_GREG; ++rg) {
+                cs->cd(rg + 2);
+                if (s_reg[rg])
+                  s_reg[rg]->DrawCopy("E1");
+              }
+              cs->cd(6);
+              if (s_io)
+                s_io->DrawCopy("E1");
+              cs->cd(7);
+              if (s_pb)
+                s_pb->DrawCopy("E1");
+              apvbase->cd();
+              wc(cs);
+              delete s_ntr;
+              for (int rg = 0; rg < N_GREG; ++rg)
+                delete s_reg[rg];
+              delete s_io;
+              delete s_pb;
+            }
         }
       }
 
