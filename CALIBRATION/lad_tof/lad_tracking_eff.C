@@ -18,13 +18,21 @@
 //   1D_GEM0/1/both    -> X.ladhod.goodhit_chiSquare_1D_GEM0    / _GEM1 / _GEMboth
 // (The folder/display label uses 'x'; the underlying chiSquare branch keeps its
 //  original '_xz' suffix, which is fixed in the data.)
+//
+// Event-vertex requirement: all histograms are filled only for events with a
+// reconstructed vertex for that spectrometer (react.ok != 0), via one
+// per-spectrometer RDataFrame Filter node.
 // Variants absent from the input are skipped automatically. The 1D variants use
 // -1 as the "no track" sentinel, so a hit counts as tracked when its chiSquare is
 // in [0, CHI_CUT_1D); the 2D variants (large sentinel) use chiSquare < CHI_CUT_2D.
 //
 // Usage:
-//   root -l -b -q 'lad_tracking_eff.C("input.dat","out.root")'
-//   root -l -b -q 'lad_tracking_eff.C("input.dat","out.root",8)'  // 8 MT threads
+//   root -l -b -q 'lad_tracking_eff.C+("input.dat","out.root")'     // '+' = compile (recommended)
+//   root -l -b -q 'lad_tracking_eff.C+("input.dat","out.root",8)'   // 8 MT threads
+// The trailing '+' ACLiC-compiles the macro once (cached .so) and runs the event
+// loop as optimized native code instead of interpreting it -- a large win on big
+// datasets and on the many histogram bookings. Drop the '+' only while editing
+// the macro source.
 // -------------------------------------------------------------------------
 
 #include <ROOT/RDataFrame.hxx>
@@ -237,6 +245,52 @@ TH1D *flat_bgsub2(const TH1D *h, double lo1, double hi1, double lo2, double hi2)
   for (int b = 1; b <= h->GetNbinsX(); ++b)
     out->SetBinContent(b, h->GetBinContent(b) - bg);
   return out;
+}
+
+// Track-cut OOT (accidental/flat) suppression factor, from the proton corrected-tof
+// spectrum. Per tof bin b, f(b) = (all(b) - h(b)) / (all(b) - oot), where all = the
+// no-track (proton-cut) spectrum (hAll), h = the with-track spectrum (hTrk), and oot
+// = the with-track OOT-window mean level. f is the fraction of the flat/accidental
+// background that survives the track requirement, so wherever the OOT template is
+// subtracted from tof window W we use OOT * f_W instead of OOT. f_W is formed as a
+// ratio of window sums over region 'reg' (GREG_INT index: 2 = IT, 3 = peak):
+// f_W = (sum_W all - sum_W h) / (sum_W all - oot * N_W). The result is clamped to
+// [0,1] (the track cut can only suppress accidentals) and falls back to 1.0 if the
+// denominator is degenerate or the inputs are missing (unmodified subtraction).
+static double oot_scale_f(const TH1 *hAll, const TH1 *hTrk, int reg) {
+  if (!hAll || !hTrk)
+    return 1.0;
+  const TAxis *ax = hAll->GetXaxis();
+  double sH = 0.;
+  int nO = 0;
+  for (const auto &iv : GREG_INT[1]) { // OOT window -> with-track flat level
+    int b1 = ax->FindBin(iv[0] + 1e-6), b2 = ax->FindBin(iv[1] - 1e-6);
+    for (int b = b1; b <= b2; ++b) {
+      sH += hTrk->GetBinContent(b);
+      ++nO;
+    }
+  }
+  const double oot = (nO > 0) ? sH / nO : 0.;
+  // ratio of window sums: f_W = (sum all - sum h) / (sum all - oot * N_W)
+  double sumA = 0., sumH = 0.;
+  int nW = 0;
+  for (const auto &iv : GREG_INT[reg]) {
+    int b1 = ax->FindBin(iv[0] + 1e-6), b2 = ax->FindBin(iv[1] - 1e-6);
+    for (int b = b1; b <= b2; ++b) {
+      sumA += hAll->GetBinContent(b);
+      sumH += hTrk->GetBinContent(b);
+      ++nW;
+    }
+  }
+  const double den = sumA - oot * nW;
+  if (std::fabs(den) < 1e-9)
+    return 1.0; // sum all -> oot * N_W over the window: undefined
+  double f = (sumA - sumH) / den;
+  if (f < 0.)
+    f = 0.;
+  if (f > 1.)
+    f = 1.;
+  return f;
 }
 
 // Look up a clust.* value for the winning cluster identified by its CLIndex at
@@ -473,7 +527,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   //     skip the (expensive) event loop. Bump CACHE_VERSION whenever the set of
   //     booked histograms changes so old caches are rejected.
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "v10"; // v10: per-APV cluster-ADC banks (wider ADC range) + mean-vs-APV summary
+  const char *CACHE_VERSION = "v11"; // v11: require event vertex (react.ok != 0) per spectrometer
   std::string sig = std::string("lad_tracking_eff;") + CACHE_VERSION + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";dt=" + std::to_string(NBINS_DT) + "," + std::to_string(XMIN_DT) + "," + std::to_string(XMAX_DT) +
@@ -521,6 +575,17 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   ROOT::RDataFrame rdf(chain);
   ROOT::RDF::RNode df = rdf;
 
+  // Per-spectrometer event-vertex availability (react.ok). When present, each
+  // spectrometer's histograms are filled ONLY for events with a reconstructed
+  // vertex (react.ok != 0); see the single per-spec Filter node in the loop below.
+  bool has_react[N_SPECS];
+  for (int is = 0; is < N_SPECS; ++is) {
+    has_react[is] = has_branch(std::string(1, specs[is]) + ".react.ok");
+    if (!has_react[is])
+      std::cout << "[lad_tracking_eff] " << specs[is]
+                << ".react.ok absent; vertex requirement NOT applied for this spectrometer\n";
+  }
+
   // Booking helpers shared by the fill and load paths. In fill mode BK1/BK2 book
   // an RDataFrame action and remember (histogram slot, result) so the slot can
   // be resolved to a raw pointer after the single event loop; in load mode they
@@ -535,12 +600,18 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   };
   std::vector<HBind1> bind1;
   std::vector<HBind2> bind2;
+  // Booking node: every histogram below is booked off dfb. The per-spectrometer
+  // booking loop points dfb at df filtered on that spectrometer's event vertex
+  // (react.ok != 0) -- one shared Filter node per spectrometer, downstream of all
+  // Defines, so the vertex cut is not duplicated per histogram or JIT'd from a
+  // string.
+  ROOT::RDF::RNode dfb = df;
   auto BK1 = [&](TH1D *&slot, const std::string &nm, const std::string &tt) {
     if (load) {
       slot = dynamic_cast<TH1D *>(fcache->Get(nm.c_str()));
       return;
     }
-    bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), NBINS_TCORR, XMIN_TCORR, XMAX_TCORR}, nm)});
+    bind1.push_back({&slot, dfb.Histo1D({nm.c_str(), tt.c_str(), NBINS_TCORR, XMIN_TCORR, XMAX_TCORR}, nm)});
   };
   auto BK2 = [&](TH2D *&slot, const std::string &xcol, const std::string &ycol, const std::string &nm,
                  const std::string &tt, double ymin, double ymax) {
@@ -549,7 +620,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       return;
     }
     bind2.push_back(
-        {&slot, df.Histo2D({nm.c_str(), tt.c_str(), NBINS_DT, XMIN_DT, XMAX_DT, NBINS_E2, ymin, ymax}, xcol, ycol)});
+        {&slot, dfb.Histo2D({nm.c_str(), tt.c_str(), NBINS_DT, XMIN_DT, XMAX_DT, NBINS_E2, ymin, ymax}, xcol, ycol)});
   };
   // GEM position booking: BKG1 books a 1D x- or y-position histogram (isX picks
   // the x vs y binning), BKG2 books a 2D x-vs-y histogram. Both share the
@@ -561,7 +632,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     }
     const int nb = isX ? GEM_NX1 : GEM_NY1;
     const double lo = isX ? GEM_XLO : GEM_YLO, hi = isX ? GEM_XHI : GEM_YHI;
-    bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), nb, lo, hi}, col)});
+    bind1.push_back({&slot, dfb.Histo1D({nm.c_str(), tt.c_str(), nb, lo, hi}, col)});
   };
   auto BKG2 = [&](TH2D *&slot, const std::string &xcol, const std::string &ycol, const std::string &nm,
                   const std::string &tt) {
@@ -569,7 +640,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       slot = dynamic_cast<TH2D *>(fcache->Get(nm.c_str()));
       return;
     }
-    bind2.push_back({&slot, df.Histo2D({nm.c_str(), tt.c_str(), GEM_NX2, GEM_XLO, GEM_XHI, GEM_NY2, GEM_YLO, GEM_YHI},
+    bind2.push_back({&slot, dfb.Histo2D({nm.c_str(), tt.c_str(), GEM_NX2, GEM_XLO, GEM_XHI, GEM_NY2, GEM_YLO, GEM_YHI},
                                        xcol, ycol)});
   };
   // Punchthrough booking: BKP2 books a 2D paddle-vs-ypos histogram (same
@@ -580,7 +651,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       slot = dynamic_cast<TH2D *>(fcache->Get(nm.c_str()));
       return;
     }
-    bind2.push_back({&slot, df.Histo2D({nm.c_str(), tt.c_str(), PT_NPAD, PT_PADLO, PT_PADHI, PT_NY, PT_YLO, PT_YHI},
+    bind2.push_back({&slot, dfb.Histo2D({nm.c_str(), tt.c_str(), PT_NPAD, PT_PADLO, PT_PADHI, PT_NY, PT_YLO, PT_YHI},
                                        xcol, ycol)});
   };
   // Cluster-ADC booking: BKA1 books a 1D cluster-ADC histogram (same cache-aware
@@ -590,7 +661,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       slot = dynamic_cast<TH1D *>(fcache->Get(nm.c_str()));
       return;
     }
-    bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), CADC_NBINS, CADC_LO, CADC_HI}, col)});
+    bind1.push_back({&slot, dfb.Histo1D({nm.c_str(), tt.c_str(), CADC_NBINS, CADC_LO, CADC_HI}, col)});
   };
   // Per-APV booking: BKA2 books a TH2D(APV position x ADC). apvcol -> x, adccol
   // -> y; each per-APV canvas is a ProjectionY over one APV x-bin at plot time.
@@ -600,7 +671,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       slot = dynamic_cast<TH2D *>(fcache->Get(nm.c_str()));
       return;
     }
-    bind2.push_back({&slot, df.Histo2D({nm.c_str(), tt.c_str(), CADC_NAPV, CADC_APV_LO, CADC_APV_HI, CADC_NBINS,
+    bind2.push_back({&slot, dfb.Histo2D({nm.c_str(), tt.c_str(), CADC_NAPV, CADC_APV_LO, CADC_APV_HI, CADC_NBINS,
                                         CADC_LO, CADC_HI_APV},
                                        apvcol, adccol)});
   };
@@ -1298,6 +1369,13 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
 
   for (int is = 0; is < N_SPECS; ++is) {
     const std::string sp(1, specs[is]);
+    // Point the booking node at this spectrometer's vertex-filtered df: one shared
+    // Filter node (compiled lambda, single react.ok column) feeding every BK*
+    // booking below, so the vertex cut is applied once per event, not per histogram.
+    if (has_react[is] && !load)
+      dfb = df.Filter([](double ok) { return ok != 0.; }, {sp + ".react.ok"}, "has_vertex_" + sp);
+    else
+      dfb = df;
     BK1(h_proton_tof[is], sp + "_tof_corr_proton", sp + " tof corr proton;tof-L/c(ns);Counts");
     for (int ic = 0; ic < N_CUTS; ++ic)
       for (int it = 0; it < ntracks; ++it) {
@@ -2051,8 +2129,12 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       if (clust_ok || cadc_ok[it]) {
         auto regW = [](int r) { double w = 0.; for (const auto &iv : GREG_INT[r]) w += iv[1] - iv[0]; return w; };
         const double wOOT = regW(1), wIT = regW(2), wPK = regW(3);
-        const double sflat_it = (wOOT > 0.) ? wIT / wOOT : 0.;
-        const double sflat_pk = (wOOT > 0.) ? wPK / wOOT : 0.;
+        // Track-cut OOT suppression from the proton tof spectrum (no-track vs with-track),
+        // folded into the flat scale factors so every OOT subtraction becomes OOT * <f>.
+        const double fIT = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 2);
+        const double fPK = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 3);
+        const double sflat_it = ((wOOT > 0.) ? wIT / wOOT : 0.) * fIT;
+        const double sflat_pk = ((wOOT > 0.) ? wPK / wOOT : 0.) * fPK;
         TF1 ftrq((sp + "_cadc_trap" + tu + cc).c_str(), trapgaus, -150., 157., 5);
         ftrq.SetParameters(0., f2->GetParameter(1) - f2->GetParameter(0), 0., f2->GetParameter(3), f2->GetParameter(4));
         auto Itr = [&](int r) { double s = 0.; for (const auto &iv : GREG_INT[r]) s += ftrq.Integral(iv[0], iv[1]); return s; };
@@ -2306,8 +2388,12 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
         // ---- background-subtraction scale factors from the pad-2 fit ----
         auto regW = [](int r) { double w = 0.; for (const auto &iv : GREG_INT[r]) w += iv[1] - iv[0]; return w; };
         const double wOOT = regW(1), wIT = regW(2), wPK = regW(3);
-        const double sflat_it = (wOOT > 0.) ? wIT / wOOT : 0.; // flat: |IT|/|OOT|
-        const double sflat_pk = (wOOT > 0.) ? wPK / wOOT : 0.; // flat: |peak|/|OOT|
+        // Track-cut OOT suppression from the proton tof spectrum (no-track vs with-track),
+        // folded into the flat scale factors so every OOT subtraction becomes OOT * <f>.
+        const double fIT = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 2);
+        const double fPK = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 3);
+        const double sflat_it = ((wOOT > 0.) ? wIT / wOOT : 0.) * fIT; // flat: |IT|/|OOT| * <f>_IT
+        const double sflat_pk = ((wOOT > 0.) ? wPK / wOOT : 0.) * fPK; // flat: |peak|/|OOT| * <f>_pk
         TF1 ftr((sp + "_gem_trap" + tu + cc).c_str(), trapgaus, -150., 157., 5);
         ftr.SetParameters(0., f2->GetParameter(1) - f2->GetParameter(0), 0., f2->GetParameter(3), f2->GetParameter(4));
         auto Itrap = [&](int r) { double s = 0.; for (const auto &iv : GREG_INT[r]) s += ftr.Integral(iv[0], iv[1]); return s; };

@@ -19,6 +19,12 @@
 // subtraction reuses lad_tracking_eff.C's scheme exactly (tof-window flat and
 // trapezoid scale factors from the pad-2 proton+track fit).
 //
+// Event-vertex requirement: every histogram is filled only for events with a
+// reconstructed vertex for that spectrometer (react.ok != 0), applied as one
+// per-spectrometer RDataFrame Filter node. This conditions the with-track/all
+// efficiency on having a vertex, removing the vertex-finding inefficiency that
+// otherwise dilutes it.
+//
 // It ALSO reproduces the _c_proton_tof canvas (per spectrometer / cut / variant).
 //
 // Tracking variants and the chi-square-cut folders are the same as
@@ -27,9 +33,13 @@
 //   <spec>/chi2cut_<val>/<variant>/plane_<001|101>/<the per-quantity canvases>
 //
 // Usage:
-//   root -l -b -q 'lad_hodo_dist.C("input.dat","out.root")'
-//   root -l -b -q 'lad_hodo_dist.C("input.dat","out.root",8)'          // 8 threads
-//   root -l -b -q 'lad_hodo_dist.C("input.dat","out.root",8,"cache.root")' // + cache
+//   root -l -b -q 'lad_hodo_dist.C+("input.dat","out.root")'            // '+' = compile (recommended)
+//   root -l -b -q 'lad_hodo_dist.C+("input.dat","out.root",8)'          // 8 threads
+//   root -l -b -q 'lad_hodo_dist.C+("input.dat","out.root",8,"cache.root")' // + cache
+// The trailing '+' ACLiC-compiles the macro once (cached .so) and runs the event
+// loop as optimized native code instead of interpreting it -- a large win on big
+// datasets and on the ~500 histogram bookings. Drop the '+' only while editing
+// the macro source.
 // -------------------------------------------------------------------------
 
 #include <ROOT/RDataFrame.hxx>
@@ -152,6 +162,52 @@ static double flatgaus(double *xx, double *p) {
   return p[0] + p[1] * std::exp(-0.5 * std::pow((x - p[2]) / p[3], 2));
 }
 
+// Track-cut OOT (accidental/flat) suppression factor, from the proton corrected-tof
+// spectrum. Per tof bin b, f(b) = (all(b) - h(b)) / (all(b) - oot), where all = the
+// no-track (proton-cut) spectrum (hAll), h = the with-track spectrum (hTrk), and oot
+// = the with-track OOT-window mean level. f is the fraction of the flat/accidental
+// background that survives the track requirement, so wherever the OOT template is
+// subtracted from tof window W we use OOT * f_W instead of OOT. f_W is formed as a
+// ratio of window sums over region 'reg' (GREG_INT index: 2 = IT, 3 = peak):
+// f_W = (sum_W all - sum_W h) / (sum_W all - oot * N_W). The result is clamped to
+// [0,1] (the track cut can only suppress accidentals) and falls back to 1.0 if the
+// denominator is degenerate or the inputs are missing (unmodified subtraction).
+static double oot_scale_f(const TH1 *hAll, const TH1 *hTrk, int reg) {
+  if (!hAll || !hTrk)
+    return 1.0;
+  const TAxis *ax = hAll->GetXaxis();
+  double sH = 0.;
+  int nO = 0;
+  for (const auto &iv : GREG_INT[1]) { // OOT window -> with-track flat level
+    int b1 = ax->FindBin(iv[0] + 1e-6), b2 = ax->FindBin(iv[1] - 1e-6);
+    for (int b = b1; b <= b2; ++b) {
+      sH += hTrk->GetBinContent(b);
+      ++nO;
+    }
+  }
+  const double oot = (nO > 0) ? sH / nO : 0.;
+  // ratio of window sums: f_W = (sum all - sum h) / (sum all - oot * N_W)
+  double sumA = 0., sumH = 0.;
+  int nW = 0;
+  for (const auto &iv : GREG_INT[reg]) {
+    int b1 = ax->FindBin(iv[0] + 1e-6), b2 = ax->FindBin(iv[1] - 1e-6);
+    for (int b = b1; b <= b2; ++b) {
+      sumA += hAll->GetBinContent(b);
+      sumH += hTrk->GetBinContent(b);
+      ++nW;
+    }
+  }
+  const double den = sumA - oot * nW;
+  if (std::fabs(den) < 1e-9)
+    return 1.0; // sum all -> oot * N_W over the window: undefined
+  double f = (sumA - sumH) / den;
+  if (f < 0.)
+    f = 0.;
+  if (f > 1.)
+    f = 1.;
+  return f;
+}
+
 // A tracking variant: 'dir' output sub-directory; 'tsuf' suffix appended to
 // "goodhit_chiSquare"; a hit is tracked when chiSquare is in [chi_lo, chi_hi).
 struct Track {
@@ -244,7 +300,7 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
   // ---------------------------------------------------------------
   // 1c. Histogram cache decision (opt-in; identical scheme to lad_tracking_eff).
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "hd_v2"; // hd_v2: coarser yp/edep bins, dt range [0,10]
+  const char *CACHE_VERSION = "hd_v3"; // hd_v3: require event vertex (react.ok != 0) per spectrometer
   std::string sig = std::string("lad_hodo_dist;") + CACHE_VERSION + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";tof2=" + std::to_string(TOF2_NBINS) + ";yp=" + std::to_string(YP_NB) + "," + std::to_string(YP_LO) + "," +
@@ -283,6 +339,17 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
   // ---------------------------------------------------------------
   ROOT::RDataFrame rdf(chain);
   ROOT::RDF::RNode df = rdf;
+
+  // Per-spectrometer event-vertex availability (react.ok). When present, each
+  // spectrometer's histograms are filled ONLY for events with a reconstructed
+  // vertex (react.ok != 0); see the single per-spec Filter node in the loop below.
+  bool has_react[N_SPECS];
+  for (int is = 0; is < N_SPECS; ++is) {
+    has_react[is] = has_branch(std::string(1, specs[is]) + ".react.ok");
+    if (!has_react[is])
+      std::cout << "[lad_hodo_dist] " << specs[is]
+                << ".react.ok absent; vertex requirement NOT applied for this spectrometer\n";
+  }
 
   struct HBind1 {
     TH1D **slot;
@@ -363,6 +430,28 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
       for (const auto &tk : tracks)
         df = df.Alias(sp + "_chiSquare" + tk.tsuf, pfx + "chiSquare" + tk.tsuf);
     }
+
+    // Require an event vertex AND >=1 proton-cut hit for this spectrometer. Every
+    // histogram here is proton-gated (isProton_1==1 on plane 001/101), so an event
+    // with no such hit contributes nothing -- requiring one upstream skips the ~80
+    // per-hit pack/unpack Defines on the events with no proton, with identical
+    // output. One compiled Filter node (no per-histogram cut duplication, no JIT'd
+    // string) is shared by everything downstream; df_novtx restores the pre-filter
+    // node so the requirement does not leak into the next spectrometer.
+    ROOT::RDF::RNode df_novtx = df;
+    if (!load && has_react[is])
+      df = df.Filter(
+          [](double ok, const RVd &pl1, const RVd &ip1) {
+            if (ok == 0.)
+              return false;
+            for (size_t i = 0; i < pl1.size(); ++i) {
+              int p = (int)std::round(pl1[i]);
+              if ((p == 1 || p == 3) && ip1[i] == 1.)
+                return true;
+            }
+            return false;
+          },
+          {sp + ".react.ok", sp + "_plane_1", sp + "_isProton_1"}, "has_vertex_proton_" + sp);
 
     // ---- proton-tagged corrected-tof columns (planes 001 & 101 combined) ----
     auto mk_proton = [&](const std::string &col, bool req_track, const std::string &chicol, double clo, double chi_hi) {
@@ -470,6 +559,7 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
                DT_HI);
         }
     }
+    df = df_novtx; // drop this spectrometer's vertex filter before the next
   }
 
   // ---------------------------------------------------------------
@@ -836,8 +926,12 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
         // ---- background-subtraction scale factors from the pad-2 fit ----
         auto regW = [](int r) { double w = 0.; for (const auto &iv : GREG_INT[r]) w += iv[1] - iv[0]; return w; };
         const double wOOT = regW(1), wIT = regW(2), wPK = regW(3);
-        const double sflat_it = (wOOT > 0.) ? wIT / wOOT : 0.;
-        const double sflat_pk = (wOOT > 0.) ? wPK / wOOT : 0.;
+        // Track-cut OOT suppression from the proton tof spectrum (no-track vs with-track),
+        // folded into the flat scale factors so every OOT subtraction becomes OOT * <f>.
+        const double fIT = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 2);
+        const double fPK = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 3);
+        const double sflat_it = ((wOOT > 0.) ? wIT / wOOT : 0.) * fIT;
+        const double sflat_pk = ((wOOT > 0.) ? wPK / wOOT : 0.) * fPK;
         TF1 ftr((sp + "_htrap" + tu + cc).c_str(), trapgaus, -150., 157., 5);
         ftr.SetParameters(0., f2->GetParameter(1) - f2->GetParameter(0), 0., f2->GetParameter(3), f2->GetParameter(4));
         auto Itr = [&](int r) { double s = 0.; for (const auto &iv : GREG_INT[r]) s += ftr.Integral(iv[0], iv[1]); return s; };
