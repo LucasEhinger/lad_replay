@@ -1,4 +1,4 @@
-// lad_hodo_dist.C
+// lad_hodo_eff.C
 // -------------------------------------------------------------------------
 // Hodoscope-distribution macro. A sibling of lad_tracking_eff.C: it reads the
 // SAME input files and uses the SAME proton selection (back-paddle proton cut:
@@ -21,15 +21,30 @@
 //
 // It ALSO reproduces the _c_proton_tof canvas (per spectrometer / cut / variant).
 //
+// NEW vs lad_hodo_dist.C: a 4-stage tracking-EFFICIENCY breakdown ("funnel").
+// For each spectrometer / chi-square cut it plots, per tracking variant, the
+// fraction of proton-cut hits surviving each successive gate:
+//   (1) proton-cut hits                         [denominator]
+//   (2) ... in an event with a reconstructed vertex (react.ok != 0)
+//   (3) ... whose variant chiSquare is a valid fit (>= 0 and < 1e29)
+//   (4) ... whose chiSquare falls in the [chi_lo, chi_hi) "has-track" window
+// The gap between successive stages localizes where a variant loses hits: (1->2)
+// the vertex gate (a hard gate for the 1D and vertex-using 2D variants; only
+// informational for the noTrackVertex variants), (2->3) no GEM cluster / failed
+// fit, (3->4) the chiSquare window cut. Stage 4 / stage 1 == the plotted
+// with-track/all efficiency for the 1D variants. One canvas per (spec, cut):
+//   <spec>/chi2cut_<val>/<spec>_c_eff_funnel
+//
 // Tracking variants and the chi-square-cut folders are the same as
 // lad_tracking_eff.C. Directory layout:
+//   <spec>/chi2cut_<val>/_c_eff_funnel                (NEW: efficiency funnel)
 //   <spec>/chi2cut_<val>/<variant>/_c_proton_tof
 //   <spec>/chi2cut_<val>/<variant>/plane_<001|101>/<the per-quantity canvases>
 //
 // Usage:
-//   root -l -b -q 'lad_hodo_dist.C("input.dat","out.root")'
-//   root -l -b -q 'lad_hodo_dist.C("input.dat","out.root",8)'          // 8 threads
-//   root -l -b -q 'lad_hodo_dist.C("input.dat","out.root",8,"cache.root")' // + cache
+//   root -l -b -q 'lad_hodo_eff.C("input.dat","out.root")'
+//   root -l -b -q 'lad_hodo_eff.C("input.dat","out.root",8)'          // 8 threads
+//   root -l -b -q 'lad_hodo_eff.C("input.dat","out.root",8,"cache.root")' // + cache
 // -------------------------------------------------------------------------
 
 #include <ROOT/RDataFrame.hxx>
@@ -125,7 +140,7 @@ const std::array<char, N_SPECS> specs = {'P', 'H'};
 const int PLANE_IDX[2] = {1, 3}; // the two punchthrough planes: 001 (idx 1), 101 (idx 3)
 
 const char *DEFAULT_DAT_FILE = "../files/run-lists/all_C3_runlist_SHMS_13p5.dat";
-const char *DEFAULT_OUT_FILE = "files/hodo_dist/hodo_dist_C3_SHMS_13p5_v1_PH.root";
+const char *DEFAULT_OUT_FILE = "files/hodo_eff/hodo_eff_C3_SHMS_13p5_v1_PH.root";
 
 // ----- fit models reused from lad_tracking_eff.C for the proton_tof canvas -----
 // flat + fixed-corner trapezoid (corners -75,-25,50,125) + gaussian.
@@ -159,7 +174,7 @@ struct Track {
   double chi_lo, chi_hi;
 };
 
-void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file = DEFAULT_OUT_FILE, int nthreads = 100,
+void lad_hodo_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file = DEFAULT_OUT_FILE, int nthreads = 100,
                    const char *cache_file = "") {
 
   const auto t_start = std::chrono::steady_clock::now();
@@ -167,10 +182,10 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
   TH1::AddDirectory(kFALSE);
   if (nthreads > 0) {
     ROOT::EnableImplicitMT(nthreads);
-    std::cout << "[lad_hodo_dist] implicit MT: " << nthreads << " threads\n";
+    std::cout << "[lad_hodo_eff] implicit MT: " << nthreads << " threads\n";
   } else {
     ROOT::EnableImplicitMT();
-    std::cout << "[lad_hodo_dist] implicit MT: all cores\n";
+    std::cout << "[lad_hodo_eff] implicit MT: all cores\n";
   }
 
   // ---------------------------------------------------------------
@@ -196,7 +211,7 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
       datlist += p + "\n";
     }
   }
-  std::cout << "[lad_hodo_dist] entries: " << chain.GetEntries() << "\n";
+  std::cout << "[lad_hodo_eff] entries: " << chain.GetEntries() << "\n";
   if (!chain.GetEntries()) {
     std::cerr << "empty chain\n";
     return;
@@ -232,20 +247,32 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
       if (ok)
         tracks.push_back(v);
       else
-        std::cout << "[lad_hodo_dist] tracking variant '" << v.dir << "' absent in data; skipping\n";
+        std::cout << "[lad_hodo_eff] tracking variant '" << v.dir << "' absent in data; skipping\n";
     }
   }
   const int ntracks = (int)tracks.size();
-  std::cout << "[lad_hodo_dist] tracking variants (" << ntracks << "):";
+  std::cout << "[lad_hodo_eff] tracking variants (" << ntracks << "):";
   for (const auto &t : tracks)
     std::cout << " " << t.dir;
   std::cout << "\n";
 
+  // Vertex flag for the efficiency-funnel's stage-2 gate. react.ok (from the
+  // spectrometer THcReactionPoint) tracks THcLADKine's fVertexModule->HasVertex()
+  // -- the same condition that gates the 1D tracking. If it is absent the vertex
+  // stage is collapsed (treated as always-passing) so the funnel still builds.
+  bool has_react[N_SPECS];
+  for (int is = 0; is < N_SPECS; ++is) {
+    has_react[is] = has_branch(std::string(1, specs[is]) + ".react.ok");
+    if (!has_react[is])
+      std::cout << "[lad_hodo_eff] " << specs[is]
+                << ".react.ok absent; funnel vertex stage collapsed (stage 2 = stage 1)\n";
+  }
+
   // ---------------------------------------------------------------
   // 1c. Histogram cache decision (opt-in; identical scheme to lad_tracking_eff).
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "hd_v2"; // hd_v2: coarser yp/edep bins, dt range [0,10]
-  std::string sig = std::string("lad_hodo_dist;") + CACHE_VERSION + ";";
+  const char *CACHE_VERSION = "he_v1"; // he_v1: lad_hodo_dist hd_v2 + 4-stage efficiency funnel
+  std::string sig = std::string("lad_hodo_eff;") + CACHE_VERSION + ";funnel=4;";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";tof2=" + std::to_string(TOF2_NBINS) + ";yp=" + std::to_string(YP_NB) + "," + std::to_string(YP_LO) + "," +
          std::to_string(YP_HI) + ";hn=" + std::to_string(HN_NB) + ";ed=" + std::to_string(ED_NB) + "," +
@@ -275,7 +302,7 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
     }
   }
   if (cache_on)
-    std::cout << "[lad_hodo_dist] cache " << (load ? "HIT -> loading histograms, skipping event loop" : "MISS") << ": "
+    std::cout << "[lad_hodo_eff] cache " << (load ? "HIT -> loading histograms, skipping event loop" : "MISS") << ": "
               << cache_file << "\n";
 
   // ---------------------------------------------------------------
@@ -307,6 +334,15 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
       return;
     }
     bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), NBINS_TCORR, XMIN_TCORR, XMAX_TCORR}, col)});
+  };
+  // 4-bin efficiency-funnel TH1D (fill column pushes the stage numbers 1..4 a hit
+  // reaches, so bin k counts hits surviving to stage k).
+  auto BKfun = [&](TH1D *&slot, const std::string &col, const std::string &nm, const std::string &tt) {
+    if (load) {
+      slot = dynamic_cast<TH1D *>(fcache->Get(nm.c_str()));
+      return;
+    }
+    bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), 4, 0.5, 4.5}, col)});
   };
   // TH3D(paddle x ypos x tof).
   auto BK3 = [&](TH3D *&slot, const std::string &xcol, const std::string &ycol, const std::string &zcol,
@@ -342,6 +378,9 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
   TH3D *h_trk_yp3[N_SPECS][N_CUTS][N_TRACKS][2] = {{{{nullptr}}}};
   TH2D *h_trk_ed2[N_SPECS][N_CUTS][N_TRACKS][2] = {{{{nullptr}}}};
   TH2D *h_trk_dt2[N_SPECS][N_CUTS][N_TRACKS][2] = {{{{nullptr}}}};
+  // Efficiency funnel: a 4-bin TH1D per (spec, cut, variant). Bin k = # proton-cut
+  // hits surviving to stage k (1=proton, 2=+vertex, 3=+valid fit, 4=+in-window).
+  TH1D *h_funnel[N_SPECS][N_CUTS][N_TRACKS] = {{{nullptr}}};
 
 #ifdef LAD_HAS_RDF_PROGRESSBAR
   if (!load)
@@ -362,6 +401,11 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
       df = df.Alias(sp + "_edepMeV_1", pfx + "hitedep_MeV_1");
       for (const auto &tk : tracks)
         df = df.Alias(sp + "_chiSquare" + tk.tsuf, pfx + "chiSquare" + tk.tsuf);
+      // Vertex flag (per event) for the funnel's stage-2 gate.
+      if (has_react[is])
+        df = df.Alias(sp + "_vtxok", sp + ".react.ok");
+      else
+        df = df.Define(sp + "_vtxok", "1.0"); // no react.ok -> vertex stage collapses
     }
 
     // ---- proton-tagged corrected-tof columns (planes 001 & 101 combined) ----
@@ -397,6 +441,45 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
         mk_proton(col, true, sp + "_chiSquare" + tracks[it].tsuf, tracks[it].chi_lo,
                   tracks[it].chi_hi * CHI_CUT_SCALES[ic]);
         BKtof(h_proton_track_tof[is][ic][it], col, col, (sp + " proton+track tof;tof-L/c(ns);Counts"));
+      }
+
+    // ---- efficiency-funnel column: for each proton-cut hit, push the stage
+    //      numbers 1..4 it reaches, so the booked 4-bin TH1D's bin k = # hits
+    //      surviving to stage k (cumulative, strictly nested). ----
+    auto mk_funnel = [&](const std::string &col, const std::string &chicol, double clo, double chi_hi) {
+      if (load)
+        return;
+      df = df.Define(col,
+                     [clo, chi_hi](const RVd &pl1, const RVd &ip1, const RVd &chi, double vtxok) {
+                       RVd r;
+                       const bool vtx = (vtxok != 0.0);
+                       for (size_t i = 0; i < pl1.size(); ++i) {
+                         if (ip1[i] != 1.)
+                           continue;
+                         int pi = (int)std::round(pl1[i]);
+                         if (pi != 1 && pi != 3)
+                           continue;
+                         r.push_back(1.); // stage 1: proton-cut hit
+                         if (!vtx)
+                           continue;
+                         r.push_back(2.); // stage 2: + event has a vertex
+                         const double c = (i < chi.size()) ? chi[i] : 1e30;
+                         if (!(c >= 0. && c < 1e29))
+                           continue;
+                         r.push_back(3.); // stage 3: + a valid variant fit
+                         if (c >= clo && c < chi_hi)
+                           r.push_back(4.); // stage 4: + chiSquare in the has-track window
+                       }
+                       return r;
+                     },
+                     {sp + "_plane_1", sp + "_isProton_1", chicol, sp + "_vtxok"});
+    };
+    for (int ic = 0; ic < N_CUTS; ++ic)
+      for (int it = 0; it < ntracks; ++it) {
+        const std::string col = sp + "_funnel" + tracks[it].tsuf + "_cut" + std::to_string(ic);
+        mk_funnel(col, sp + "_chiSquare" + tracks[it].tsuf, tracks[it].chi_lo,
+                  tracks[it].chi_hi * CHI_CUT_SCALES[ic]);
+        BKfun(h_funnel[is][ic][it], col, col, (sp + " eff funnel [" + tracks[it].dir + "];stage;hits"));
       }
 
     // ---- per-plane packed {tof, paddle, ypos, edep_back, dt} columns ----
@@ -477,7 +560,7 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
   // ---------------------------------------------------------------
   std::vector<TH1 *> cache_list;
   if (!load) {
-    std::cout << "[lad_hodo_dist] booked " << bind1.size() << " TH1D + " << bind2.size() << " TH2D + " << bind3.size()
+    std::cout << "[lad_hodo_eff] booked " << bind1.size() << " TH1D + " << bind2.size() << " TH2D + " << bind3.size()
               << " TH3D; running event loop...\n";
     for (auto &b : bind1) {
       *b.slot = b.res.GetPtr();
@@ -502,7 +585,7 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
         TNamed sg("signature", sig.c_str());
         sg.Write();
         fc.Close();
-        std::cout << "[lad_hodo_dist] wrote cache: " << cache_file << "\n";
+        std::cout << "[lad_hodo_eff] wrote cache: " << cache_file << "\n";
       }
     }
   }
@@ -899,6 +982,78 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
           delete d2[2];
         }
       }
+
+      // ================= efficiency funnel (this spec, this cut) =============
+      // One canvas: x = tracking variant, four overlaid marker series giving the
+      // fraction of proton-cut hits that survive each successive gate. The gap
+      // between series localizes the loss: 1->2 vertex gate, 2->3 no fit/cluster,
+      // 3->4 the chiSquare window. Series 4 / series 1 is the with-track/all
+      // efficiency (exact for the 1D variants).
+      {
+        dc->cd();
+        const std::string cc = "_cut" + std::to_string(ic);
+        const int nv = ntracks;
+        const char *stlab[4] = {"1: proton-cut", "2: + has vertex", "3: + valid fit", "4: + in window (eff)"};
+        const int stcol[4] = {kGray + 2, kOrange + 7, kAzure + 1, kRed + 1};
+        const int stmk[4] = {24, 25, 26, 20};
+        TH1D *hs[4] = {nullptr, nullptr, nullptr, nullptr};
+        double n_proton = 0.;
+        for (int st = 0; st < 4; ++st) {
+          hs[st] = new TH1D((sp + "_funnelfrac_s" + std::to_string(st + 1) + cc).c_str(),
+                            (sp + " tracking-efficiency funnel [chi2<" + cutstr +
+                             "];tracking variant;fraction of proton-cut hits")
+                                .c_str(),
+                            nv, 0.5, nv + 0.5);
+          hs[st]->SetDirectory(nullptr);
+          hs[st]->SetStats(0);
+          hs[st]->SetMarkerStyle(stmk[st]);
+          hs[st]->SetMarkerColor(stcol[st]);
+          hs[st]->SetLineColor(stcol[st]);
+          hs[st]->SetMarkerSize(1.3);
+          hs[st]->SetLineWidth(2);
+          for (int it = 0; it < nv; ++it) {
+            hs[st]->GetXaxis()->SetBinLabel(it + 1, tracks[it].dir.c_str());
+            TH1D *f = h_funnel[is][ic][it];
+            const double s1 = f ? f->GetBinContent(1) : 0.;
+            const double sk = f ? f->GetBinContent(st + 1) : 0.;
+            if (st == 0)
+              n_proton = std::max(n_proton, s1);
+            const double frac = (s1 > 0.) ? sk / s1 : 0.;
+            hs[st]->SetBinContent(it + 1, frac);
+            if (s1 > 0.)
+              hs[st]->SetBinError(it + 1, std::sqrt(std::max(0., frac * (1. - frac) / s1)));
+          }
+        }
+        TCanvas *cf = new TCanvas((sp + "_c_eff_funnel").c_str(),
+                                  (sp + " tracking-efficiency funnel [chi2<" + cutstr + "]").c_str(), 1600, 800);
+        cf->SetGridy();
+        cf->SetBottomMargin(0.24); // room for vertical variant labels
+        hs[0]->GetYaxis()->SetRangeUser(0., 1.05);
+        hs[0]->GetXaxis()->LabelsOption("v");
+        for (int st = 0; st < 4; ++st)
+          hs[st]->DrawCopy(st == 0 ? "PL E1" : "PL E1 SAME");
+        TLegend *lg = new TLegend(0.68, 0.70, 0.99, 0.93);
+        lg->SetHeader(Form("N proton-cut = %.0f", n_proton));
+        lg->SetFillStyle(0);
+        for (int st = 0; st < 4; ++st)
+          lg->AddEntry(hs[st], stlab[st], "pl");
+        lg->Draw();
+        wc(cf);
+        // compact numeric table to the log (plot is the primary artifact)
+        std::printf("[lad_hodo_eff] %s chi2<%s funnel  (frac of %.0f proton-cut hits)\n", sp.c_str(), cutstr.c_str(),
+                    n_proton);
+        std::printf("    %-18s %8s %8s %8s\n", "variant", "vtx", "fit", "window");
+        for (int it = 0; it < nv; ++it) {
+          TH1D *f = h_funnel[is][ic][it];
+          if (!f)
+            continue;
+          const double s1 = f->GetBinContent(1);
+          std::printf("    %-18s %8.3f %8.3f %8.3f\n", tracks[it].dir.c_str(), s1 > 0 ? f->GetBinContent(2) / s1 : 0.,
+                      s1 > 0 ? f->GetBinContent(3) / s1 : 0., s1 > 0 ? f->GetBinContent(4) / s1 : 0.);
+        }
+        for (int st = 0; st < 4; ++st)
+          delete hs[st];
+      }
     }
   }
 
@@ -910,6 +1065,6 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
   }
   const double elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_start).count();
   const int mins = (int)(elapsed / 60.);
-  std::cout << "[lad_hodo_dist] Done. Wrote " << out_file << "\n";
-  std::printf("[lad_hodo_dist] Total time: %.1f s (%dm %.1fs)\n", elapsed, mins, elapsed - 60. * mins);
+  std::cout << "[lad_hodo_eff] Done. Wrote " << out_file << "\n";
+  std::printf("[lad_hodo_eff] Total time: %.1f s (%dm %.1fs)\n", elapsed, mins, elapsed - 60. * mins);
 }
