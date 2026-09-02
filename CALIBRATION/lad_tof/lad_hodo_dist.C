@@ -162,52 +162,6 @@ static double flatgaus(double *xx, double *p) {
   return p[0] + p[1] * std::exp(-0.5 * std::pow((x - p[2]) / p[3], 2));
 }
 
-// Track-cut OOT (accidental/flat) suppression factor, from the proton corrected-tof
-// spectrum. Per tof bin b, f(b) = (all(b) - h(b)) / (all(b) - oot), where all = the
-// no-track (proton-cut) spectrum (hAll), h = the with-track spectrum (hTrk), and oot
-// = the with-track OOT-window mean level. f is the fraction of the flat/accidental
-// background that survives the track requirement, so wherever the OOT template is
-// subtracted from tof window W we use OOT * f_W instead of OOT. f_W is formed as a
-// ratio of window sums over region 'reg' (GREG_INT index: 2 = IT, 3 = peak):
-// f_W = (sum_W all - sum_W h) / (sum_W all - oot * N_W). The result is clamped to
-// [0,1] (the track cut can only suppress accidentals) and falls back to 1.0 if the
-// denominator is degenerate or the inputs are missing (unmodified subtraction).
-static double oot_scale_f(const TH1 *hAll, const TH1 *hTrk, int reg) {
-  if (!hAll || !hTrk)
-    return 1.0;
-  const TAxis *ax = hAll->GetXaxis();
-  double sH = 0.;
-  int nO = 0;
-  for (const auto &iv : GREG_INT[1]) { // OOT window -> with-track flat level
-    int b1 = ax->FindBin(iv[0] + 1e-6), b2 = ax->FindBin(iv[1] - 1e-6);
-    for (int b = b1; b <= b2; ++b) {
-      sH += hTrk->GetBinContent(b);
-      ++nO;
-    }
-  }
-  const double oot = (nO > 0) ? sH / nO : 0.;
-  // ratio of window sums: f_W = (sum all - sum h) / (sum all - oot * N_W)
-  double sumA = 0., sumH = 0.;
-  int nW = 0;
-  for (const auto &iv : GREG_INT[reg]) {
-    int b1 = ax->FindBin(iv[0] + 1e-6), b2 = ax->FindBin(iv[1] - 1e-6);
-    for (int b = b1; b <= b2; ++b) {
-      sumA += hAll->GetBinContent(b);
-      sumH += hTrk->GetBinContent(b);
-      ++nW;
-    }
-  }
-  const double den = sumA - oot * nW;
-  if (std::fabs(den) < 1e-9)
-    return 1.0; // sum all -> oot * N_W over the window: undefined
-  double f = (sumA - sumH) / den;
-  if (f < 0.)
-    f = 0.;
-  if (f > 1.)
-    f = 1.;
-  return f;
-}
-
 // A tracking variant: 'dir' output sub-directory; 'tsuf' suffix appended to
 // "goodhit_chiSquare"; a hit is tracked when chiSquare is in [chi_lo, chi_hi).
 struct Track {
@@ -926,12 +880,8 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
         // ---- background-subtraction scale factors from the pad-2 fit ----
         auto regW = [](int r) { double w = 0.; for (const auto &iv : GREG_INT[r]) w += iv[1] - iv[0]; return w; };
         const double wOOT = regW(1), wIT = regW(2), wPK = regW(3);
-        // Track-cut OOT suppression from the proton tof spectrum (no-track vs with-track),
-        // folded into the flat scale factors so every OOT subtraction becomes OOT * <f>.
-        const double fIT = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 2);
-        const double fPK = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 3);
-        const double sflat_it = ((wOOT > 0.) ? wIT / wOOT : 0.) * fIT;
-        const double sflat_pk = ((wOOT > 0.) ? wPK / wOOT : 0.) * fPK;
+        const double sflat_it = (wOOT > 0.) ? wIT / wOOT : 0.;
+        const double sflat_pk = (wOOT > 0.) ? wPK / wOOT : 0.;
         TF1 ftr((sp + "_htrap" + tu + cc).c_str(), trapgaus, -150., 157., 5);
         ftr.SetParameters(0., f2->GetParameter(1) - f2->GetParameter(0), 0., f2->GetParameter(3), f2->GetParameter(4));
         auto Itr = [&](int r) { double s = 0.; for (const auto &iv : GREG_INT[r]) s += ftr.Integral(iv[0], iv[1]); return s; };
