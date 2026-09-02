@@ -18,21 +18,13 @@
 //   1D_GEM0/1/both    -> X.ladhod.goodhit_chiSquare_1D_GEM0    / _GEM1 / _GEMboth
 // (The folder/display label uses 'x'; the underlying chiSquare branch keeps its
 //  original '_xz' suffix, which is fixed in the data.)
-//
-// Event-vertex requirement: all histograms are filled only for events with a
-// reconstructed vertex for that spectrometer (react.ok != 0), via one
-// per-spectrometer RDataFrame Filter node.
 // Variants absent from the input are skipped automatically. The 1D variants use
 // -1 as the "no track" sentinel, so a hit counts as tracked when its chiSquare is
 // in [0, CHI_CUT_1D); the 2D variants (large sentinel) use chiSquare < CHI_CUT_2D.
 //
 // Usage:
-//   root -l -b -q 'lad_tracking_eff.C+("input.dat","out.root")'     // '+' = compile (recommended)
-//   root -l -b -q 'lad_tracking_eff.C+("input.dat","out.root",8)'   // 8 MT threads
-// The trailing '+' ACLiC-compiles the macro once (cached .so) and runs the event
-// loop as optimized native code instead of interpreting it -- a large win on big
-// datasets and on the many histogram bookings. Drop the '+' only while editing
-// the macro source.
+//   root -l -b -q 'lad_tracking_eff.C("input.dat","out.root")'
+//   root -l -b -q 'lad_tracking_eff.C("input.dat","out.root",8)'  // 8 MT threads
 // -------------------------------------------------------------------------
 
 #include <ROOT/RDataFrame.hxx>
@@ -481,7 +473,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   //     skip the (expensive) event loop. Bump CACHE_VERSION whenever the set of
   //     booked histograms changes so old caches are rejected.
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "v11"; // v11: require event vertex (react.ok != 0) per spectrometer
+  const char *CACHE_VERSION = "v10"; // v10: per-APV cluster-ADC banks (wider ADC range) + mean-vs-APV summary
   std::string sig = std::string("lad_tracking_eff;") + CACHE_VERSION + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";dt=" + std::to_string(NBINS_DT) + "," + std::to_string(XMIN_DT) + "," + std::to_string(XMAX_DT) +
@@ -529,17 +521,6 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   ROOT::RDataFrame rdf(chain);
   ROOT::RDF::RNode df = rdf;
 
-  // Per-spectrometer event-vertex availability (react.ok). When present, each
-  // spectrometer's histograms are filled ONLY for events with a reconstructed
-  // vertex (react.ok != 0); see the single per-spec Filter node in the loop below.
-  bool has_react[N_SPECS];
-  for (int is = 0; is < N_SPECS; ++is) {
-    has_react[is] = has_branch(std::string(1, specs[is]) + ".react.ok");
-    if (!has_react[is])
-      std::cout << "[lad_tracking_eff] " << specs[is]
-                << ".react.ok absent; vertex requirement NOT applied for this spectrometer\n";
-  }
-
   // Booking helpers shared by the fill and load paths. In fill mode BK1/BK2 book
   // an RDataFrame action and remember (histogram slot, result) so the slot can
   // be resolved to a raw pointer after the single event loop; in load mode they
@@ -554,18 +535,12 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   };
   std::vector<HBind1> bind1;
   std::vector<HBind2> bind2;
-  // Booking node: every histogram below is booked off dfb. The per-spectrometer
-  // booking loop points dfb at df filtered on that spectrometer's event vertex
-  // (react.ok != 0) -- one shared Filter node per spectrometer, downstream of all
-  // Defines, so the vertex cut is not duplicated per histogram or JIT'd from a
-  // string.
-  ROOT::RDF::RNode dfb = df;
   auto BK1 = [&](TH1D *&slot, const std::string &nm, const std::string &tt) {
     if (load) {
       slot = dynamic_cast<TH1D *>(fcache->Get(nm.c_str()));
       return;
     }
-    bind1.push_back({&slot, dfb.Histo1D({nm.c_str(), tt.c_str(), NBINS_TCORR, XMIN_TCORR, XMAX_TCORR}, nm)});
+    bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), NBINS_TCORR, XMIN_TCORR, XMAX_TCORR}, nm)});
   };
   auto BK2 = [&](TH2D *&slot, const std::string &xcol, const std::string &ycol, const std::string &nm,
                  const std::string &tt, double ymin, double ymax) {
@@ -574,7 +549,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       return;
     }
     bind2.push_back(
-        {&slot, dfb.Histo2D({nm.c_str(), tt.c_str(), NBINS_DT, XMIN_DT, XMAX_DT, NBINS_E2, ymin, ymax}, xcol, ycol)});
+        {&slot, df.Histo2D({nm.c_str(), tt.c_str(), NBINS_DT, XMIN_DT, XMAX_DT, NBINS_E2, ymin, ymax}, xcol, ycol)});
   };
   // GEM position booking: BKG1 books a 1D x- or y-position histogram (isX picks
   // the x vs y binning), BKG2 books a 2D x-vs-y histogram. Both share the
@@ -586,7 +561,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     }
     const int nb = isX ? GEM_NX1 : GEM_NY1;
     const double lo = isX ? GEM_XLO : GEM_YLO, hi = isX ? GEM_XHI : GEM_YHI;
-    bind1.push_back({&slot, dfb.Histo1D({nm.c_str(), tt.c_str(), nb, lo, hi}, col)});
+    bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), nb, lo, hi}, col)});
   };
   auto BKG2 = [&](TH2D *&slot, const std::string &xcol, const std::string &ycol, const std::string &nm,
                   const std::string &tt) {
@@ -594,7 +569,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       slot = dynamic_cast<TH2D *>(fcache->Get(nm.c_str()));
       return;
     }
-    bind2.push_back({&slot, dfb.Histo2D({nm.c_str(), tt.c_str(), GEM_NX2, GEM_XLO, GEM_XHI, GEM_NY2, GEM_YLO, GEM_YHI},
+    bind2.push_back({&slot, df.Histo2D({nm.c_str(), tt.c_str(), GEM_NX2, GEM_XLO, GEM_XHI, GEM_NY2, GEM_YLO, GEM_YHI},
                                        xcol, ycol)});
   };
   // Punchthrough booking: BKP2 books a 2D paddle-vs-ypos histogram (same
@@ -605,7 +580,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       slot = dynamic_cast<TH2D *>(fcache->Get(nm.c_str()));
       return;
     }
-    bind2.push_back({&slot, dfb.Histo2D({nm.c_str(), tt.c_str(), PT_NPAD, PT_PADLO, PT_PADHI, PT_NY, PT_YLO, PT_YHI},
+    bind2.push_back({&slot, df.Histo2D({nm.c_str(), tt.c_str(), PT_NPAD, PT_PADLO, PT_PADHI, PT_NY, PT_YLO, PT_YHI},
                                        xcol, ycol)});
   };
   // Cluster-ADC booking: BKA1 books a 1D cluster-ADC histogram (same cache-aware
@@ -615,7 +590,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       slot = dynamic_cast<TH1D *>(fcache->Get(nm.c_str()));
       return;
     }
-    bind1.push_back({&slot, dfb.Histo1D({nm.c_str(), tt.c_str(), CADC_NBINS, CADC_LO, CADC_HI}, col)});
+    bind1.push_back({&slot, df.Histo1D({nm.c_str(), tt.c_str(), CADC_NBINS, CADC_LO, CADC_HI}, col)});
   };
   // Per-APV booking: BKA2 books a TH2D(APV position x ADC). apvcol -> x, adccol
   // -> y; each per-APV canvas is a ProjectionY over one APV x-bin at plot time.
@@ -625,7 +600,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       slot = dynamic_cast<TH2D *>(fcache->Get(nm.c_str()));
       return;
     }
-    bind2.push_back({&slot, dfb.Histo2D({nm.c_str(), tt.c_str(), CADC_NAPV, CADC_APV_LO, CADC_APV_HI, CADC_NBINS,
+    bind2.push_back({&slot, df.Histo2D({nm.c_str(), tt.c_str(), CADC_NAPV, CADC_APV_LO, CADC_APV_HI, CADC_NBINS,
                                         CADC_LO, CADC_HI_APV},
                                        apvcol, adccol)});
   };
@@ -1323,13 +1298,6 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
 
   for (int is = 0; is < N_SPECS; ++is) {
     const std::string sp(1, specs[is]);
-    // Point the booking node at this spectrometer's vertex-filtered df: one shared
-    // Filter node (compiled lambda, single react.ok column) feeding every BK*
-    // booking below, so the vertex cut is applied once per event, not per histogram.
-    if (has_react[is] && !load)
-      dfb = df.Filter([](double ok) { return ok != 0.; }, {sp + ".react.ok"}, "has_vertex_" + sp);
-    else
-      dfb = df;
     BK1(h_proton_tof[is], sp + "_tof_corr_proton", sp + " tof corr proton;tof-L/c(ns);Counts");
     for (int ic = 0; ic < N_CUTS; ++ic)
       for (int it = 0; it < ntracks; ++it) {
