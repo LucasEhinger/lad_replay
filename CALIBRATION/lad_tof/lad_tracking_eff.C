@@ -473,7 +473,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   //     skip the (expensive) event loop. Bump CACHE_VERSION whenever the set of
   //     booked histograms changes so old caches are rejected.
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "v10"; // v10: per-APV cluster-ADC banks (wider ADC range) + mean-vs-APV summary
+  const char *CACHE_VERSION = "v11"; // v11: paddle-centre tof path length (110 - 22*paddle)
   std::string sig = std::string("lad_tracking_eff;") + CACHE_VERSION + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";dt=" + std::to_string(NBINS_DT) + "," + std::to_string(XMIN_DT) + "," + std::to_string(XMAX_DT) +
@@ -666,7 +666,12 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                          if (pi != 1 && pi != 3)
                            continue; // planes 001 and 101 only
                          double R = hodo_radii[pi];
-                         double dx = 22. * (pd1[i] - 6.);
+                         // Transverse offset of the paddle CENTRE (cm), 0-BASED paddle index: the 11
+                         // paddles are centred at 110, 88, ... -88, -110 (lladhodo_*_center in
+                         // lhodo_geom.param), and THcLADHodoscope stores goodhit paddles as
+                         // GetPaddleNumber() - 1.  The former 22*(paddle - 6) assumed a 1-based index
+                         // and spanned -132 .. +88, i.e. one paddle off and asymmetric.
+                         double dx = (110. - 22. * pd1[i]);
                          double p2d = std::sqrt(y1[i] * y1[i] + dx * dx);
                          r.push_back(t1[i] - std::sqrt(p2d * p2d + R * R) / 100. / 0.3);
                        }
@@ -702,7 +707,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                                continue;
                              if (req_track && !(chi[i] >= clo && chi[i] < chi_hi))
                                continue;
-                             double dx = 22. * (pd1[i] - 6.);
+                             double dx = (110. - 22. * pd1[i]);
                              double p2d = std::sqrt(y1[i] * y1[i] + dx * dx);
                              r.push_back(t1[i] - std::sqrt(p2d * p2d + R_c * R_c) / 100. / 0.3);
                            }
@@ -732,7 +737,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                              continue;
                            if (req_track && !(chi[i] >= clo && chi[i] < chi_hi))
                              continue;
-                           double dx = 22. * (pd1[i] - 6.);
+                           double dx = (110. - 22. * pd1[i]);
                            double p2d = std::sqrt(y1[i] * y1[i] + dx * dx);
                            r.push_back(t1[i] - std::sqrt(p2d * p2d + R_c * R_c) / 100. / 0.3);
                          }
@@ -822,7 +827,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                   continue;
                 if (!(cs[i] >= clo && cs[i] < chi))
                   continue;
-                double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                double dx = (110. - 22. * pd1[i]), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                 double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
                 // Winning-cluster CLIndex per layer/axis -> lab (x,y) from clust.*.
                 int kx0 = i < cix0.size() ? (int)std::round(cix0[i]) : -1;
@@ -856,7 +861,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                   continue;
                 if (!(cs[i] >= clo && cs[i] < chi))
                   continue;
-                double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                double dx = (110. - 22. * pd1[i]), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                 double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
                 int k = (i < tid.size()) ? (int)std::round(tid[i]) : -1;
                 double a = -1000., b = -1000., c = -1000., d = -1000.;
@@ -1068,7 +1073,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                     continue;
                   if (!(cs[i] >= clo && cs[i] < chi))
                     continue;
-                  double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                  double dx = (110. - 22. * pd1[i]), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                   double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
                   int kx0 = i < cix0.size() ? (int)std::round(cix0[i]) : -1;
                   int kx1 = i < cix1.size() ? (int)std::round(cix1[i]) : -1;
@@ -1101,7 +1106,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                     continue;
                   if (!(cs[i] >= clo && cs[i] < chi))
                     continue;
-                  double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                  double dx = (110. - 22. * pd1[i]), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                   double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
                   int k = (i < tid.size()) ? (int)std::round(tid[i]) : -1;
                   // The track's space-point cluster CLIndex per layer/axis
@@ -1164,7 +1169,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                     continue;
                   if (!(cs[i] >= clo && cs[i] < chi))
                     continue;
-                  double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                  double dx = (110. - 22. * pd1[i]), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                   double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
                   int kx0 = i < cix0.size() ? (int)std::round(cix0[i]) : -1;
                   int kx1 = i < cix1.size() ? (int)std::round(cix1[i]) : -1;
@@ -1204,7 +1209,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                     continue;
                   if (!(cs[i] >= clo && cs[i] < chi))
                     continue;
-                  double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                  double dx = (110. - 22. * pd1[i]), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                   double tofc = t1[i] - std::sqrt(p2d * p2d + hodo_radii[pi] * hodo_radii[pi]) / 100. / 0.3;
                   int k = (i < tid.size()) ? (int)std::round(tid[i]) : -1;
                   int kx0 = (k >= 0 && k < (int)sp0v.size()) ? (int)std::round(sp0v[k]) : -1;

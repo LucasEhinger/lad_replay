@@ -233,7 +233,12 @@ static bool analyze_run(const std::vector<std::string> &paths, TDirectory *perru
           for (size_t i = 0; i < pln.size(); ++i) {
             if (pln[i] != plv) continue;
             if (excl && (pdl[i] == 1. || pdl[i] == 9.)) continue;
-            const double dx  = 22. * (pdl[i] - 6.);
+            // Transverse offset of the paddle CENTRE (cm), 0-BASED paddle index: the 11
+            // paddles are centred at 110, 88, ... -88, -110 (lladhodo_*_center in
+            // lhodo_geom.param), and THcLADHodoscope stores goodhit paddles as
+            // GetPaddleNumber() - 1.  The former 22*(paddle - 6) assumed a 1-based index
+            // and spanned -132 .. +88, i.e. one paddle off and asymmetric.
+            const double dx  = (110. - 22. * pdl[i]);
             const double p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
             r.push_back(tf[i] - std::sqrt(p2d * p2d + R * R) / 100. / 0.3);
           }

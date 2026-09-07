@@ -244,7 +244,7 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
   // ---------------------------------------------------------------
   // 1c. Histogram cache decision (opt-in; identical scheme to lad_tracking_eff).
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "hd_v2"; // hd_v2: coarser yp/edep bins, dt range [0,10]
+  const char *CACHE_VERSION = "hd_v3"; // hd_v3: paddle-centre tof path length (110 - 22*paddle)
   std::string sig = std::string("lad_hodo_dist;") + CACHE_VERSION + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";tof2=" + std::to_string(TOF2_NBINS) + ";yp=" + std::to_string(YP_NB) + "," + std::to_string(YP_LO) + "," +
@@ -381,7 +381,12 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
                          if (pi != 1 && pi != 3)
                            continue;
                          double R = hodo_radii[pi];
-                         double dx = 22. * (pd1[i] - 6.);
+                         // Transverse offset of the paddle CENTRE (cm), 0-BASED paddle index: the 11
+                         // paddles are centred at 110, 88, ... -88, -110 (lladhodo_*_center in
+                         // lhodo_geom.param), and THcLADHodoscope stores goodhit paddles as
+                         // GetPaddleNumber() - 1.  The former 22*(paddle - 6) assumed a 1-based index
+                         // and spanned -132 .. +88, i.e. one paddle off and asymmetric.
+                         double dx = (110. - 22. * pd1[i]);
                          double p2d = std::sqrt(y1[i] * y1[i] + dx * dx);
                          r.push_back(t1[i] - std::sqrt(p2d * p2d + R * R) / 100. / 0.3);
                        }
@@ -419,7 +424,7 @@ void lad_hodo_dist(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
                            continue;
                          if (req_track && !(chi[i] >= clo && chi[i] < chi_hi))
                            continue;
-                         double dx = 22. * (pd1[i] - 6.), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
+                         double dx = (110. - 22. * pd1[i]), p2d = std::sqrt(yp[i] * yp[i] + dx * dx);
                          double tofc = tf[i] - std::sqrt(p2d * p2d + R * R) / 100. / 0.3;
                          r.push_back(tofc);
                          r.push_back(pd1[i]);

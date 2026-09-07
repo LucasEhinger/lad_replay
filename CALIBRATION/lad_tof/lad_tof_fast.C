@@ -681,7 +681,12 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
         const double R=hodo_radii[plane];
         const bool excl_pad=(plane==2||plane==3);
         for (int paddle=0;paddle<N_PADDLES;++paddle) {
-          const double dx=22.*(static_cast<double>(paddle)-6.);
+          // Transverse offset of the paddle CENTRE (cm), 0-BASED paddle index: the 11
+          // paddles are centred at 110, 88, ... -88, -110 (lladhodo_*_center in
+          // lhodo_geom.param), and THcLADHodoscope stores goodhit paddles as
+          // GetPaddleNumber() - 1.  The former 22*(paddle - 6) assumed a 1-based index
+          // and spanned -132 .. +88, i.e. one paddle off and asymmetric.
+          const double dx=(110.-22.*static_cast<double>(paddle));
           const std::string tc=sp+"_tof_p" +std::to_string(plane)+"_b"+std::to_string(paddle)+cs;
           const std::string yc=sp+"_ypos_p"+std::to_string(plane)+"_b"+std::to_string(paddle)+cs;
           df=df.Define(sp+"_tof_corrected_p"+std::to_string(plane)+"_b"+std::to_string(paddle)+cs,
@@ -700,7 +705,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
               if(plv[i]!=pl_val) continue;
               if(excl_pad&&(pdv[i]==1.||pdv[i]==9.)) continue;
               if(cm2==1&&chi[i]>=100.) continue; if(cm2==2&&chi[i]<100.) continue;
-              double dx=22.*(pdv[i]-6.); double p2d=std::sqrt(yv[i]*yv[i]+dx*dx);
+              double dx=(110.-22.*pdv[i]); double p2d=std::sqrt(yv[i]*yv[i]+dx*dx);
               r.push_back(tv[i]-std::sqrt(p2d*p2d+R*R)/100./0.3);} return r;
           },{sp+"_plane_"+side,sp+"_paddle_"+side,sp+"_ypos_"+side,sp+"_tof_"+side,chi});
       }
@@ -734,7 +739,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
               int pi=(int)std::round(pl1[i]);
               if(pi!=1&&pi!=3) continue; // only planes 001 and 101
               double R=hodo_radii[pi];
-              double dx=22.*(pd1[i]-6.);
+              double dx=(110.-22.*pd1[i]);
               double p2d=std::sqrt(y1[i]*y1[i]+dx*dx);
               r.push_back(t1[i]-std::sqrt(p2d*p2d+R*R)/100./0.3);
             } return r;
@@ -764,7 +769,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                   if((int)std::round(pl1[i])!=pi_c) continue;
                   if(pd1[i]!=pv_c) continue;
                   if(req_track&&chi[i]>=100.) continue;
-                  double dx=22.*(pd1[i]-6.);
+                  double dx=(110.-22.*pd1[i]);
                   double p2d=std::sqrt(y1[i]*y1[i]+dx*dx);
                   r.push_back(t1[i]-std::sqrt(p2d*p2d+R_c*R_c)/100./0.3);
                 } return r;
@@ -786,7 +791,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
                 if((int)std::round(pl1[i])!=pi_c) continue;
                 if(excl_c&&(pd1[i]==1.||pd1[i]==9.)) continue;
                 if(req_track&&chi[i]>=100.) continue;
-                double dx=22.*(pd1[i]-6.);
+                double dx=(110.-22.*pd1[i]);
                 double p2d=std::sqrt(y1[i]*y1[i]+dx*dx);
                 r.push_back(t1[i]-std::sqrt(p2d*p2d+R_c*R_c)/100./0.3);
               } return r;
