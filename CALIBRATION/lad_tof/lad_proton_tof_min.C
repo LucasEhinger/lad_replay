@@ -3,13 +3,25 @@
 // Minimal, fast reproduction of ONE canvas: P_c_proton_tof for the
 // 1D_x_GEM0 tracking variant.
 //
-// Purpose: a stable baseline for bisecting the bug that appeared when the
-// three changes of 189c7f0 (event-vertex requirement, filter/compile speed
-// work, OOT*f background-subtraction scaling) were added together. Every one
-// of those three is ABSENT here -- this file is transcribed from
-// lad_hodo_eff.C / lad_tracking_eff.C in their reverted (pre-189c7f0) state,
-// so its output is the "before" picture. Re-introduce one change at a time
-// and re-run to see which one moves the plot.
+// Purpose: a small, fast stand-in for the full macros when working on this
+// canvas. It carries the same three changes they do (event-vertex
+// requirement, filter/compile speed work, OOT*f background-subtraction
+// scaling), transcribed from lad_hodo_eff.C / lad_hodo_dist.C, so it tracks
+// their behaviour rather than a frozen earlier state:
+//
+//   vertex   fill only for events with a reconstructed P vertex
+//            (P.react.ok != 0), as one compiled RDataFrame Filter. Skipped
+//            with a warning when the branch is absent.
+//   speed    the ">=1 proton-cut hit" test is folded into that same Filter,
+//            so the per-hit Defines never run on events that cannot
+//            contribute (every histogram here is proton-gated). Identical
+//            output, less work per event.
+//   OOT*f    the track-cut OOT suppression factor oot_scale_f(). NOTE: this
+//            canvas subtracts fitted backgrounds (subtract_fit_bg) and never
+//            forms sflat_it/sflat_pk, so f changes nothing that is drawn
+//            here -- it is computed from the two histograms this macro
+//            already builds and PRINTED, so the number the parent macros
+//            fold into their other plot families can be checked cheaply.
 //
 // The canvas is built by exactly the code path the full macros use:
 //   pad 1  proton total tof, flat+gaus fit (gaus sigma fixed to the pad-2 fit)
@@ -37,6 +49,7 @@
 
 #include <ROOT/RDataFrame.hxx>
 #include <ROOT/RVec.hxx>
+#include <TAxis.h>
 #include <TBox.h>
 #include <TCanvas.h>
 #include <TChain.h>
@@ -72,6 +85,14 @@ const double CHI_CUT_BASE = 100.0;
 const int N_CUTS = 3;
 const std::array<double, N_CUTS> CHI_CUT_SCALES = {0.5, 1.0, 2.0};
 
+// tof-L/c regions: all / out-of-time sideband / in-time sideband / peak.
+// Only used by oot_scale_f below; the canvas itself does not project regions.
+const std::vector<std::vector<std::array<double, 2>>> GREG_INT = {
+    {{-1e9, 1e9}},                        // all
+    {{SB_LO1, SB_HI1}, {SB_LO2, SB_HI2}}, // oot: [-150,-100] u [125,175]
+    {{-25., 30.}, {50., 125.}},           // it:  [-25,30] u [50,125]
+    {{30., 50.}}};                        // peak: [30,50]
+
 const double hodo_radii[5] = {615., 655.6, 523., 563.6, 615.}; // cm, by plane index
 
 // The one variant this macro plots.
@@ -104,6 +125,52 @@ static double trapgaus(double *xx, double *p) {
 static double flatgaus(double *xx, double *p) {
   const double x = xx[0];
   return p[0] + p[1] * std::exp(-0.5 * std::pow((x - p[2]) / p[3], 2));
+}
+
+// Track-cut OOT (accidental/flat) suppression factor, from the proton corrected-tof
+// spectrum. Per tof bin b, f(b) = (all(b) - h(b)) / (all(b) - oot), where all = the
+// no-track (proton-cut) spectrum (hAll), h = the with-track spectrum (hTrk), and oot
+// = the with-track OOT-window mean level. f is the fraction of the flat/accidental
+// background that survives the track requirement, so wherever the OOT template is
+// subtracted from tof window W the parent macros use OOT * f_W instead of OOT. f_W is
+// formed as a ratio of window sums over region 'reg' (GREG_INT index: 2 = IT, 3 = peak):
+// f_W = (sum_W all - sum_W h) / (sum_W all - oot * N_W). The result is clamped to
+// [0,1] (the track cut can only suppress accidentals) and falls back to 1.0 if the
+// denominator is degenerate or the inputs are missing (unmodified subtraction).
+static double oot_scale_f(const TH1 *hAll, const TH1 *hTrk, int reg) {
+  if (!hAll || !hTrk)
+    return 1.0;
+  const TAxis *ax = hAll->GetXaxis();
+  double sH = 0.;
+  int nO = 0;
+  for (const auto &iv : GREG_INT[1]) { // OOT window -> with-track flat level
+    int b1 = ax->FindBin(iv[0] + 1e-6), b2 = ax->FindBin(iv[1] - 1e-6);
+    for (int b = b1; b <= b2; ++b) {
+      sH += hTrk->GetBinContent(b);
+      ++nO;
+    }
+  }
+  const double oot = (nO > 0) ? sH / nO : 0.;
+  // ratio of window sums: f_W = (sum all - sum h) / (sum all - oot * N_W)
+  double sumA = 0., sumH = 0.;
+  int nW = 0;
+  for (const auto &iv : GREG_INT[reg]) {
+    int b1 = ax->FindBin(iv[0] + 1e-6), b2 = ax->FindBin(iv[1] - 1e-6);
+    for (int b = b1; b <= b2; ++b) {
+      sumA += hAll->GetBinContent(b);
+      sumH += hTrk->GetBinContent(b);
+      ++nW;
+    }
+  }
+  const double den = sumA - oot * nW;
+  if (std::fabs(den) < 1e-9)
+    return 1.0; // sum all -> oot * N_W over the window: undefined
+  double f = (sumA - sumH) / den;
+  if (f < 0.)
+    f = 0.;
+  if (f > 1.)
+    f = 1.;
+  return f;
 }
 
 void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file = DEFAULT_OUT_FILE,
@@ -197,6 +264,29 @@ void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out
   df = df.Alias(sp + "_ypos_1", pfx + "hit_ypos_1");
   df = df.Alias(sp + "_isProton_1", pfx + "isProton_1");
   df = df.Alias(sp + "_chiSquare" + VAR_TSUF, chib);
+
+  // Require an event vertex AND >=1 proton-cut hit, exactly as lad_hodo_dist.C
+  // does. Every histogram here is proton-gated (isProton_1==1 on plane 001/101),
+  // so an event with no such hit contributes nothing -- requiring one upstream
+  // skips the per-hit Defines on those events with identical output. One
+  // compiled Filter node (explicit column list, so no JIT'd string expression)
+  // is shared by everything downstream.
+  const bool has_react = has_branch(sp + ".react.ok");
+  if (!has_react)
+    std::cout << "[proton_tof_min] " << sp << ".react.ok absent; vertex requirement NOT applied\n";
+  else
+    df = df.Filter(
+        [](double ok, const RVd &pl1, const RVd &ip1) {
+          if (ok == 0.)
+            return false;
+          for (size_t i = 0; i < pl1.size(); ++i) {
+            int p = (int)std::round(pl1[i]);
+            if ((p == 1 || p == 3) && ip1[i] == 1.)
+              return true;
+          }
+          return false;
+        },
+        {sp + ".react.ok", sp + "_plane_1", sp + "_isProton_1"}, "has_vertex_proton_" + sp);
 
   // ---- proton-tagged corrected-tof column (planes 001 & 101 combined) ----
   // Verbatim from lad_hodo_eff.C's mk_proton.
@@ -409,6 +499,22 @@ void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out
                 f2->GetParameter(4));
     std::printf("[proton_tof_min] chi2<%s  pad1 flatgaus: flat=%.2f gaus_h=%.2f mean=%.2f sigma=%.3f\n", cutstr.c_str(),
                 f1->GetParameter(0), f1->GetParameter(1), f1->GetParameter(2), f1->GetParameter(3));
+
+    // Track-cut OOT suppression factors. Nothing on this canvas consumes them
+    // (pads 1-4 subtract fitted backgrounds, not the OOT template), but these
+    // are the numbers the parent macros fold into sflat_it / sflat_pk for their
+    // other plot families, so print them for comparison.
+    {
+      const double fIT = oot_scale_f(h_proton_tof, hpt, 2);
+      const double fPK = oot_scale_f(h_proton_tof, hpt, 3);
+      auto regW = [](int r) { double w = 0.; for (const auto &iv : GREG_INT[r]) w += iv[1] - iv[0]; return w; };
+      const double wOOT = regW(1), wIT = regW(2), wPK = regW(3);
+      std::printf("[proton_tof_min] chi2<%s  OOT scale: f_IT=%.4f f_pk=%.4f  ->  sflat_it=%.4f sflat_pk=%.4f "
+                  "(unscaled %.4f / %.4f)\n",
+                  cutstr.c_str(), fIT, fPK, ((wOOT > 0.) ? wIT / wOOT : 0.) * fIT,
+                  ((wOOT > 0.) ? wPK / wOOT : 0.) * fPK, (wOOT > 0.) ? wIT / wOOT : 0.,
+                  (wOOT > 0.) ? wPK / wOOT : 0.);
+    }
 
     // Write the canvas into the file, and drop a .png beside out_file.
     c->Write();
