@@ -30,9 +30,14 @@ ldo_1Dcluster_tracking = 0 ; 1D-cluster tracking: seed from individual GEM strip
                            ; 2D space points, so a plane missing a U or V cluster still
                            ; tracks. Writes the P/H.ladkin.trk1d.* branches; leaves the
                            ; existing 2D-space-point tracking untouched for comparison.
-; 1D-cluster tracking combinatorics limits (only used when the flag above is 1):
-lmax_1Dcluster_per_slot  = 3    ; clusters kept per (layer,axis) slot, highest ADC
-                                ; first. <=0 = no limit.
+; 1D-cluster tracking candidate selection (only used when the flag above is 1).
+; For each hodo hit, a GEM cluster is a candidate if it lies within the road of
+; where the line vertex -> hodo hit crosses that GEM plane (measured along the
+; strip axis). Real hits sit within ~2 cm; 10 cm keeps every fit with chi2 < 10
+; identical to trying all clusters, and only rejects far-away (noise) clusters.
+lroad_1Dcluster          = 10.  ; road half-width (cm). <=0 = no road (try every cluster).
+lmax_1Dcluster_per_slot  = 0    ; cap on candidates per (layer,axis) slot and hit, nearest
+                                ; to the prediction first. <=0 = no cap.
 lmax_1Dcluster_candidates = 2000 ; cap on projective fits attempted per event. <=0 = no limit.
 ; Hodoscope resolutions used ONLY by the 1D-cluster projective tracking (cm).
 ; x-z is the coarse paddle direction (~ paddle width / sqrt(12)); y is the finer
