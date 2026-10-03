@@ -18,6 +18,15 @@ lglobal_time_offset_shms = -1728.0 ;ns
 lglobal_time_offset_hms  = -1752.3 ;ns
 lglobal_time_offset      = -1710   ;ns old shared value (fallback only)
 
+; Vertex z used by the LAD ToF corrections (electron path length and the z/c of the
+; RF-corrected ToF). A reaction point outside |z| < lvertex_zmax is a junk
+; reconstruction (some at |z| of metres): with lvertex_bad_z_reject = 1 the LAD ToF of
+; that event is not computed (kBig); with 0 the target centre (z = 0) is used instead.
+; Rejecting gives the narrower photon peak (SHMS: ~9% of LAD hits, 7% of photons lost).
+; lvertex_zmax <= 0 disables the limit. The z used is written as X.ladkin.z_tof.
+lvertex_zmax        = 20.0 ;cm
+lvertex_bad_z_reject = 1
+
 ltrk_dt_cut = 10
 
 l_nr_rf_offsets = 5; number of rows on vector below
