@@ -20,8 +20,9 @@
 //  original '_xz' suffix, which is fixed in the data.)
 //
 // Event-vertex requirement: all histograms are filled only for events with a
-// reconstructed vertex for that spectrometer (react.ok != 0), via one
-// per-spectrometer RDataFrame Filter node.
+// reconstructed vertex for that spectrometer inside the target window
+// (react.ok != 0 and |react.z| < VTX_ZMAX), via one per-spectrometer RDataFrame
+// Filter node.
 // Variants absent from the input are skipped automatically. The 1D variants use
 // -1 as the "no track" sentinel, so a hit counts as tracked when its chiSquare is
 // in [0, CHI_CUT_1D); the 2D variants (large sentinel) use chiSquare < CHI_CUT_2D.
@@ -56,6 +57,8 @@
 #include <TVirtualPad.h>
 #include <cmath>
 
+#include "lad_tof_offset.h" // calibrated LAD ToF convention (photon peak at tof-L/c = 0)
+
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6, 30, 0)
 #if __has_include(<ROOT/RDFHelpers.hxx>)
 #include <ROOT/RDFHelpers.hxx>
@@ -79,8 +82,8 @@
 // =====================================================================
 // Constants
 // =====================================================================
-const int NBINS_TCORR = 650; // 0.5 ns bins over [-150, 175]
-const double XMIN_TCORR = -150., XMAX_TCORR = 175.;
+const int NBINS_TCORR = 650; // 0.5 ns bins over [-168, 157] (photon peak at 0; see lad_tof_offset.h)
+const double XMIN_TCORR = ladtof::TCORR_LO, XMAX_TCORR = ladtof::TCORR_HI;
 
 const int N_PLANES = 5, N_PADDLES = 11, N_SPECS = 2;
 // N_TRACKS is the compile-time capacity for the per-variant histogram arrays.
@@ -88,7 +91,7 @@ const int N_PLANES = 5, N_PADDLES = 11, N_SPECS = 2;
 const int N_TRACKS = 13;
 const int PROTON_REBIN = 10; // rebin before sideband-subtracted efficiency (divides NBINS_TCORR=650 -> 5 ns bins)
 // Two-sided sidebands (tof-L/c ns) for the _c_proton_tof track/total ratio.
-const double SB_LO1 = -150., SB_HI1 = -100., SB_LO2 = 125., SB_HI2 = 175.;
+const double SB_LO1 = ladtof::OOT_LO1, SB_HI1 = ladtof::OOT_HI1, SB_LO2 = ladtof::OOT_LO2, SB_HI2 = ladtof::OOT_HI2;
 
 // "Has track" chiSquare window per family. 2D variants use a large "no track"
 // sentinel, so any chiSquare < CHI_CUT_2D is a track. 1D variants use -1 as the
@@ -102,10 +105,15 @@ const double CHI_CUT_1D = 100.0;
 // more points (e.g. a 1D GEMboth fit over 3-4 points, or a combined xz+y fit)
 // than for a GEM0/GEM1 fit over 2-3 points. We emit one output folder per cut
 // (chi2cut_<value>) so the sensitivity to the cut can be seen: the nominal cut
-// and its half and double. The window is [chi_lo, chi_hi * scale).
+// plus three tighter ones and one looser one (1, 10, 50, 100, 500). The window is
+// [chi_lo, chi_hi * scale).
+// Event-vertex window: react.ok != 0 AND |react.z| < VTX_ZMAX. The target foils
+// sit at z = -10, 0, +10 cm; reconstructed vertices far outside (some at |z| of
+// metres) give meaningless vertex -> hodo lines for the GEM tracking.
+const double VTX_ZMAX = 20.0; // cm
 const double CHI_CUT_BASE = 100.0; // nominal cut (== CHI_CUT_2D / CHI_CUT_1D)
-const int N_CUTS = 3;
-const std::array<double, N_CUTS> CHI_CUT_SCALES = {0.5, 1.0, 2.0};
+const int N_CUTS = 5;
+const std::array<double, N_CUTS> CHI_CUT_SCALES = {0.01, 0.1, 0.5, 1.0, 5.0}; // chi2 cuts 1, 10, 50, 100, 500
 
 // edep vs inter-plane tof (t_back - t_front) proton-ID 2x2 panels
 const int NBINS_DT = 150;
@@ -131,12 +139,12 @@ const double GEM_YLO = -50., GEM_YHI = 50.;         // y range (cm)
 const int N_GREG = 4;
 const char *const GREG_NAME[N_GREG] = {"all", "oot", "it", "peak"};
 // Per-region tof intervals (a hit is in-region if its corrected tof falls in any
-// interval). "all" uses a catch-all interval. See SB_* and the [30,50] peak.
+// interval). "all" uses a catch-all interval. See SB_* and the [12,32] peak.
 const std::vector<std::vector<std::array<double, 2>>> GREG_INT = {
     {{-1e9, 1e9}},                                // all
-    {{SB_LO1, SB_HI1}, {SB_LO2, SB_HI2}},         // oot: [-150,-100] u [125,175]
-    {{-25., 30.}, {50., 125.}},                   // it:  [-25,30] u [50,125]
-    {{30., 50.}}};                                // peak: [30,50]
+    {{SB_LO1, SB_HI1}, {SB_LO2, SB_HI2}},         // oot: [-168,-118] u [107,157]
+    {{ladtof::IT_LO1, ladtof::IT_HI1}, {ladtof::IT_LO2, ladtof::IT_HI2}}, // it: [-43,12] u [32,107]
+    {{ladtof::PEAK_LO, ladtof::PEAK_HI}}};        // peak: [12,32]
 // Hodoscope plane groups the GEM hits are split by: 000/001 (plane 001, pl==1)
 // vs 100/101 (plane 101, pl==3). The 1D x/y plots overlay both groups in
 // distinct colors; the 2D x-vs-y sums both groups into one standard COLZ heatmap.
@@ -205,7 +213,7 @@ const char *const plane_names[N_PLANES] = {"000", "001", "100", "101", "200"};
 const std::array<char, N_SPECS> specs = {'P', 'H'};
 
 const char *DEFAULT_DAT_FILE = "../files/run-lists/all_C3_runlist_SHMS_13p5.dat";
-const char *DEFAULT_OUT_FILE = "files/tracking_eff/tracking_eff_C3_SHMS_13p5_v2_PH.root";
+const char *DEFAULT_OUT_FILE = "files/tracking_eff/tracking_eff_C3_SHMS_13p5_v5_PH.root";
 
 // Sideband-subtract a histogram: mean bin content in [xmin, xmin+sideband_ns]
 // is subtracted as a flat background from all bins.
@@ -247,50 +255,62 @@ TH1D *flat_bgsub2(const TH1D *h, double lo1, double hi1, double lo2, double hi2)
   return out;
 }
 
-// Track-cut OOT (accidental/flat) suppression factor, from the proton corrected-tof
-// spectrum. Per tof bin b, f(b) = (all(b) - h(b)) / (all(b) - oot), where all = the
-// no-track (proton-cut) spectrum (hAll), h = the with-track spectrum (hTrk), and oot
-// = the with-track OOT-window mean level. f is the fraction of the flat/accidental
-// background that survives the track requirement, so wherever the OOT template is
-// subtracted from tof window W we use OOT * f_W instead of OOT. f_W is formed as a
-// ratio of window sums over region 'reg' (GREG_INT index: 2 = IT, 3 = peak):
-// f_W = (sum_W all - sum_W h) / (sum_W all - oot * N_W). The result is clamped to
-// [0,1] (the track cut can only suppress accidentals) and falls back to 1.0 if the
-// denominator is degenerate or the inputs are missing (unmodified subtraction).
-static double oot_scale_f(const TH1 *hAll, const TH1 *hTrk, int reg) {
-  if (!hAll || !hTrk)
-    return 1.0;
-  const TAxis *ax = hAll->GetXaxis();
-  double sH = 0.;
-  int nO = 0;
-  for (const auto &iv : GREG_INT[1]) { // OOT window -> with-track flat level
-    int b1 = ax->FindBin(iv[0] + 1e-6), b2 = ax->FindBin(iv[1] - 1e-6);
-    for (int b = b1; b <= b2; ++b) {
-      sH += hTrk->GetBinContent(b);
-      ++nO;
-    }
-  }
-  const double oot = (nO > 0) ? sH / nO : 0.;
-  // ratio of window sums: f_W = (sum all - sum h) / (sum all - oot * N_W)
-  double sumA = 0., sumH = 0.;
-  int nW = 0;
+// GEM-noise background subtraction, following written_docs/background_subtraction
+// (eq. 8). A hodoscope hit passes the track cut if it has a true GEM track, or if
+// it has none but GEM noise gives it one; f = B_noise/B is the probability of the
+// latter. Outside the GEM window (the OOT sidebands) every tracked hit is noise, so
+// f = (with-track OOT counts) / (OOT counts without the track cut). The noise is a
+// constant FRACTION of the hits without a true track, not a constant rate: in any
+// tof window W the noise-only tracked hits number f/(1-f) * U_W, where U_W = all_W -
+// trk_W are the hits that fail the track cut. A hit with both a true track and noise
+// counts once, as a true track. All three helpers take the proton tof spectra
+// without (hAll) and with (hTrk) the track cut.
+
+// Sum of a tof histogram over the bins of region 'reg' (GREG_INT index: 1 = OOT,
+// 2 = IT, 3 = peak).
+static double region_sum(const TH1 *h, int reg) {
+  const TAxis *ax = h->GetXaxis();
+  double s = 0.;
   for (const auto &iv : GREG_INT[reg]) {
     int b1 = ax->FindBin(iv[0] + 1e-6), b2 = ax->FindBin(iv[1] - 1e-6);
-    for (int b = b1; b <= b2; ++b) {
-      sumA += hAll->GetBinContent(b);
-      sumH += hTrk->GetBinContent(b);
-      ++nW;
-    }
+    for (int b = b1; b <= b2; ++b)
+      s += h->GetBinContent(b);
   }
-  const double den = sumA - oot * nW;
-  if (std::fabs(den) < 1e-9)
-    return 1.0; // sum all -> oot * N_W over the window: undefined
-  double f = (sumA - sumH) / den;
-  if (f < 0.)
-    f = 0.;
-  if (f > 1.)
-    f = 1.;
-  return f;
+  return s;
+}
+
+// Noise fraction f = B_noise / B (eq. 3); 0 if the inputs are missing or empty.
+static double noise_frac(const TH1 *hAll, const TH1 *hTrk) {
+  if (!hAll || !hTrk)
+    return 0.;
+  const double b = region_sum(hAll, 1);
+  return (b > 0.) ? region_sum(hTrk, 1) / b : 0.;
+}
+
+// Scale k_W of the with-track OOT template in tof window 'reg': OOT * k_W is the
+// noise-only tracked hits in W, f/(1-f) U_W. The OOT template itself holds
+// f/(1-f) U_OOT of them, so k_W = U_W / U_OOT, the ratio of hits failing the track
+// cut. This is eq. 8 for a histogram with no untracked counterpart (e.g. GEM
+// positions); 0 if U_OOT <= 0 (no noise estimate possible).
+static double noise_scale_k(const TH1 *hAll, const TH1 *hTrk, int reg) {
+  if (!hAll || !hTrk)
+    return 0.;
+  const double uO = region_sum(hAll, 1) - region_sum(hTrk, 1);
+  return (uO > 0.) ? (region_sum(hAll, reg) - region_sum(hTrk, reg)) / uO : 0.;
+}
+
+// eq. 8 for a bg-subtracted track/total ratio: r = (C_t - B_GEM)/(C - B) =
+// f + (1-f) eps, so replace each bin by the true-track efficiency eps =
+// (r - f)/(1 - f). Bins left empty by the divide (content and error 0) are kept.
+static void noise_correct_ratio(TH1 *h, double f) {
+  if (!h || !(f < 1.))
+    return;
+  for (int b = 1; b <= h->GetNbinsX(); ++b) {
+    if (h->GetBinContent(b) == 0. && h->GetBinError(b) == 0.)
+      continue;
+    h->SetBinContent(b, (h->GetBinContent(b) - f) / (1. - f));
+    h->SetBinError(b, h->GetBinError(b) / (1. - f));
+  }
 }
 
 // Look up a clust.* value for the winning cluster identified by its CLIndex at
@@ -527,8 +547,8 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   //     skip the (expensive) event loop. Bump CACHE_VERSION whenever the set of
   //     booked histograms changes so old caches are rejected.
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "v12"; // v12: v11 paddle-centre tof + require event vertex (react.ok != 0)
-  std::string sig = std::string("lad_tracking_eff;") + CACHE_VERSION + ";";
+  const char *CACHE_VERSION = "v14"; // v14: v13 + calibrated per-spectrometer LAD ToF (lad_tof_offset.h)
+  std::string sig = std::string("lad_tracking_eff;") + CACHE_VERSION + ";" + ladtof::signature() + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";dt=" + std::to_string(NBINS_DT) + "," + std::to_string(XMIN_DT) + "," + std::to_string(XMAX_DT) +
          ";e2=" + std::to_string(NBINS_E2) + "," + std::to_string(EMIN_F) + "," + std::to_string(EMAX_F) + "," +
@@ -547,6 +567,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   sig += ";vars=";
   for (const auto &t : tracks)
     sig += t.dir + "|" + std::to_string(t.chi_lo) + "|" + std::to_string(t.chi_hi) + ",";
+  sig += ";vtxz=" + std::to_string(VTX_ZMAX);
   sig += ";runlist=" + std::to_string((unsigned long long)std::hash<std::string>{}(datlist));
 
   const bool cache_on = (cache_file && cache_file[0] != '\0');
@@ -580,10 +601,10 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
   // vertex (react.ok != 0); see the single per-spec Filter node in the loop below.
   bool has_react[N_SPECS];
   for (int is = 0; is < N_SPECS; ++is) {
-    has_react[is] = has_branch(std::string(1, specs[is]) + ".react.ok");
+    has_react[is] = has_branch(std::string(1, specs[is]) + ".react.ok") && has_branch(std::string(1, specs[is]) + ".react.z");
     if (!has_react[is])
       std::cout << "[lad_tracking_eff] " << specs[is]
-                << ".react.ok absent; vertex requirement NOT applied for this spectrometer\n";
+                << ".react.ok/.react.z absent; vertex requirement NOT applied for this spectrometer\n";
   }
 
   // Booking helpers shared by the fill and load paths. In fill mode BK1/BK2 book
@@ -702,7 +723,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     // proton-ID uses side-1 hits only
     df = df.Alias(sp + "_plane_1", pfx + "plane_1");
     df = df.Alias(sp + "_paddle_1", pfx + "paddle_1");
-    df = df.Alias(sp + "_tof_1", pfx + "hit_tof_1");
+    df = ladtof::define_tof(df, sp + "_tof_1", specs[is], "1"); // calibrated ToF, any replay
     df = df.Alias(sp + "_ypos_1", pfx + "hit_ypos_1");
     df = df.Alias(sp + "_isProton_1", pfx + "isProton_1");
     // front/back plane times and calibrated edep (for the edep-vs-tof panels)
@@ -1378,7 +1399,8 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     // Filter node (compiled lambda, single react.ok column) feeding every BK*
     // booking below, so the vertex cut is applied once per event, not per histogram.
     if (has_react[is] && !load)
-      dfb = df.Filter([](double ok) { return ok != 0.; }, {sp + ".react.ok"}, "has_vertex_" + sp);
+      dfb = df.Filter([](double ok, double z) { return ok != 0. && std::fabs(z) < VTX_ZMAX; },
+                      {sp + ".react.ok", sp + ".react.z"}, "has_vertex_" + sp);
     else
       dfb = df;
     BK1(h_proton_tof[is], sp + "_tof_corr_proton", sp + " tof corr proton;tof-L/c(ns);Counts");
@@ -1743,8 +1765,8 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       const int kPk = kRed;       // peak hatch color
       const int fsSB = 3004;      // sideband fill: diagonal hatch  ///
       const int fsPk = 3005;      // peak fill:     anti-diagonal hatch  \\\
-      // Fits for pads 1 & 2, over (-150,157). Pad 2 (proton+track) = flat line +
-      // a fixed-corner trapezoid (corners at x = -75,-25,50,125) + a gaussian;
+      // Fits for pads 1 & 2, over (-168,139). Pad 2 (proton+track) = flat line +
+      // a fixed-corner trapezoid (corners at x = -93,-43,32,107) + a gaussian;
       // pad 1 (proton total) = flat line + gaussian whose width is FIXED to the
       // pad-2 gaussian width ("same width"). Both display the gaussian integral
       // expressed as a number of events (curve area / bin width).
@@ -1753,14 +1775,14 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
         const double flat = p[0];
         const double amp = p[1] - p[0]; // trapezoid plateau height above the flat line
         double trap;
-        if (x < -75.)
+        if (x < ladtof::TRAP_C0)
           trap = 0.;
-        else if (x < -25.)
-          trap = amp * (x + 75.) / 50.; // rise  -75 -> -25
-        else if (x < 50.)
-          trap = amp; // plateau -25 -> 50
-        else if (x < 125.)
-          trap = amp * (125. - x) / 75.; // fall   50 -> 125
+        else if (x < ladtof::TRAP_C1)
+          trap = amp * (x - ladtof::TRAP_C0) / (ladtof::TRAP_C1 - ladtof::TRAP_C0); // rise  -93 -> -43
+        else if (x < ladtof::TRAP_C2)
+          trap = amp; // plateau -43 -> 32
+        else if (x < ladtof::TRAP_C3)
+          trap = amp * (ladtof::TRAP_C3 - x) / (ladtof::TRAP_C3 - ladtof::TRAP_C2); // fall   32 -> 107
         else
           trap = 0.;
         const double g = p[2] * std::exp(-0.5 * std::pow((x - p[3]) / p[4], 2));
@@ -1796,10 +1818,10 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
 
       // Fit pad-2 histogram FIRST so its gaussian width can be reused for pad 1.
       TH1D *ht2 = (TH1D *)h_proton_track_tof[is][ic][it]->Clone((sp + "_proton_track_tof_p2" + tu).c_str());
-      TF1 *f2 = new TF1((sp + "_fit_trapgaus" + tu + cc).c_str(), trapgaus, -150., 157., 5);
+      TF1 *f2 = new TF1((sp + "_fit_trapgaus" + tu + cc).c_str(), trapgaus, ladtof::FIT_LO, ladtof::FIT_HI, 5);
       f2->SetParNames("flat", "trap_top", "gaus_h", "gaus_mean", "gaus_sigma");
-      f2->SetParameters(50., 70., 100., 41., 5.);
-      f2->FixParameter(3, 41.); // gaussian center fixed at 41 ns
+      f2->SetParameters(50., 70., 100., ladtof::PEAK_MEAN0, 5.);
+      f2->FixParameter(3, ladtof::PEAK_MEAN0); // gaussian center fixed at 23 ns
       f2->SetLineColor(kGreen + 2);
       f2->SetNpx(600);
       // N = don't attach the function to the histogram (so deleting the clone
@@ -1813,17 +1835,17 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       // Fit = flat + gaussian, gaussian width fixed to the pad-2 gaussian width.
       c->cd(1);
       TH1D *hp1 = (TH1D *)h_proton_tof[is]->Clone((sp + "_proton_tof_p1" + tu).c_str());
-      TF1 *f1 = new TF1((sp + "_fit_flatgaus" + tu + cc).c_str(), flatgaus, -150., 157., 4);
+      TF1 *f1 = new TF1((sp + "_fit_flatgaus" + tu + cc).c_str(), flatgaus, ladtof::FIT_LO, ladtof::FIT_HI, 4);
       f1->SetParNames("flat", "gaus_h", "gaus_mean", "gaus_sigma");
-      f1->SetParameters(50., 100., 41., sig2);
-      f1->FixParameter(2, 41.);  // gaussian center fixed at 41 ns
+      f1->SetParameters(50., 100., ladtof::PEAK_MEAN0, sig2);
+      f1->FixParameter(2, ladtof::PEAK_MEAN0);  // gaussian center fixed at 23 ns
       f1->FixParameter(3, sig2); // same width as the pad-2 gaussian
       f1->SetLineColor(kGreen + 2);
       f1->SetNpx(600);
       hp1->Fit(f1, "RQN0"); // N = don't attach to hist; 0 = don't draw; drawn explicitly below
       draw_shaded(hp1, {{SB_LO1, SB_HI1, (double)kSB, (double)fsSB},
                         {SB_LO2, SB_HI2, (double)kSB, (double)fsSB},
-                        {30., 50., (double)kPk, (double)fsPk}});
+                        {ladtof::PEAK_LO, ladtof::PEAK_HI, (double)kPk, (double)fsPk}});
       f1->Draw("same"); // fit curve on top, as its own canvas primitive
       draw_gaus_integral(hp1, f1->GetParameter(1), f1->GetParameter(3));
       delete hp1;
@@ -1831,7 +1853,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       c->cd(2);
       draw_shaded(ht2, {{SB_LO1, SB_HI1, (double)kSB, (double)fsSB},
                         {SB_LO2, SB_HI2, (double)kSB, (double)fsSB},
-                        {30., 50., (double)kPk, (double)fsPk}});
+                        {ladtof::PEAK_LO, ladtof::PEAK_HI, (double)kPk, (double)fsPk}});
       f2->Draw("same"); // fit curve on top, as its own canvas primitive
       draw_gaus_integral(ht2, f2->GetParameter(2), f2->GetParameter(4));
       delete ht2;
@@ -1847,7 +1869,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       //                 100 ns), rescaled to the signal width.
       // In-time    bg = integral of the trapezoid component ABOVE the flat line
       //                 (the non-random in-time excess), from its 2nd corner
-      //                 (x=-25) to x=170 (width 195 ns), rescaled to the signal
+      //                 (x=-43) to x=152 (width 195 ns), rescaled to the signal
       //                 width. The flat baseline is the out-of-time level and is
       //                 excluded here.
       TH1D *hpt = h_proton_track_tof[is][ic][it];
@@ -1860,10 +1882,10 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
                              hpt->Integral(hpt->FindBin(SB_LO2 + 1e-6), hpt->FindBin(SB_HI2 - 1e-6));
       const double oob_ev = (w_sb > 0.) ? oob_raw * w_sig / w_sb : 0.;
       const double trap_amp = f2->GetParameter(1) - f2->GetParameter(0);
-      TF1 ftrap((sp + "_trap_only" + tu + cc).c_str(), trapgaus, -150., 157., 5);
+      TF1 ftrap((sp + "_trap_only" + tu + cc).c_str(), trapgaus, ladtof::FIT_LO, ladtof::FIT_HI, 5);
       ftrap.SetParameters(0., trap_amp, 0., f2->GetParameter(3), f2->GetParameter(4)); // flat=0, gaus off
-      const double w_trap = 170. - (-25.);
-      const double itb_raw = (p2binw > 0.) ? ftrap.Integral(-25., 170.) / p2binw : 0.;
+      const double w_trap = ladtof::ITB_HI - ladtof::ITB_LO;
+      const double itb_raw = (p2binw > 0.) ? ftrap.Integral(ladtof::ITB_LO, ladtof::ITB_HI) / p2binw : 0.;
       const double itb_ev = (w_trap > 0.) ? itb_raw * w_sig / w_trap : 0.;
       const double soob = (oob_ev > 0.) ? sig_ev / oob_ev : 0.;
       const double sitb = (itb_ev > 0.) ? sig_ev / itb_ev : 0.;
@@ -1884,13 +1906,17 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       // so the Rebin scale factor cancels in the ratio (no extra /5 needed). The
       // background subtracted from each is now the NON-GAUSSIAN part of the pad
       // 1 & 2 fits (track: flat+trapezoid; total: flat), so only the gaussian
-      // peak survives. Fixed to x in [-50,175], y in [0,3]; peak region shaded.
+      // peak survives. That ratio is (C_t - B_GEM)/S = f + (1-f) eps: GEM noise
+      // also tags signal hits that have no true track. It is corrected to the
+      // true-track efficiency eps with eq. 8 (noise_correct_ratio). Fixed to x in
+      // [-68,157], y in [0,3]; peak region shaded.
       c->cd(3);
       const double orig_binw = h_proton_track_tof[is][ic][it]->GetXaxis()->GetBinWidth(1);
+      const double f_noise = noise_frac(h_proton_tof[is], h_proton_track_tof[is][ic][it]);
       // background models = the fits with the gaussian height set to zero.
-      TF1 *fbg_trk = new TF1((sp + "_bg_trk" + tu + cc).c_str(), trapgaus, -150., 157., 5);
+      TF1 *fbg_trk = new TF1((sp + "_bg_trk" + tu + cc).c_str(), trapgaus, ladtof::FIT_LO, ladtof::FIT_HI, 5);
       fbg_trk->SetParameters(f2->GetParameter(0), f2->GetParameter(1), 0., f2->GetParameter(3), f2->GetParameter(4));
-      TF1 *fbg_tot = new TF1((sp + "_bg_tot" + tu + cc).c_str(), flatgaus, -150., 157., 4);
+      TF1 *fbg_tot = new TF1((sp + "_bg_tot" + tu + cc).c_str(), flatgaus, ladtof::FIT_LO, ladtof::FIT_HI, 4);
       fbg_tot->SetParameters(f1->GetParameter(0), 0., f1->GetParameter(2), f1->GetParameter(3));
       TH1D *ht_rb5r = (TH1D *)h_proton_track_tof[is][ic][it]->Clone((sp + "_proton_track_ratio_trk_rb5" + tu).c_str());
       ht_rb5r->Rebin(5);
@@ -1903,14 +1929,17 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       subtract_fit_bg(ht_sb2, fbg_trk, orig_binw);
       subtract_fit_bg(hp_sb2, fbg_tot, orig_binw);
       TH1D *hratio = (TH1D *)ht_sb2->Clone((sp + "_proton_track_ratio" + tu).c_str());
-      hratio->SetTitle((sp + " proton (track-fitbg)/(total-fitbg);tof-L/c(ns);ratio").c_str());
+      hratio->SetTitle(
+          (sp + " proton (track-fitbg)/(total-fitbg), GEM-noise corrected (f=" + Form("%.3f", f_noise) + ");tof-L/c(ns);ratio")
+              .c_str());
       hratio->Divide(hp_sb2);
+      noise_correct_ratio(hratio, f_noise);
       // event-weighted peak-region efficiency: weight each ratio bin by its
       // numerator+denominator event counts (rebinned, pre-bg-sub).
-      region_wstats(hratio, ht_rb5r, hp_rb5r, {{30., 50.}}, eff_m, eff_e);
-      hratio->GetXaxis()->SetRangeUser(-50., 175.);
+      region_wstats(hratio, ht_rb5r, hp_rb5r, {{ladtof::PEAK_LO, ladtof::PEAK_HI}}, eff_m, eff_e);
+      hratio->GetXaxis()->SetRangeUser(ladtof::RATIO_LO, ladtof::RATIO_HI);
       hratio->GetYaxis()->SetRangeUser(0., 3);
-      draw_shaded(hratio, {{30., 50., (double)kPk, (double)fsPk}});
+      draw_shaded(hratio, {{ladtof::PEAK_LO, ladtof::PEAK_HI, (double)kPk, (double)fsPk}});
       delete hratio;
       delete ht_sb2;
       delete hp_sb2;
@@ -1933,7 +1962,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       hratio_raw->GetYaxis()->SetRangeUser(0., 1.);
       draw_shaded(hratio_raw, {{SB_LO1, SB_HI1, (double)kSB, (double)fsSB},
                                {SB_LO2, SB_HI2, (double)kSB, (double)fsSB},
-                               {30., 50., (double)kPk, (double)fsPk}});
+                               {ladtof::PEAK_LO, ladtof::PEAK_HI, (double)kPk, (double)fsPk}});
       delete hratio_raw;
       delete ht_rawn;
       delete hp_rawn;
@@ -1971,8 +2000,9 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       delete hp_rb;
       delete ht_rb;
       TH1D *hratio_sb = (TH1D *)htb->Clone((sp + "_proton_track_ratio_sb" + tu).c_str());
-      hratio_sb->SetTitle((sp + " proton (track-bg)/(total-bg);tof-L/c(ns);ratio").c_str());
+      hratio_sb->SetTitle((sp + " proton (track-bg)/(total-bg), GEM-noise corrected;tof-L/c(ns);ratio").c_str());
       hratio_sb->Divide(hpb);
+      noise_correct_ratio(hratio_sb, f_noise); // eq. 8 (only the flat level is subtracted here)
       csb->cd(1);
       hpb->DrawCopy();
       csb->cd(2);
@@ -2128,19 +2158,14 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
 
       // Cluster-ADC-amplitude canvases (one per strip axis: x = V strips, y = U
       // strips). 7 panels: all clusters (no track), with-track+proton-hodo (all
-      // tof), oot, it, peak, IT-OOT, peak-IT-OOT. The last two reuse the pad-2
-      // fit's tof-window scale factors (flat ~ window width, trapezoid ~ its
-      // fitted integral) -- identical to the GEM position background subtraction.
+      // tof), oot, it, peak, IT-OOT, peak-IT-OOT. The last two use the same
+      // scale factors as the GEM position background subtraction: the OOT
+      // (GEM-noise) template scaled to the noise-only tracked hits in each window
+      // (eq. 8, noise_scale_k), and the pad-2 fit's trapezoid integral ratio.
       if (clust_ok || cadc_ok[it]) {
-        auto regW = [](int r) { double w = 0.; for (const auto &iv : GREG_INT[r]) w += iv[1] - iv[0]; return w; };
-        const double wOOT = regW(1), wIT = regW(2), wPK = regW(3);
-        // Track-cut OOT suppression from the proton tof spectrum (no-track vs with-track),
-        // folded into the flat scale factors so every OOT subtraction becomes OOT * <f>.
-        const double fIT = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 2);
-        const double fPK = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 3);
-        const double sflat_it = ((wOOT > 0.) ? wIT / wOOT : 0.) * fIT;
-        const double sflat_pk = ((wOOT > 0.) ? wPK / wOOT : 0.) * fPK;
-        TF1 ftrq((sp + "_cadc_trap" + tu + cc).c_str(), trapgaus, -150., 157., 5);
+        const double sflat_it = noise_scale_k(h_proton_tof[is], h_proton_track_tof[is][ic][it], 2);
+        const double sflat_pk = noise_scale_k(h_proton_tof[is], h_proton_track_tof[is][ic][it], 3);
+        TF1 ftrq((sp + "_cadc_trap" + tu + cc).c_str(), trapgaus, ladtof::FIT_LO, ladtof::FIT_HI, 5);
         ftrq.SetParameters(0., f2->GetParameter(1) - f2->GetParameter(0), 0., f2->GetParameter(3), f2->GetParameter(4));
         auto Itr = [&](int r) { double s = 0.; for (const auto &iv : GREG_INT[r]) s += ftrq.Integral(iv[0], iv[1]); return s; };
         const double itrIT = Itr(2), itrPK = Itr(3);
@@ -2376,13 +2401,16 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
 
       // GEM hit-position plots (this chi-square cut), one canvas per GEM layer.
       // Each canvas is a 3x2 grid of 6 panels: the 4 tof regions (all / oot / it /
-      // peak) plus 2 fit-scaled background-subtracted panels:
-      //   IT-OOT       = it - (|IT|/|OOT|) oot         [in-time bkg, flat removed]
-      //   peak-IT-OOT  = peak - (|pk|/|OOT|) oot - (Itrap_pk/Itrap_it)(IT-OOT)
-      //                                                 [signal, flat+in-time removed]
-      // Scale factors come from the pad-2 flat+trapezoid+gaussian fit: the flat
-      // component is constant so its region ratio = the tof-width ratio; the
-      // trapezoid ratio is the fitted trapezoid integrated over each region. The
+      // peak) plus 2 background-subtracted panels:
+      //   IT-OOT       = it - k_IT oot                 [in-time accidentals with a
+      //                                                  true track; noise removed]
+      //   peak-IT-OOT  = peak - k_pk oot - (Itrap_pk/Itrap_it)(IT-OOT)
+      //                                                 [signal with a true track]
+      // Every with-track OOT hit is GEM noise, so oot is the noise template. k_W =
+      // U_W/U_OOT scales it to the noise-only tracked hits in window W, f/(1-f) U_W
+      // (eq. 8 of written_docs/background_subtraction; U = hits failing the track
+      // cut, from the proton tof spectra). The trapezoid ratio is the pad-2 fit's
+      // trapezoid integrated over each region. The
       // 1D x/y canvases overlay the two plane groups (000/001, 100/101) in distinct
       // colors; the 2D x-vs-y canvas sums both plane groups into one standard COLZ
       // heatmap. Six canvases per variant/cut: x/y/xy each for GEM0 and GEM1.
@@ -2390,16 +2418,11 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
         td->cd();
         const std::string gt = tracks[it].dir;
         const std::string cinfo = " [" + gt + ", chi2<" + cutstr + "]";
-        // ---- background-subtraction scale factors from the pad-2 fit ----
-        auto regW = [](int r) { double w = 0.; for (const auto &iv : GREG_INT[r]) w += iv[1] - iv[0]; return w; };
-        const double wOOT = regW(1), wIT = regW(2), wPK = regW(3);
-        // Track-cut OOT suppression from the proton tof spectrum (no-track vs with-track),
-        // folded into the flat scale factors so every OOT subtraction becomes OOT * <f>.
-        const double fIT = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 2);
-        const double fPK = oot_scale_f(h_proton_tof[is], h_proton_track_tof[is][ic][it], 3);
-        const double sflat_it = ((wOOT > 0.) ? wIT / wOOT : 0.) * fIT; // flat: |IT|/|OOT| * <f>_IT
-        const double sflat_pk = ((wOOT > 0.) ? wPK / wOOT : 0.) * fPK; // flat: |peak|/|OOT| * <f>_pk
-        TF1 ftr((sp + "_gem_trap" + tu + cc).c_str(), trapgaus, -150., 157., 5);
+        // ---- background-subtraction scale factors ----
+        // GEM noise: OOT template scaled to the noise-only tracked hits (eq. 8).
+        const double sflat_it = noise_scale_k(h_proton_tof[is], h_proton_track_tof[is][ic][it], 2); // k_IT
+        const double sflat_pk = noise_scale_k(h_proton_tof[is], h_proton_track_tof[is][ic][it], 3); // k_pk
+        TF1 ftr((sp + "_gem_trap" + tu + cc).c_str(), trapgaus, ladtof::FIT_LO, ladtof::FIT_HI, 5);
         ftr.SetParameters(0., f2->GetParameter(1) - f2->GetParameter(0), 0., f2->GetParameter(3), f2->GetParameter(4));
         auto Itrap = [&](int r) { double s = 0.; for (const auto &iv : GREG_INT[r]) s += ftr.Integral(iv[0], iv[1]); return s; };
         const double itrIT = Itrap(2), itrPK = Itrap(3);
@@ -2544,7 +2567,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
     // -------------------------------------------------------------
     // Combined summary: one point per 1D tracking variant, with ALL chi-square
     // cuts overlaid on a single plot per metric (proton_id/summary/).
-    //   efficiency        = peak-region [30,50] event-weighted average of the
+    //   efficiency        = peak-region [12,32] event-weighted average of the
     //                       bg-subtracted (track-bg)/(total-bg) ratio (pad 3),
     //                       weighted by numerator+denominator counts per bin.
     //   bkg reduction frac = sideband average of the raw track/total ratio
@@ -2555,8 +2578,13 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
       TDirectory *dsum = d->mkdir("summary");
       dsum->cd();
       const int nb = (int)sum_names.size();
-      const int cutColor[3] = {kRed + 1, kBlack, kBlue + 1};
-      const int cutMark[3] = {20, 21, 22};
+      // One distinct color + marker per cut (chi2 < 1, 10, 50, 100, 500): blue -> sky blue
+      // -> orange for the tight cuts, black for the nominal 100, dark red for the loosest.
+      // Built-in color indices only: colors made with TColor::GetColor are not stored in
+      // the output file, so saved canvases would reopen with them drawn black. Green is
+      // left for the "no cut" reference.
+      const int cutColor[N_CUTS] = {kBlue + 1, kAzure + 7, kOrange + 1, kBlack, kRed + 2};
+      const int cutMark[N_CUTS] = {24, 25, 22, 20, 21};
       // Nominal cut index (scale 1.0) -- used as the single representative for
       // the optional "no cut" reference series (the proton-total plot has no
       // chi-square cut, so it needs only one representative width).
@@ -2595,10 +2623,10 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
             hs->GetXaxis()->SetBinLabel(i + 1, sum_names[i].c_str());
           }
           hs->SetStats(0);
-          hs->SetMarkerStyle(cutMark[ic % 3]);
+          hs->SetMarkerStyle(cutMark[ic]);
           hs->SetMarkerSize(1.2);
-          hs->SetMarkerColor(cutColor[ic % 3]);
-          hs->SetLineColor(cutColor[ic % 3]);
+          hs->SetMarkerColor(cutColor[ic]);
+          hs->SetLineColor(cutColor[ic]);
           hs->SetLineWidth(2);
           hs->GetXaxis()->CenterLabels(kTRUE); // tick/label centered on the bin (= point) center
           hs->GetXaxis()->LabelsOption("v");   // vertical labels for the long names
@@ -2630,7 +2658,7 @@ void lad_tracking_eff(const char *dat_file = DEFAULT_DAT_FILE, const char *out_f
         leg->Draw();
         wc(cs);
       };
-      draw_summary("_c_summary_eff", "<(track-bg)/(total-bg)> over [30,50]", " 1D tracking efficiency summary",
+      draw_summary("_c_summary_eff", "<(track-bg)/(total-bg)> over [12,32]", " 1D tracking efficiency summary",
                    sum_eff, sum_eff_err);
       draw_summary("_c_summary_bkgfrac", "<track/total> over sidebands", " 1D background reduction summary", sum_bkg,
                    sum_bkg_err);

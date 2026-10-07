@@ -45,6 +45,8 @@
 #include <TROOT.h>
 #include <cmath>
 
+#include "lad_tof_offset.h" // calibrated LAD ToF convention (photon peak at tof-L/c = 0)
+
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6, 30, 0)
 #if __has_include(<ROOT/RDFHelpers.hxx>)
 #include <ROOT/RDFHelpers.hxx>
@@ -68,13 +70,13 @@
 // =====================================================================
 // Histogram binning
 // =====================================================================
-const int NBINS_TOF=200;      const double XMIN_TOF=0.,      XMAX_TOF=100.;
+const int NBINS_TOF=200;      const double XMIN_TOF=-20.,    XMAX_TOF=80.;   // calibrated ToF: photons at L/c ~ 18-22 ns
 const int NBINS_YPOS=200;     const double XMIN_YPOS=-100.,  XMAX_YPOS=100.;
 const int NBINS_HITTIME=200;  const double XMIN_HITTIME=1550.,XMAX_HITTIME=2050.;
 const int NBINS_EDEP=200;     const double XMIN_EDEP=0.,     XMAX_EDEP=100.;
 const int NBINS_EDEP_AMP=300; const double XMIN_EDEP_AMP=0., XMAX_EDEP_AMP=300;
 const int NBINS_PT=150;       const double XMIN_PT=-5.,      XMAX_PT=10.; // punch throughs
-const int NBINS_TCORR=900;    const double XMIN_TCORR=-150.,  XMAX_TCORR=300.;
+const int NBINS_TCORR=900;    const double XMIN_TCORR=-168.,  XMAX_TCORR=282.; // photon peak at 0 (was [-150,300] with the old -1710 offset)
 
 // N_TRACKS is the max # of tracking variants; N_CATS = 1 (all_hits) + 2*N_TRACKS
 // (has_track/no_track per variant).  Both are compile-time capacities for the
@@ -250,7 +252,7 @@ void lad_tof_fast(const char *dat_file=DEFAULT_DAT_FILE, const char *out_file=DE
       df=df.Alias(sp+"_hittime_" +s, pfx+"hittime_"    +s);
       df=df.Alias(sp+"_edep_"    +s, pfx+"hitedep_"    +s);
       df=df.Alias(sp+"_edep_amp_"+s, pfx+"hitedep_amp_"+s);
-      df=df.Alias(sp+"_tof_"     +s, pfx+"hit_tof_"    +s);
+      df=ladtof::define_tof(df, sp+"_tof_"+s, specs[is], s); // calibrated ToF, any replay
       df=df.Alias(sp+"_ypos_"    +s, pfx+"hit_ypos_"   +s);
     }
     for (const auto& tk:tracks)

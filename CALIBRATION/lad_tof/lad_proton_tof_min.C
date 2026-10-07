@@ -28,7 +28,8 @@
 //   pad 2  proton+track tof, flat+trapezoid+gaus fit
 //   pad 3  (track - fitbg) / (total - fitbg), rebinned by 5
 //   pad 4  raw track/total ratio, no bg subtraction
-// Shaded bands: grey = OOT sidebands [-150,-100] u [125,175], red = peak [30,50].
+// Shaded bands: grey = OOT sidebands [-168,-118] u [107,157], red = peak [12,32]
+// (calibrated ToF, photon peak at tof-L/c = 0; see lad_tof_offset.h).
 //
 // Deliberately omitted (everything the canvas does not need): the H
 // spectrometer, the other 12 tracking variants, all GEM/cluster-ADC/hodo
@@ -66,6 +67,8 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+
+#include "lad_tof_offset.h" // calibrated LAD ToF convention (photon peak at tof-L/c = 0)
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -74,13 +77,17 @@
 #include <vector>
 
 // ===== constants, copied verbatim from lad_hodo_eff.C =====
-const int NBINS_TCORR = 650; // 0.5 ns bins over [-150, 175]
-const double XMIN_TCORR = -150., XMAX_TCORR = 175.;
+const int NBINS_TCORR = 650; // 0.5 ns bins over [-168, 157] (photon peak at 0, see lad_tof_offset.h)
+const double XMIN_TCORR = ladtof::TCORR_LO, XMAX_TCORR = ladtof::TCORR_HI;
 
 // Two-sided sidebands (tof-L/c ns) used by the proton_tof ratio pads.
-const double SB_LO1 = -150., SB_HI1 = -100., SB_LO2 = 125., SB_HI2 = 175.;
+const double SB_LO1 = ladtof::OOT_LO1, SB_HI1 = ladtof::OOT_HI1, SB_LO2 = ladtof::OOT_LO2, SB_HI2 = ladtof::OOT_HI2;
 
 const double CHI_CUT_1D = 100.0;
+// Event-vertex window: react.ok != 0 AND |react.z| < VTX_ZMAX. The target foils
+// sit at z = -10, 0, +10 cm; reconstructed vertices far outside (some at |z| of
+// metres) give meaningless vertex -> hodo lines for the GEM tracking.
+const double VTX_ZMAX = 20.0; // cm
 const double CHI_CUT_BASE = 100.0;
 const int N_CUTS = 3;
 const std::array<double, N_CUTS> CHI_CUT_SCALES = {0.5, 1.0, 2.0};
@@ -89,9 +96,9 @@ const std::array<double, N_CUTS> CHI_CUT_SCALES = {0.5, 1.0, 2.0};
 // Only used by oot_scale_f below; the canvas itself does not project regions.
 const std::vector<std::vector<std::array<double, 2>>> GREG_INT = {
     {{-1e9, 1e9}},                        // all
-    {{SB_LO1, SB_HI1}, {SB_LO2, SB_HI2}}, // oot: [-150,-100] u [125,175]
-    {{-25., 30.}, {50., 125.}},           // it:  [-25,30] u [50,125]
-    {{30., 50.}}};                        // peak: [30,50]
+    {{SB_LO1, SB_HI1}, {SB_LO2, SB_HI2}}, // oot: [-168,-118] u [107,157]
+    {{ladtof::IT_LO1, ladtof::IT_HI1}, {ladtof::IT_LO2, ladtof::IT_HI2}}, // it: [-43,12] u [32,107]
+    {{ladtof::PEAK_LO, ladtof::PEAK_HI}}}; // peak: [12,32]
 
 const double hodo_radii[5] = {615., 655.6, 523., 563.6, 615.}; // cm, by plane index
 
@@ -103,20 +110,20 @@ const char *DEFAULT_DAT_FILE = "../files/run-lists/all_C3_runlist_SHMS_13p5.dat"
 const char *DEFAULT_OUT_FILE = "files/proton_tof_min/proton_tof_min_P_1D_x_GEM0.root";
 
 // ===== fit models, copied verbatim from lad_hodo_eff.C =====
-// flat + fixed-corner trapezoid (corners -75,-25,50,125) + gaussian.
+// flat + fixed-corner trapezoid (corners -93,-43,32,107) + gaussian.
 static double trapgaus(double *xx, double *p) {
   const double x = xx[0];
   const double flat = p[0];
   const double amp = p[1] - p[0];
   double trap;
-  if (x < -75.)
+  if (x < ladtof::TRAP_C0)
     trap = 0.;
-  else if (x < -25.)
-    trap = amp * (x + 75.) / 50.;
-  else if (x < 50.)
+  else if (x < ladtof::TRAP_C1)
+    trap = amp * (x - ladtof::TRAP_C0) / (ladtof::TRAP_C1 - ladtof::TRAP_C0);
+  else if (x < ladtof::TRAP_C2)
     trap = amp;
-  else if (x < 125.)
-    trap = amp * (125. - x) / 75.;
+  else if (x < ladtof::TRAP_C3)
+    trap = amp * (ladtof::TRAP_C3 - x) / (ladtof::TRAP_C3 - ladtof::TRAP_C2);
   else
     trap = 0.;
   const double g = p[2] * std::exp(-0.5 * std::pow((x - p[3]) / p[4], 2));
@@ -260,7 +267,7 @@ void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out
   const std::string pfx = sp + ".ladhod.goodhit_";
   df = df.Alias(sp + "_plane_1", pfx + "plane_1");
   df = df.Alias(sp + "_paddle_1", pfx + "paddle_1");
-  df = df.Alias(sp + "_tof_1", pfx + "hit_tof_1");
+  df = ladtof::define_tof(df, sp + "_tof_1", sp[0], "1"); // calibrated ToF, any replay
   df = df.Alias(sp + "_ypos_1", pfx + "hit_ypos_1");
   df = df.Alias(sp + "_isProton_1", pfx + "isProton_1");
   df = df.Alias(sp + "_chiSquare" + VAR_TSUF, chib);
@@ -271,13 +278,13 @@ void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out
   // skips the per-hit Defines on those events with identical output. One
   // compiled Filter node (explicit column list, so no JIT'd string expression)
   // is shared by everything downstream.
-  const bool has_react = has_branch(sp + ".react.ok");
+  const bool has_react = has_branch(sp + ".react.ok") && has_branch(sp + ".react.z");
   if (!has_react)
-    std::cout << "[proton_tof_min] " << sp << ".react.ok absent; vertex requirement NOT applied\n";
+    std::cout << "[proton_tof_min] " << sp << ".react.ok/.react.z absent; vertex requirement NOT applied\n";
   else
     df = df.Filter(
-        [](double ok, const RVd &pl1, const RVd &ip1) {
-          if (ok == 0.)
+        [](double ok, double z, const RVd &pl1, const RVd &ip1) {
+          if (ok == 0. || !(std::fabs(z) < VTX_ZMAX))
             return false;
           for (size_t i = 0; i < pl1.size(); ++i) {
             int p = (int)std::round(pl1[i]);
@@ -286,7 +293,7 @@ void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out
           }
           return false;
         },
-        {sp + ".react.ok", sp + "_plane_1", sp + "_isProton_1"}, "has_vertex_proton_" + sp);
+        {sp + ".react.ok", sp + ".react.z", sp + "_plane_1", sp + "_isProton_1"}, "has_vertex_proton_" + sp);
 
   // ---- proton-tagged corrected-tof column (planes 001 & 101 combined) ----
   // Verbatim from lad_hodo_eff.C's mk_proton.
@@ -414,10 +421,10 @@ void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out
 
     // ---- fit the proton+track tof (pad-2 model) ----
     TH1D *hpt = h_proton_track_tof[ic];
-    TF1 *f2 = new TF1((sp + "_fit_trapgaus" + tu + cc).c_str(), trapgaus, -150., 157., 5);
+    TF1 *f2 = new TF1((sp + "_fit_trapgaus" + tu + cc).c_str(), trapgaus, ladtof::FIT_LO, ladtof::FIT_HI, 5);
     f2->SetParNames("flat", "trap_top", "gaus_h", "gaus_mean", "gaus_sigma");
-    f2->SetParameters(50., 70., 100., 41., 5.);
-    f2->FixParameter(3, 41.);
+    f2->SetParameters(50., 70., 100., ladtof::PEAK_MEAN0, 5.);
+    f2->FixParameter(3, ladtof::PEAK_MEAN0);
     f2->SetLineColor(kGreen + 2);
     f2->SetNpx(600);
     if (hpt)
@@ -430,17 +437,17 @@ void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out
     // pad 1: proton total, gaussian width fixed to the pad-2 width.
     c->cd(1);
     TH1D *hp1 = (TH1D *)h_proton_tof->Clone((sp + "_ptof_p1" + tu + cc).c_str());
-    TF1 *f1 = new TF1((sp + "_fit_flatgaus" + tu + cc).c_str(), flatgaus, -150., 157., 4);
+    TF1 *f1 = new TF1((sp + "_fit_flatgaus" + tu + cc).c_str(), flatgaus, ladtof::FIT_LO, ladtof::FIT_HI, 4);
     f1->SetParNames("flat", "gaus_h", "gaus_mean", "gaus_sigma");
-    f1->SetParameters(50., 100., 41., sig2);
-    f1->FixParameter(2, 41.);
+    f1->SetParameters(50., 100., ladtof::PEAK_MEAN0, sig2);
+    f1->FixParameter(2, ladtof::PEAK_MEAN0);
     f1->FixParameter(3, sig2);
     f1->SetLineColor(kGreen + 2);
     f1->SetNpx(600);
     hp1->Fit(f1, "RQN0");
     draw_shaded(hp1, {{SB_LO1, SB_HI1, (double)kSB, (double)fsSB},
                       {SB_LO2, SB_HI2, (double)kSB, (double)fsSB},
-                      {30., 50., (double)kPk, (double)fsPk}});
+                      {ladtof::PEAK_LO, ladtof::PEAK_HI, (double)kPk, (double)fsPk}});
     f1->Draw("same");
     draw_gaus_integral(hp1, f1->GetParameter(1), f1->GetParameter(3));
     delete hp1;
@@ -449,16 +456,16 @@ void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out
     TH1D *ht2 = (TH1D *)hpt->Clone((sp + "_pttof_p2" + tu + cc).c_str());
     draw_shaded(ht2, {{SB_LO1, SB_HI1, (double)kSB, (double)fsSB},
                       {SB_LO2, SB_HI2, (double)kSB, (double)fsSB},
-                      {30., 50., (double)kPk, (double)fsPk}});
+                      {ladtof::PEAK_LO, ladtof::PEAK_HI, (double)kPk, (double)fsPk}});
     f2->Draw("same");
     draw_gaus_integral(ht2, f2->GetParameter(2), f2->GetParameter(4));
     delete ht2;
     // pad 3: (track - fitbg) / (total - fitbg), rebinned by 5.
     c->cd(3);
     const double orig_binw = hpt->GetXaxis()->GetBinWidth(1);
-    TF1 *fbg_trk = new TF1((sp + "_bg_trk" + tu + cc).c_str(), trapgaus, -150., 157., 5);
+    TF1 *fbg_trk = new TF1((sp + "_bg_trk" + tu + cc).c_str(), trapgaus, ladtof::FIT_LO, ladtof::FIT_HI, 5);
     fbg_trk->SetParameters(f2->GetParameter(0), f2->GetParameter(1), 0., f2->GetParameter(3), f2->GetParameter(4));
-    TF1 *fbg_tot = new TF1((sp + "_bg_tot" + tu + cc).c_str(), flatgaus, -150., 157., 4);
+    TF1 *fbg_tot = new TF1((sp + "_bg_tot" + tu + cc).c_str(), flatgaus, ladtof::FIT_LO, ladtof::FIT_HI, 4);
     fbg_tot->SetParameters(f1->GetParameter(0), 0., f1->GetParameter(2), f1->GetParameter(3));
     TH1D *ht_rb5 = (TH1D *)hpt->Clone((sp + "_ratio_trk_rb5" + tu + cc).c_str());
     ht_rb5->Rebin(5);
@@ -469,9 +476,9 @@ void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out
     TH1D *hratio = (TH1D *)ht_rb5->Clone((sp + "_ratio" + tu + cc).c_str());
     hratio->SetTitle((sp + " proton (track-fitbg)/(total-fitbg);tof-L/c(ns);ratio").c_str());
     hratio->Divide(hp_rb5);
-    hratio->GetXaxis()->SetRangeUser(-50., 175.);
+    hratio->GetXaxis()->SetRangeUser(ladtof::RATIO_LO, ladtof::RATIO_HI);
     hratio->GetYaxis()->SetRangeUser(0., 3.);
-    draw_shaded(hratio, {{30., 50., (double)kPk, (double)fsPk}});
+    draw_shaded(hratio, {{ladtof::PEAK_LO, ladtof::PEAK_HI, (double)kPk, (double)fsPk}});
     delete hratio;
     delete ht_rb5;
     delete hp_rb5;
@@ -487,7 +494,7 @@ void lad_proton_tof_min(const char *dat_file = DEFAULT_DAT_FILE, const char *out
     hratio_raw->GetYaxis()->SetRangeUser(0., 1.);
     draw_shaded(hratio_raw, {{SB_LO1, SB_HI1, (double)kSB, (double)fsSB},
                              {SB_LO2, SB_HI2, (double)kSB, (double)fsSB},
-                             {30., 50., (double)kPk, (double)fsPk}});
+                             {ladtof::PEAK_LO, ladtof::PEAK_HI, (double)kPk, (double)fsPk}});
     delete hratio_raw;
     delete ht_raw;
     delete hp_raw;
