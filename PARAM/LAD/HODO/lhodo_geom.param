@@ -148,6 +148,11 @@ lladhodo_plane_names = "000 001 100 101 200 REFBAR"
                          -66.0
                          -88.0
                          -110.0
+; Paddles that form no hits (1 = disabled). Their raw and per-PMT Good* data stay in the tree; they never
+; reach the good hits, the GEM matching or the ToF. 100-1: the top PMT's FADC signal is broken in most runs
+; from 22698 on (see the 2026 calibration note), so the bar is dropped in every run. Optional per plane:
+; lladhodo_<plane>_disable, 11 values.
+      lladhodo_100_disable = 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
       lladhodo_101_top  =     193.75
                               196.65
                               199.5
