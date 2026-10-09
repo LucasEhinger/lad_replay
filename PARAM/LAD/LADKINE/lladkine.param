@@ -33,13 +33,20 @@ lvertex_bad_z_reject = 1
 
 ltrk_dt_cut = 10
 
-l_nr_rf_offsets = 5; number of rows on vector below
+; RF phase per run range (CALIBRATION/lad_tof/files/rf_check/l_rf_offset_proposed.param, from the 2026-10-05 ifarm seg0
+; replay of all beam runs): 3-pass row (22013-22177), 22712 row (H back to 3.79 from 22720), H split in 23597+ (slow drift).
+l_nr_rf_offsets = 10; number of rows on vector below
 ;               run_start       SHMS        HMS
-l_rf_offset =   22013,          -0.15,      -3.65,
+l_rf_offset =   22013,          -0.37,      -3.90,
+                22178,          -0.15,      -3.65,
                 22560,          -0.34,      -3.84,
                 22661,          -2.36,      -1.89,
+                22712,          -0.34,      -3.79,
                 22745,          -0.34,      -3.82,
-                23597,          -2.38,      -1.82
+                23597,          -2.38,      -1.89,
+                23641,          -2.38,      -1.82,
+                23701,          -2.38,      -1.75,
+                23759,          -2.38,      -1.78
 
 l_rf_period = 4.00801
 
