@@ -37,8 +37,9 @@
 
 namespace ladtof {
 
-constexpr double LAD_TOF_OFFSET_SHMS = -1728.0; // ns, lglobal_time_offset_shms
-constexpr double LAD_TOF_OFFSET_HMS  = -1752.3; // ns, lglobal_time_offset_hms
+// 2026-10-09: reset for the 2026 LAD recalibration (was -1728.0 / -1752.3; see lladkine.param)
+constexpr double LAD_TOF_OFFSET_SHMS = -1727.86; // ns, lglobal_time_offset_shms
+constexpr double LAD_TOF_OFFSET_HMS  = -1751.93; // ns, lglobal_time_offset_hms
 
 inline double target_offset(char spec) { return (spec == 'H' || spec == 'h') ? LAD_TOF_OFFSET_HMS : LAD_TOF_OFFSET_SHMS; }
 

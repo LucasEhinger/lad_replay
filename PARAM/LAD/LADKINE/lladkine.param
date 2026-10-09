@@ -13,9 +13,13 @@ ld0_cut_noVertex = 200 ; cm
 ;   SHMS peak was at tof-L/c = 18.02 ns, HMS at 42.34 ns (H-P = 24.3 ns, stable over
 ;   run periods). Runs 22560-22660 sit ~1 ns later in both (-1728.9 / -1753.1).
 ; See CALIBRATION/lad_tof/lad_photon_timing.C and lad_photon_timing_fit.py.
+; 2026-10-09: with the 2026 LAD recalibration (time walk lhodo_TWcalib_2026, per-period ladhodo_Vpcalib_2026_*)
+; the photon peak moves by -0.26 ns in both arms. Reset to the median per-bar photon peak of the RF-corrected
+; ToF in runs 22698+ (CALIBRATION/lad_hodo_calib/lad_bar_timing_peaks.py on btc_P5_v2(_H).root); was -1728.0 / -1752.3.
+; Replays made with the old LAD calibration (ladhodo_Vpcalib_23798, lhodo_TWcalib_186) put photons ~0.26 ns late.
 ; lglobal_time_offset is the fallback when a per-spectrometer value is absent.
-lglobal_time_offset_shms = -1728.0 ;ns
-lglobal_time_offset_hms  = -1752.3 ;ns
+lglobal_time_offset_shms = -1727.86 ;ns
+lglobal_time_offset_hms  = -1751.93 ;ns
 lglobal_time_offset      = -1710   ;ns old shared value (fallback only)
 
 ; Vertex z used by the LAD ToF corrections (electron path length and the z/c of the
