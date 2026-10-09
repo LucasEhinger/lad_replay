@@ -1,0 +1,17 @@
+; Proposed l_rf_offset (targeted edits of the 2026-10-03 table; see lad_rf_offset_check.py).
+; Changes: new 22712 row (H back to 3.79 from run 22720 on; no P t_vertex in 22712-22744),
+; H in 23597+ split to follow its slow drift (1.89 -> 1.82 -> 1.75 -> 1.78).
+; 2026-10-05: 3-pass runs (22013-22177) get their own row: median phase over 22013-22155 in the
+; ifarm seg0 replay is P 0.371 / H 3.898 (67 / 89 runs); 5-pass starts at 22178 (P 0.154 / H 3.649).
+l_nr_rf_offsets = 10; number of rows on vector below
+;               run_start       SHMS        HMS
+l_rf_offset =   22013,          -0.37,      -3.90,
+                22178,          -0.15,      -3.65,
+                22560,          -0.34,      -3.84,
+                22661,          -2.36,      -1.89,
+                22712,          -0.34,      -3.79,
+                22745,          -0.34,      -3.82,
+                23597,          -2.38,      -1.89,
+                23641,          -2.38,      -1.82,
+                23701,          -2.38,      -1.75,
+                23759,          -2.38,      -1.78

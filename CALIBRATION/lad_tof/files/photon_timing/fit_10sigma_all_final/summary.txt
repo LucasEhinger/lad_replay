@@ -1,0 +1,122 @@
+Input: files/photon_timing/photon_timing_10sigma_all_final.root
+ToF offsets of the input: P (SHMS) = -1728.0 ns, H (HMS) = -1752.3 ns
+Background: RF-periodic template (4.00801 ns) from [mu0-45.0, mu0-8.0] ns; Gaussian core fit [mu-1.5, mu+1.0] sigma
+
+Photon peak, all-planes total (bars 1,9 of 100/101 excluded):
+spec var     category                           mu     +-   sigma   FWHM      Nsig    S/B
+P    tofc    all hits                        0.448  0.013   1.692   7.51    313503   0.40
+P    tofc    back-plane hits                 0.265  0.016   1.530   3.67    117663   0.56
+P    tofc    back + front veto               0.116  0.020   1.414   2.95     62334   0.50
+P    tofc    back+veto E<2                   0.206  0.052   1.266   2.59      6886   0.62
+P    tofc    back+veto E>2                   0.108  0.019   1.390   3.09     53243   0.50
+P    tofc    back+veto E<5                   0.248  0.042   1.393   3.06     14626   0.34
+P    tofc    back+veto E>5                   0.079  0.021   1.381   3.09     46069   0.60
+P    tofc    back+veto E<10                  0.250  0.027   1.426   3.12     37256   0.46
+P    tofc    back+veto E>10                  0.007  0.033   1.384   2.68     23579   0.60
+P    tofc    back+veto E<15                  0.175  0.021   1.378   3.12     48332   0.52
+P    tofc    back+veto E>15                 -0.066  0.041   1.373   2.77     11421   0.49
+P    tofc    back+veto E<20                  0.133  0.019   1.399   3.09     54439   0.52
+P    tofc    back+veto E>20                 -0.035  0.063   1.403   2.51      5981   0.41
+P    tofc    back (no veto) E<2              0.297  0.040   1.439   2.87     12800   0.67
+P    tofc    back (no veto) E<5              0.379  0.033   1.551   4.23     27019   0.45
+P    tofc    back (no veto) E<10             0.417  0.020   1.588   6.07     73165   0.59
+P    tofc    back (no veto) E<15             0.334  0.017   1.485   4.27     93550   0.61
+P    tofc    back (no veto) E<20             0.292  0.016   1.524   6.43    102831   0.60
+H    tofc    all hits                        0.598  0.013   2.021   7.60    367459   0.58
+H    tofc    back-plane hits                 0.276  0.016   1.599   6.53    111841   0.75
+H    tofc    back + front veto               0.094  0.019   1.354   2.78     50571   0.64
+H    tofc    back+veto E<2                   0.169  0.059   1.237   2.42      6302   0.86
+H    tofc    back+veto E>2                   0.090  0.021   1.413   3.17     43572   0.63
+H    tofc    back+veto E<5                   0.219  0.056   1.536   3.11     13067   0.43
+H    tofc    back+veto E>5                   0.082  0.021   1.295   2.77     36604   0.78
+H    tofc    back+veto E<10                  0.240  0.028   1.393   2.83     30155   0.59
+H    tofc    back+veto E>10                 -0.049  0.026   1.215   2.56     18886   0.81
+H    tofc    back+veto E<15                  0.168  0.021   1.344   2.86     39670   0.66
+H    tofc    back+veto E>15                 -0.144  0.048   1.436   2.51      9988   0.63
+H    tofc    back+veto E<20                  0.140  0.022   1.335   2.80     44326   0.67
+H    tofc    back+veto E>20                 -0.166  0.071   1.553   2.72      5404   0.52
+H    tofc    back (no veto) E<2              0.280  0.037   1.315   3.43     12048   1.00
+H    tofc    back (no veto) E<5              0.363  0.035   1.509   5.75     24059   0.63
+H    tofc    back (no veto) E<10             0.448  0.020   1.553   5.86     66464   0.80
+H    tofc    back (no veto) E<15             0.348  0.017   1.498   6.56     85959   0.83
+H    tofc    back (no veto) E<20             0.302  0.017   1.546   6.61     94593   0.82
+
+P    tofcrf  all hits                        0.445  0.011   1.437   6.87    278962   0.41
+P    tofcrf  back-plane hits                 0.307  0.014   1.300   3.15    106500   0.59
+P    tofcrf  back + front veto               0.180  0.016   1.192   2.38     57691   0.54
+P    tofcrf  back+veto E<2                   0.245  0.043   1.134   2.44      6699   0.66
+P    tofcrf  back+veto E>2                   0.197  0.016   1.119   2.71     48820   0.55
+P    tofcrf  back+veto E<5                   0.293  0.040   1.265   2.85     14074   0.35
+P    tofcrf  back+veto E>5                   0.181  0.015   0.968   2.33     38821   0.73
+P    tofcrf  back+veto E<10                  0.288  0.023   1.173   2.76     34323   0.51
+P    tofcrf  back+veto E>10                  0.088  0.021   1.034   2.45     20636   0.70
+P    tofcrf  back+veto E<15                  0.243  0.018   1.133   2.43     45079   0.57
+P    tofcrf  back+veto E>15                 -0.004  0.038   1.208   2.61     10891   0.52
+P    tofcrf  back+veto E<20                  0.219  0.016   1.130   2.71     50054   0.58
+P    tofcrf  back+veto E>20                  0.028  0.055   1.178   2.45      5493   0.46
+P    tofcrf  back (no veto) E<2              0.370  0.036   1.233   2.91     12057   0.70
+P    tofcrf  back (no veto) E<5              0.418  0.031   1.364   3.40     24814   0.47
+P    tofcrf  back (no veto) E<10             0.436  0.018   1.359   3.43     66753   0.61
+P    tofcrf  back (no veto) E<15             0.377  0.015   1.243   3.31     84093   0.65
+P    tofcrf  back (no veto) E<20             0.341  0.015   1.307   3.34     93782   0.63
+H    tofcrf  all hits                        0.439  0.012   1.845   7.25    342454   0.59
+H    tofcrf  back-plane hits                 0.151  0.015   1.468   6.38    104388   0.77
+H    tofcrf  back + front veto              -0.026  0.018   1.194   2.41     46920   0.68
+H    tofcrf  back+veto E<2                  -0.074  0.037   0.871   2.08      5276   0.99
+H    tofcrf  back+veto E>2                  -0.030  0.021   1.110   2.62     38186   0.69
+H    tofcrf  back+veto E<5                   0.084  0.043   1.277   2.70     11708   0.46
+H    tofcrf  back+veto E>5                  -0.056  0.019   1.070   2.39     32591   0.85
+H    tofcrf  back+veto E<10                  0.110  0.026   1.170   2.77     27570   0.63
+H    tofcrf  back+veto E>10                 -0.201  0.023   0.970   2.36     16790   0.90
+H    tofcrf  back+veto E<15                  0.045  0.020   1.144   2.59     36331   0.70
+H    tofcrf  back+veto E>15                 -0.251  0.037   1.066   2.23      8530   0.73
+H    tofcrf  back+veto E<20                 -0.016  0.020   1.091   2.51     38620   0.74
+H    tofcrf  back+veto E>20                 -0.247  0.060   1.217   2.27      4720   0.58
+H    tofcrf  back (no veto) E<2              0.026  0.034   1.046   2.49     10483   1.06
+H    tofcrf  back (no veto) E<5              0.248  0.034   1.397   3.86     22949   0.65
+H    tofcrf  back (no veto) E<10             0.282  0.020   1.393   6.20     61885   0.83
+H    tofcrf  back (no veto) E<15             0.227  0.016   1.394   6.18     82375   0.85
+H    tofcrf  back (no veto) E<20             0.188  0.015   1.381   6.16     87884   0.84
+
+Energy split used in overlay plots: 10 MeV
+
+Per plane (all hits, tofc):
+  P: 000: 0.46/1.47  001: 0.30/1.57  100: 2.20/3.53  101: 0.24/1.50  200: 0.49/1.81   (mu/sigma ns)
+  H: 000: 0.61/1.91  001: 0.23/1.50  100: 1.90/3.26  101: 0.31/1.63  200: 0.70/2.24   (mu/sigma ns)
+
+Offset determination (photon tof - L/c should be 0):
+  [tofc]
+    P: mu(back+veto) = 0.116 +- 0.020 ns, mu(all) = 0.448 ns  -> lglobal_time_offset_shms = -1728.12 ns
+    H: mu(back+veto) = 0.094 +- 0.019 ns, mu(all) = 0.598 ns  -> lglobal_time_offset_hms = -1752.39 ns
+    H - P = -0.022 ns
+  [tofcrf]
+    P: mu(back+veto) = 0.180 +- 0.016 ns, mu(all) = 0.445 ns  -> lglobal_time_offset_shms = -1728.18 ns
+    H: mu(back+veto) = -0.026 +- 0.018 ns, mu(all) = 0.439 ns  -> lglobal_time_offset_hms = -1752.27 ns
+    H - P = -0.207 ns
+
+Per run period (back + front veto), periods = l_rf_offset rows:
+  [tofc]
+    runs 22560-22660: P mu=0.958+-0.056 sig=1.278 (N=1695290)  H mu=0.794+-0.034 sig=1.124 (N=2011026)  H-P=-0.164  -> offset_P=-1728.96 offset_H=-1753.09
+    runs 22745-23596: P mu=-0.021+-0.032 sig=1.273 (N=2564128)  H mu=-0.113+-0.038 sig=1.430 (N=2224812)  H-P=-0.092  -> offset_P=-1727.98 offset_H=-1752.19
+    runs 23597-23999: P mu=0.044+-0.023 sig=1.376 (N=5887433)  H mu=-0.057+-0.022 sig=1.028 (N=2583972)  H-P=-0.101  -> offset_P=-1728.04 offset_H=-1752.24
+  [tofcrf]
+    runs 22560-22660: P mu=1.106+-0.052 sig=1.151 (N=1695290)  H mu=0.773+-0.037 sig=1.215 (N=2011026)  H-P=-0.334  -> offset_P=-1729.11 offset_H=-1753.07
+    runs 22745-23596: P mu=0.136+-0.030 sig=1.054 (N=2564128)  H mu=-0.068+-0.034 sig=1.066 (N=2224812)  H-P=-0.204  -> offset_P=-1728.14 offset_H=-1752.23
+    runs 23597-23999: P mu=0.139+-0.019 sig=1.085 (N=5887433)  H mu=-0.231+-0.021 sig=0.876 (N=2583972)  H-P=-0.371  -> offset_P=-1728.14 offset_H=-1752.07
+
+Run-period shift and the combined width (back + front veto, from the per-run histograms, 0.2 ns bins):
+  [tofc] P: all runs: sig=1.406 FWHM=3.09 | without 22560-22660: sig=1.345 FWHM=2.92 | periods aligned: sig=1.338 FWHM=2.88
+  [tofc] H: all runs: sig=1.329 FWHM=2.87 | without 22560-22660: sig=1.075 FWHM=2.71 | periods aligned: sig=1.103 FWHM=2.77
+  [tofcrf] P: all runs: sig=1.124 FWHM=2.71 | without 22560-22660: sig=1.076 FWHM=2.48 | periods aligned: sig=1.080 FWHM=2.45
+  [tofcrf] H: all runs: sig=1.088 FWHM=2.50 | without 22560-22660: sig=0.950 FWHM=1.87 | periods aligned: sig=0.920 FWHM=2.12
+
+Run dependence of the photon peak (back + front veto, tofc): runs with >=1500 hits
+  P: 49 runs, mean 0.274, rms 0.473, min -0.35 (run 23406), max 1.41 (run 22566)
+  H: 40 runs, mean 0.139, rms 0.760, min -0.84 (run 23736), max 4.18 (run 23227)
+
+Expected photon tof L/c (target centre, ypos=0), ns:
+  plane 000: 20.96 20.85 20.76 20.69 20.65 20.64 20.65 20.69 20.76 20.85 20.96
+  plane 001: 22.27 22.16 22.08 22.02 21.98 21.97 21.98 22.02 22.08 22.16 22.27
+  plane 100: 17.93 17.79 17.69 17.61 17.57 17.55 17.57 17.61 17.69 17.79 17.93
+  plane 101: 19.30 19.18 19.08 19.01 18.96 18.95 18.96 19.01 19.08 19.18 19.30
+  plane 200: 20.82 20.71 20.62 20.55 20.51 20.50 20.51 20.55 20.62 20.71 20.82

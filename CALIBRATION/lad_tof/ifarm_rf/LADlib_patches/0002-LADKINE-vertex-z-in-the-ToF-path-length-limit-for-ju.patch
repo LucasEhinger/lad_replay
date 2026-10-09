@@ -1,0 +1,188 @@
+From 29c863782623c3c9d8b6458c536ea8b4c9186d30 Mon Sep 17 00:00:00 2001
+From: LucasEhinger <lucasehinger@gmail.com>
+Date: Sat, 3 Oct 2026 16:31:28 -0400
+Subject: [PATCH 2/2] LADKINE: vertex z in the ToF path length; limit for junk
+ vertex z
+
+t_vertex used the central path length from the target centre, so it was early
+by z*cos(theta_e)/c for a vertex at z (0.32 ns at z = 10 cm, 13 deg). Subtract
+z*cos(theta_e) from the electron path (theta_e from the golden track's lab
+momentum). The RF correction now snaps t_vertex - z/c (bunch time at the
+target centre), and the RF-corrected ToF adds back z/c from the same z.
+
+The reaction-point z was used without a range check, so junk vertices (up to
+|z| of metres) shifted the RF-corrected ToF by many ns. New params
+vertex_zmax (default 20 cm) and vertex_bad_z_reject (default 1): outside the
+window the LAD ToF is not computed (kBig); with reject = 0 the target centre
+is used. The z used is written as z_tof.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/THcLADKine.cxx | 63 ++++++++++++++++++++++++++++++++++++++++------
+ src/THcLADKine.h   |  5 +++-
+ 2 files changed, 60 insertions(+), 8 deletions(-)
+
+diff --git a/src/THcLADKine.cxx b/src/THcLADKine.cxx
+index 1ac2349..d2037fa 100644
+--- a/src/THcLADKine.cxx
++++ b/src/THcLADKine.cxx
+@@ -30,6 +30,9 @@ ClassImp(THcLADKine)
+   fTVertex        = kBig;
+   fRFTime         = kBig;
+   fTVertex_RFcorr = kBig;
++  fVertexZMax     = 20.0; // cm
++  fRejectBadZ     = 1;
++  fZTof           = 0.0;
+   fFixed_z        = nullptr;
+   rf_offset       = nullptr;
+   n_rf_offsets    = 0;
+@@ -83,6 +86,7 @@ void THcLADKine::Clear(Option_t *opt) {
+   fTVertex        = kBig;
+   fRFTime         = kBig;
+   fTVertex_RFcorr = kBig;
++  fZTof           = 0.0;
+   vertex.SetXYZ(0, 0, 0);
+ 
+   // 1D-cluster projective tracking writes its results directly onto the
+@@ -165,6 +169,8 @@ Int_t THcLADKine::ReadDatabase(const TDatime &date) {
+   fD0Cut_noVertex      = 0.0;
+   fNfixed_z            = 0;
+   fglobal_time_offset  = 0.0;
++  fVertexZMax          = 20.0; // cm
++  fRejectBadZ          = 1;
+   fTrk_dtCut           = 10.0;
+   fDoNoVertexTracking  = 1;    // default: no-vertex tracking on
+   fDoXZTracking        = 0;    // default: x-z (no-y) tracking off
+@@ -182,6 +188,8 @@ Int_t THcLADKine::ReadDatabase(const TDatime &date) {
+                       {"d0_cut_noVertex", &fD0Cut_noVertex, kDouble, 0, 1},
+                       {"nfixed_z", &fNfixed_z, kInt, 0, 1},
+                       {"global_time_offset", &fglobal_time_offset, kDouble, 0, 1},
++                      {"vertex_zmax", &fVertexZMax, kDouble, 0, 1},
++                      {"vertex_bad_z_reject", &fRejectBadZ, kInt, 0, 1},
+                       {"trk_dt_cut", &fTrk_dtCut, kDouble, 0, 1},
+                       {"do_noVertex_tracking", &fDoNoVertexTracking, kInt, 0, 1},
+                       {"do_xz_tracking", &fDoXZTracking, kInt, 0, 1},
+@@ -1305,7 +1313,26 @@ void THcLADKine::MakeProtonCut(TClonesArray *hits) {
+ }
+ //_____________________________________________________________________________
+ void THcLADKine::CalculateTVertex() {
+-  // Calculate the time of flight
++  // Electron interaction time at the vertex (fTVertex) and the RF-bucket time at
++  // the target centre (fTVertex_RFcorr), from the golden track.
++
++  // Vertex z used by the ToF corrections: this spectrometer's reaction point, or
++  // the target centre (z = 0) when there is none. A reaction point outside
++  // |z| < vertex_zmax is a junk reconstruction (some reach |z| of metres, i.e.
++  // ToF shifts of many ns, z/c = 3.3 ns per metre): with vertex_bad_z_reject = 1
++  // the ToF of that event is not computed (fZTof = kBig, ToF = kBig); with 0 the
++  // target centre is used. Rejecting gave the narrower photon peak (SHMS: ~9% of
++  // LAD hits have such a vertex, and their timing is worse).
++  fZTof = 0.0;
++  if (fVertexModule && fVertexModule->HasVertex()) {
++    const Double_t z = fVertexModule->GetVertex().Z();
++    if (fVertexZMax <= 0 || std::fabs(z) < fVertexZMax)
++      fZTof = z;
++    else if (fRejectBadZ)
++      fZTof = kBig;
++  }
++  const Double_t zcorr = (fZTof < 0.1 * kBig) ? fZTof : 0.0; // z used in the time arithmetic
++
+   if (fTrack == nullptr) {
+     // Error("CalculateToF", "No track found");
+     return;
+@@ -1346,11 +1373,26 @@ void THcLADKine::CalculateTVertex() {
+     return;
+   }
+ 
++  // The central path length is measured from the target centre. A vertex at z on
++  // the beam line is z*cos(theta_e) closer to the spectrometer (theta_e = electron
++  // lab angle), so the electron path is shorter by that much. Without this term
++  // fTVertex is early by z*cos(theta_e)/c (0.32 ns for z = 10 cm at 13 deg).
++  const TVector3 &pv = fTrack->GetPvect();
++  const Double_t costh_e =
++      (pv.Mag() > 0. && pv.Mag() < 1e10) ? pv.CosTheta() : std::cos(fSpectro ? fSpectro->GetThetaGeo() : 0.);
++  DeltaPathLength -= zcorr * costh_e;
++
+   Double_t beta_calc      = elec_P / sqrt(elec_P * elec_P + elecMass * elecMass);
+   Double_t PathLengthCorr = DeltaPathLength / (lightSpeed * beta_calc);
+ 
+   fTVertex = fPtime - PathLengthCorr;
+ 
++  // Time the electron's bunch passed the target centre: the beam reaches z a time
++  // z/c after z = 0. This is what the RF correction snaps to the nearest bucket,
++  // so fTVertex_RFcorr is the bucket time at the target centre (CalculateTOFRFcorr
++  // adds the z/c back).
++  const Double_t t_bunch0 = fTVertex - zcorr / this->lightSpeed;
++
+   // Look up the run number; default to a safe value (0 -> first offset row) if unavailable
+   Int_t run_number = 0;
+   THaVar *varptr   = gHcParms->Find("gen_run_number");
+@@ -1382,10 +1424,10 @@ void THcLADKine::CalculateTVertex() {
+ 
+     // std::remainder maps the value into [-rf_period/2, +rf_period/2] directly.
+     // (fmod would instead return a full-period range with the sign of the dividend.)
+-    double tmp      = std::remainder(fTVertex - fRFTime + rf_offset[fRFTimeIndex], rf_period);
+-    fTVertex_RFcorr = fTVertex - tmp;
++    double tmp      = std::remainder(t_bunch0 - fRFTime + rf_offset[fRFTimeIndex], rf_period);
++    fTVertex_RFcorr = t_bunch0 - tmp;
+   } else {
+-    fTVertex_RFcorr = fTVertex; // no RF offsets available
++    fTVertex_RFcorr = t_bunch0; // no RF offsets available
+   }
+ 
+   // cout << "Offset" << rf_offset[fRFTimeIndex] << " Offset Index " << fRFTimeIndex << " RF Time " << fRFTime
+@@ -1394,16 +1436,22 @@ void THcLADKine::CalculateTVertex() {
+ }
+ //_____________________________________________________________________________
+ Double_t THcLADKine::CalculateToF(Double_t t_raw) {
++  if (fZTof >= 0.1 * kBig)
++    return kBig; // vertex outside |z| < vertex_zmax (vertex_bad_z_reject = 1)
+ 
+   Double_t tof = t_raw - fTVertex + fglobal_time_offset;
+ 
+   return tof;
+ }
+ Double_t THcLADKine::CalculateTOFRFcorr(Double_t t_raw) {
++  if (fZTof >= 0.1 * kBig)
++    return kBig; // vertex outside |z| < vertex_zmax (vertex_bad_z_reject = 1)
+ 
+   Double_t tof = t_raw - fTVertex_RFcorr + fglobal_time_offset;
+ 
+-  tof -= vertex.Z() / lightSpeed;
++  // fTVertex_RFcorr is the bucket time at the target centre; the interaction at z
++  // happened z/c later (fZTof: within |z| < vertex_zmax, or 0 without a vertex).
++  tof -= fZTof / lightSpeed;
+ 
+   return tof;
+ }
+@@ -1416,8 +1464,9 @@ Int_t THcLADKine::DefineVariables(EMode mode) {
+   // Define variables for the analysis tree
+   if (mode == kDefine) {
+     RVarDef vars[] = {
+-        {"t_vertex", "Calculated vertex time", "fTVertex"},
+-        {"t_vertex_RFcorr", "Calculated vertex time (RF corrected)", "fTVertex_RFcorr"},
++        {"t_vertex", "Electron interaction time at the vertex (path length from the vertex z)", "fTVertex"},
++        {"t_vertex_RFcorr", "RF-bucket time at the target centre (RF corrected vertex time)", "fTVertex_RFcorr"},
++        {"z_tof", "Vertex z used for the ToF corrections (cm); 0 if no vertex, kBig if outside vertex_zmax and rejected", "fZTof"},
+         // All below variables are defined and identical to those in ladhodo. Just use H/P.ladhod.var
+ 
+         // {"n_goodhits", "Number of good hits", "goodhit_n"},
+diff --git a/src/THcLADKine.h b/src/THcLADKine.h
+index fa8494a..941265b 100644
+--- a/src/THcLADKine.h
++++ b/src/THcLADKine.h
+@@ -55,7 +55,10 @@ protected:
+   Int_t fNfixed_z;
+   Double_t *fFixed_z;
+   Double_t fglobal_time_offset; // LAD ToF offset (ns) for this spectrometer (global_time_offset_shms/_hms, else global_time_offset)
+-  Double_t fTVertex;
++  Double_t fTVertex;        // electron interaction time at the vertex (ns)
++  Double_t fVertexZMax;     // |vertex z| limit (cm) for the ToF corrections; <= 0 = no limit
++  Int_t fRejectBadZ;        // 1: no ToF when the vertex is outside the limit; 0: use the target centre instead
++  Double_t fZTof;           // vertex z used for the ToF corrections (cm): reaction point, 0 if none, kBig if rejected
+   Double_t fRFTime;
+   Double_t fTVertex_RFcorr;
+   Int_t n_rf_offsets;
+-- 
+2.52.0
+
