@@ -10,6 +10,15 @@ block P.gem.clust.*
 block H.gem.clust.*
 block P.gem.trk.*
 block H.gem.trk.*
+# GEM space points, per-layer counts and per-module 2D-hit / cluster counts (no strip-level data)
+block P.gem.sp.*
+block H.gem.sp.*
+block P.gem.hit.*
+block H.gem.hit.*
+block P.gem.m*.n2Dhits
+block H.gem.m*.n2Dhits
+block P.gem.m*.nclusters
+block H.gem.m*.nclusters
 
 block P.hod.*time
 block P.hod.*Time

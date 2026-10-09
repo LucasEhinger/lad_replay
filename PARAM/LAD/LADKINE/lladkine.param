@@ -55,7 +55,7 @@ l_rf_period = 4.00801
 ldo_noVertex_tracking = 0  ; no-vertex tracking (free line, no target vertex)
 ldo_xz_tracking       = 0  ; x-z (no-y) tracking: fit only x and z, drop the y residual
                            ; the no-vertex x-z pass runs only when BOTH toggles are 1
-ldo_1Dcluster_tracking = 0 ; 1D-cluster tracking: seed from individual GEM strip
+ldo_1Dcluster_tracking = 1 ; 1D-cluster tracking: seed from individual GEM strip
                            ; clusters (unpaired U/V) + vertex + hodoscope instead of
                            ; 2D space points, so a plane missing a U or V cluster still
                            ; tracks. Writes the P/H.ladkin.trk1d.* branches; leaves the
@@ -91,8 +91,11 @@ lchisq_cut  =  20.0, 15.0  ; chi2 cut [0]=accept 2-hodo-hit fit, [1]=fall back t
 lsigma_gem  =  0.1         ; cm
 lsigma_hodo = 10.0         ; cm
 
-; --- Proton ID cuts (set to the code defaults) ---
-lproton_front_edep_cut = 100.0 ; MeV, front-plane proton threshold
+; --- Proton ID cuts ---
+; Front cut on the 2026 (proton-scale) energy calibration, where the MIP sits at 14 MeV in every plane and a
+; 5 cm bar holds at most ~80 MeV (punch-through). 25 MeV keeps ~70-80% of slow (1/beta 1.3-4) front hits and
+; ~25% of fast (1/beta ~1) ones. The old 100 MeV was set on the pre-2026 scale and keeps ~5% of protons now.
+lproton_front_edep_cut =  25.0 ; MeV, front-plane proton threshold (was 100 before the 2026 edep calibration)
 lproton_back_dt_min    =   2.8 ; ns
 lproton_back_dt_max    =  10.0 ; ns
 lproton_back_y_diag    =  35.0 ; MeV

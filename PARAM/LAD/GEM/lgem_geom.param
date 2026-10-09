@@ -31,7 +31,7 @@ lgem_m1_apvmap = 1
 ; number, so anything set here would override the run-selected values.
 
 lgem_d0_cut = 20; cm
-lgem_max_tracks = 10000; max GEM tracks stored per event (default 10000 if unset)
+lgem_max_tracks = 30000; max GEM tracks stored per event (default 10000 if unset). Pairs with GEM0-GEM1 dt > ltrk_dt_cut form no track.
 
 
 ; strip angles
