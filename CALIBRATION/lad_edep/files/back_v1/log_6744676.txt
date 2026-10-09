@@ -1,0 +1,4 @@
+p5_22698 101 11: MIP-match 1/g=2.692  dt-fit 1/g=2.687  ratio 1.002
+dt-fit / MIP-match gain ratio: median 0.829, rms 0.133, n=20
+p5_22698 101 11: MIP-match 1/g=0.422  dt-fit 1/g=0.482  ratio 0.875
+dt-fit / MIP-match gain ratio: median 0.831, rms 0.093, n=20
