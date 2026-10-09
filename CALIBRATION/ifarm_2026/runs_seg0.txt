@@ -1,0 +1,11 @@
+# First segment only: timing/energy checks in HV periods without carbon
+# 22375-22532
+22400
+22421
+22430
+# 5-pass < 22375
+22289
+22344
+# 3-pass LD2
+22148
+22154
