@@ -17,8 +17,11 @@ ld0_cut_noVertex = 200 ; cm
 ; the photon peak moves by -0.26 ns in both arms. Reset to the median per-bar photon peak of the RF-corrected
 ; ToF in runs 22698+ (CALIBRATION/lad_hodo_calib/lad_bar_timing_peaks.py on btc_P5_v2(_H).root); was -1728.0 / -1752.3.
 ; Replays made with the old LAD calibration (ladhodo_Vpcalib_23798, lhodo_TWcalib_186) put photons ~0.26 ns late.
+; 2026-10-09 (later): SHMS/HMS match on the RF-corrected photon peak (tof_rfcorr - path/c, both planes) of 31
+; first-segment test replays with the full 2026 settings: SHMS +0.12/+0.12/+0.20 ns in 22536-22694 / 22698-23425 /
+; 23426+ (all +0.15 +- 0.03), HMS -0.02/-0.02/-0.10 (all -0.03 +- 0.03, kept). SHMS moved by -0.15 ns (was -1727.86).
 ; lglobal_time_offset is the fallback when a per-spectrometer value is absent.
-lglobal_time_offset_shms = -1727.86 ;ns
+lglobal_time_offset_shms = -1728.01 ;ns
 lglobal_time_offset_hms  = -1751.93 ;ns
 lglobal_time_offset      = -1710   ;ns old shared value (fallback only)
 
