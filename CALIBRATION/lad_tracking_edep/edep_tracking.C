@@ -86,6 +86,8 @@
 #include <TSystem.h>
 #include <TVirtualPad.h>
 #include <cmath>
+
+#include "../lad_tof/lad_tof_offset.h" // calibrated LAD ToF convention (photon peak at tof-L/c = 0)
 #include <functional>
 
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6, 30, 0)
@@ -115,11 +117,11 @@ const int N_SPECS = 2;
 const std::array<char, N_SPECS> specs = {'P', 'H'};
 
 // --- corrected-tof axis (identical to lad_tracking_eff.C so the plots overlay) ---
-const int NBINS_TCORR = 650; // 0.5 ns bins over [-150, 175]
-const double XMIN_TCORR = -150., XMAX_TCORR = 175.;
+const int NBINS_TCORR = 650; // 0.5 ns bins over [-168, 157] (photon peak at 0, see lad_tof_offset.h)
+const double XMIN_TCORR = ladtof::TCORR_LO, XMAX_TCORR = ladtof::TCORR_HI;
 const int PROTON_REBIN = 10; // rebin to 5 ns before the sideband-subtracted ratio
-const double SB_LO1 = -150., SB_HI1 = -100., SB_LO2 = 125., SB_HI2 = 175.;
-const std::array<double, 2> PEAK_WIN = {30., 50.};
+const double SB_LO1 = ladtof::OOT_LO1, SB_HI1 = ladtof::OOT_HI1, SB_LO2 = ladtof::OOT_LO2, SB_HI2 = ladtof::OOT_HI2;
+const std::array<double, 2> PEAK_WIN = {ladtof::PEAK_LO, ladtof::PEAK_HI}; // [12, 32]
 
 // tof regions the spectra are split by (a hit is in-region if its corrected tof
 // falls in any of that region's intervals). Same definition as lad_tracking_eff.C.
@@ -128,8 +130,8 @@ const char *const GREG_NAME[N_GREG] = {"all", "oot", "it", "peak"};
 const std::vector<std::vector<std::array<double, 2>>> GREG_INT = {
     {{-1e9, 1e9}},                        // all
     {{SB_LO1, SB_HI1}, {SB_LO2, SB_HI2}}, // oot: out-of-time sidebands
-    {{-25., 30.}, {50., 125.}},           // it:  in-time sidebands
-    {{30., 50.}}};                        // peak
+    {{ladtof::IT_LO1, ladtof::IT_HI1}, {ladtof::IT_LO2, ladtof::IT_HI2}}, // it: in-time sidebands
+    {{ladtof::PEAK_LO, ladtof::PEAK_HI}}}; // peak
 // Hodoscope plane groups: plane 001 (index 1) and plane 101 (index 3).
 const int N_GGRP = 2;
 const char *const GGRP_NAME[N_GGRP] = {"000_001", "100_101"};
@@ -516,8 +518,8 @@ void edep_tracking(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
   //     given and its stored signature matches, load the histograms and skip the
   //     event loop entirely.
   // ---------------------------------------------------------------
-  const char *CACHE_VERSION = "v1";
-  std::string sig = std::string("edep_tracking;") + CACHE_VERSION + ";";
+  const char *CACHE_VERSION = "v2"; // v2: calibrated per-spectrometer LAD ToF (lad_tof_offset.h)
+  std::string sig = std::string("edep_tracking;") + CACHE_VERSION + ";" + ladtof::signature() + ";";
   sig += "tof=" + std::to_string(NBINS_TCORR) + "," + std::to_string(XMIN_TCORR) + "," + std::to_string(XMAX_TCORR) +
          ";adc=" + std::to_string(ADC_NBINS) + "," + std::to_string(ADC_LO) + "," + std::to_string(ADC_HI) +
          ";res=" + std::to_string(RES_NBINS) + "," + std::to_string(RES_LO) + "," + std::to_string(RES_HI) +
@@ -604,7 +606,7 @@ void edep_tracking(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
       df = df.Alias(sp + "_plane_1", pfx + "plane_1");
       df = df.Alias(sp + "_paddle_1", pfx + "paddle_1");
       df = df.Alias(sp + "_ypos_1", pfx + "hit_ypos_1");
-      df = df.Alias(sp + "_tof_1", pfx + "hit_tof_1");
+      df = ladtof::define_tof(df, sp + "_tof_1", specs[is], "1"); // calibrated ToF, any replay
       df = df.Alias(sp + "_isProton_1", pfx + "isProton_1");
 
       // -------------------------------------------------------------
@@ -1148,7 +1150,7 @@ void edep_tracking(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
         hratio->Divide(hd_sb);
         double eff_m = 0., eff_e = 0.;
         region_wstats(hratio, ht_rb, hd_rb, {{PEAK_WIN[0], PEAK_WIN[1]}}, eff_m, eff_e);
-        hratio->GetXaxis()->SetRangeUser(-50., 175.);
+        hratio->GetXaxis()->SetRangeUser(ladtof::RATIO_LO, ladtof::RATIO_HI);
         hratio->GetYaxis()->SetRangeUser(0., 1.5);
         hratio->SetLineColor(kBlue + 1);
         hratio->SetLineWidth(2);
@@ -1171,7 +1173,7 @@ void edep_tracking(const char *dat_file = DEFAULT_DAT_FILE, const char *out_file
         hraw->Divide(hd_rw);
         double bkg_m = 0., bkg_e = 0.;
         region_wstats(hraw, ht_rw, hd_rw, {{SB_LO1, SB_HI1}, {SB_LO2, SB_HI2}}, bkg_m, bkg_e);
-        hraw->GetXaxis()->SetRangeUser(-150., 175.);
+        hraw->GetXaxis()->SetRangeUser(ladtof::TCORR_LO, ladtof::TCORR_HI);
         hraw->GetYaxis()->SetRangeUser(0., 1.5);
         hraw->SetLineColor(kMagenta + 2);
         hraw->SetLineWidth(2);
