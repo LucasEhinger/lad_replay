@@ -19,6 +19,9 @@
 // Optional exclusion list: lines "<plane> <paddle> <run>" (e.g. "100 1 23038"); hits of that bar in that run are
 // skipped, and so are front-back pairs containing it (bars with a hardware fault in some runs).
 //
+// Optional path window: keep hits with path_lo <= path/thickness < path_hi (default: the MAX_PATH_RATIO cut), e.g.
+// 1.03, 1.5 for the oblique hits the default cut drops.
+//
 // Usage: root -l -b -q 'lad_edep_histos.C+("files.dat","out.root",4,"exclude.txt")'
 
 #include <ROOT/RDataFrame.hxx>
@@ -138,7 +141,8 @@ struct Hists {
 };
 } // namespace led
 
-void lad_edep_histos(const char *listfile, const char *outfile, int nthreads = 4, const char *exclfile = "") {
+void lad_edep_histos(const char *listfile, const char *outfile, int nthreads = 4, const char *exclfile = "",
+                     double path_lo = 0., double path_hi = led::MAX_PATH_RATIO) {
   using namespace led;
   using RVd = ROOT::VecOps::RVec<double>;
   TH1::AddDirectory(kFALSE);
@@ -191,7 +195,7 @@ void lad_edep_histos(const char *listfile, const char *outfile, int nthreads = 4
                                      g + "trackid",    g + "hittime_0",    g + "hittime_1",
                                      sp + ".react.ok", sp + ".react.z",    "g.runnum"};
     d.ForeachSlot(
-        [&H, spec](unsigned slot, const RVd &pl0, const RVd &pl1, const RVd &pd0, const RVd &pd1, const RVd &t0,
+        [&H, spec, path_lo, path_hi](unsigned slot, const RVd &pl0, const RVd &pl1, const RVd &pd0, const RVd &pd1, const RVd &t0,
              const RVd &t1, const RVd &y0, const RVd &y1, const RVd &e0, const RVd &e1, const RVd &a0, const RVd &a1,
              const RVd &trk, const RVd &ht0, const RVd &ht1, double vok, double vz, double run) {
           Hists &h       = *H[slot];
@@ -242,7 +246,7 @@ void lad_edep_histos(const char *listfile, const char *outfile, int nthreads = 4
               const double cosa = (X * s + Zz * c) / L;
               const double path = 1. / std::fabs(cosa);
               h.hpath[per][p]->Fill(path);
-              if (path > MAX_PATH_RATIO)
+              if (path < path_lo || path >= path_hi)
                 continue;
               const double ib = T[i] * C_LIGHT / L;
               const bool intrk = i < trk.size() && trk[i] >= 0;
@@ -315,6 +319,7 @@ void lad_edep_histos(const char *listfile, const char *outfile, int nthreads = 4
   }
   fout.cd();
   TNamed("tof", ladtof::signature().c_str()).Write();
+  TNamed("path", Form("%g,%g", path_lo, path_hi)).Write();
   fout.Close();
   std::cout << "wrote " << outfile << std::endl;
 }
