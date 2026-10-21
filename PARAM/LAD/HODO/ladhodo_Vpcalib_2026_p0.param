@@ -1,3 +1,5 @@
+; NOTE (2026-10): these constants are better than the previous ones but are not final and will need
+; updating; in particular the energy scale (back-plane Delta-t vs front ridge vs MIP match) is still under study.
 ; LAD hodoscope velFit, cableFit, LCoeff for runs below 22375
 ; reference vp_P5.param shifted per PMT by the TDC-only laser run laser_22358.root vs laser_22824.root, laser_23249.root, laser_23798.root
 ; laser amplitude = reference amplitude x p0_lt22375 MIP gain ratio; time walk beam_P5_final_free.param (CALIBRATION/lad_hodo_calib/lad_laser_period.py)

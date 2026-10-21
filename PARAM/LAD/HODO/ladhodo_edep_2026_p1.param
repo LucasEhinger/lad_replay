@@ -1,3 +1,5 @@
+; NOTE (2026-10): these constants are better than the previous ones but are not final and will need
+; updating; in particular the energy scale (back-plane Delta-t vs front ridge vs MIP match) is still under study.
 ; LAD hodoscope energy calibration, PMT-HV period p1_22375 (22375-22532)
 ; proton scale: a proton that just punches through a bar reads its deposited energy
 ; written by CALIBRATION/lad_edep/lad_edep_param.py from lad_edep_fit.py

@@ -18,6 +18,8 @@ g_ctp_lad_hodo_offset_filename = "PARAM/LAD/HODO/lhodo_adc_tdc_offsets_preMay16.
 g_ctp_lad_hodo_offset_filename = "PARAM/LAD/HODO/lhodo_adc_tdc_offsets_May16.param"
 
 ; LAD hodo bar timing (velFit, cableFit, LCoeff) and energy calibration per PMT-HV period (2026 recalibration).
+; NOTE (2026-10): these constants are better than the previous ones but are not final and will need
+; updating; in particular the energy scale (back-plane Delta-t vs front ridge vs MIP match) is still under study.
 ; HV changes: 22375 (REFBAR, 01-01-01 top), 22533 (02-00-10 btm), 22536 (all), 22695 (all), 22698 (minor).
 ; Loaded by the replay scripts after general.param, so they override its defaults.
 ; Bar timing: p5 from the laser runs (22824-29, 23249-51, 23798-23821); p3 from p5 + the photon flash of 22536-22694;

@@ -1,3 +1,5 @@
+; NOTE (2026-10): these constants are better than the previous ones but are not final and will need
+; updating; in particular the energy scale (back-plane Delta-t vs front ridge vs MIP match) is still under study.
 ; LAD hodoscope velFit, cableFit, LCoeff for runs 22695+
 ; = ladhodo_Vpcalib_2026_p5.param with LCoeff corrected per bar by the RF-corrected photon flash of the 2026
 ; full replay (CALIBRATION/lad_hodo_calib/lad_photon_bar_offsets.py; periods P5;

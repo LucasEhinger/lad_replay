@@ -1,3 +1,5 @@
+; NOTE (2026-10): these constants are better than the previous ones but are not final and will need
+; updating; in particular the energy scale (back-plane Delta-t vs front ridge vs MIP match) is still under study.
 ; LAD hodoscope velFit, cableFit, LCoeff for runs 22536-22694
 ; reference vp_P5.param corrected with the photon flash (hybrid mode); cables from the reference
 ; (CALIBRATION/lad_hodo_calib/lad_period_offsets.py; inputs btc_P5_v2.root, btc_P3_v2.root)

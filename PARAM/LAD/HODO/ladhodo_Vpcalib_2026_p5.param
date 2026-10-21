@@ -1,3 +1,5 @@
+; NOTE (2026-10): these constants are better than the previous ones but are not final and will need
+; updating; in particular the energy scale (back-plane Delta-t vs front ridge vs MIP match) is still under study.
 ; LAD hodoscope propagation velocity, top-bottom cable offsets and bar offsets
 ; from laser runs 22824, 22825, 22826, 22827, 22828, 22829, 23249, 23250, 23251, 23801, 23802, 23803, 23804, 23805, 23806, 23808, 23811, 23812, 23813, 23814, 23815, 23816, 23817 (CALIBRATION/lad_hodo_calib/lad_laser_offsets.py)
 ; time walk: beam_P5_final_free.param; reference bar: plane 000 paddle 1

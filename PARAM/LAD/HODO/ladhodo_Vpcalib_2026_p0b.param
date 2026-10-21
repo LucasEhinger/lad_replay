@@ -1,3 +1,5 @@
+; NOTE (2026-10): these constants are better than the previous ones but are not final and will need
+; updating; in particular the energy scale (back-plane Delta-t vs front ridge vs MIP match) is still under study.
 ; LAD hodoscope velFit, cableFit, LCoeff for runs 22081-22120 (3-pass, measured on 22100-22120)
 ; = vp_P0_lt22375.param with the back-plane (001, 101) LCoeff shifted by the same-paddle
 ;   front-back fast-pair residual of this run group against runs 22698+ (lad_pairs_period_offsets.py).

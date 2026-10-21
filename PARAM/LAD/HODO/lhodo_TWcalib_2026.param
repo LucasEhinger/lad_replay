@@ -1,3 +1,5 @@
+; NOTE (2026-10): these constants are better than the previous ones but are not final and will need
+; updating; in particular the energy scale (back-plane Delta-t vs front ridge vs MIP match) is still under study.
 ;LAD Hodoscopes time-walk parameters: beam TDC-FADC, prod10 runs 22698+ (P), c3 free
 ;written by CALIBRATION/lad_hodo_calib/lad_tw_fit.py (free fit)
 ;tw(A) = c3 * [(A/thr)^-c2 - (200/thr)^-c2], A = FADC pulse amplitude (mV); c1 is the TDC-FADC offset (not used)
