@@ -44,3 +44,6 @@ PARAM/LAD/HODO/ladhodo_Vpcalib_*.param
 !PARAM/LAD/HODO/ladhodo_Vpcalib_229.param
 !PARAM/LAD/HODO/ladhodo_Vpcalib_22827.param
 !PARAM/LAD/HODO/ladhodo_Vpcalib_23798.param
+
+# Python bytecode
+__pycache__/
