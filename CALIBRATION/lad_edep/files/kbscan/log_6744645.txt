@@ -1,0 +1,16 @@
+KB=0.0
+54
+dt-fit / MIP-match gain ratio: median 0.833, rms 0.175, n=14
+front+200 MIP on proton scale: median 16.3 MeV  n=24
+KB=0.013
+55
+dt-fit / MIP-match gain ratio: median 0.885, rms 0.366, n=16
+front+200 MIP on proton scale: median 16.8 MeV  n=24
+KB=0.0258
+53
+dt-fit / MIP-match gain ratio: median 0.937, rms 0.501, n=15
+front+200 MIP on proton scale: median 17.5 MeV  n=24
+KB=0.04
+53
+dt-fit / MIP-match gain ratio: median 0.895, rms 0.682, n=15
+front+200 MIP on proton scale: median 18.5 MeV  n=24
